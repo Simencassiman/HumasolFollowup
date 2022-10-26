@@ -36,6 +36,7 @@ repos:
     -   id: isort
         args:
           - --line-length=79
+          - --profile=black
 -   repo: local
     hooks:
     -   id: pylint

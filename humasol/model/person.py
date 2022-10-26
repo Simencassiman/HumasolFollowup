@@ -655,17 +655,17 @@ class Organization(db.Model):
             is not None
         )
 
+    # TODO: convert to python setter
     def set_name(self, name: str) -> None:
         """Set the name of this organisation."""
-        # TODO: convert to python setter
         if not self.is_valid_name(name):
             raise ValueError("Illegal 'name' for an organization")
 
         self.name = name
 
+    # TODO: convert to python setter
     def set_logo(self, logo: str) -> None:
         """Set the logo of this organisation."""
-        # TODO: convert to python setter
         if not self.is_valid_logo(logo):
             raise ValueError("Illegal logo path for an organization")
 

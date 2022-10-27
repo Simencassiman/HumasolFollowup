@@ -55,8 +55,6 @@ repos:
     -   id: mypy
         additional_dependencies:
           - types-requests
-        args:
-          - --ignore-missing-imports
 -   repo: https://github.com/PyCQA/pydocstyle
     rev: 6.1.1
     hooks:

@@ -1165,3 +1165,164 @@ class Grid(ProjectComponent):
             + f"injection_cost={self.injection_cost}"
             f")"
         )
+
+
+class Generator(ProjectComponent):
+    """Class representing an electricity generator.
+
+    Class containing certain attributes of an electric generator that can be
+    configured for each project.
+
+    Attributes:
+    fuel_cost       -- Price for fuel (€/L)
+    overheats       -- Flag indicating whether the generator overheats during
+                        operation
+    cooldown_time   -- Time required by to cool down and restart working after
+                        it has overheated
+    """
+
+    LABEL = "generator"
+
+    def __init__(
+        self,
+        fuel_cost: float,
+        overheats: bool = False,
+        cooldown_time: Optional[float] = None,
+    ):
+        """Instantiate an object of this class.
+
+        Arguments:
+        fuel_cost       -- Price for fuel (€/L)
+        overheats       -- Flag indicating whether the generator overheats
+                            during operation
+        cooldown_time   -- Time required by to cool down and restart working
+                            after it has overheated
+        """
+        if not isinstance(fuel_cost, (float, int)):
+            raise TypeError(
+                "Argument 'fuel_cost' should not be None and of type float"
+            )
+        if not self.is_valid_cost(fuel_cost):
+            raise ValueError(
+                "Argument 'fuel_cost' has an illegal value. Cost should "
+                "be non-negative"
+            )
+
+        if not self.is_valid_overheats(overheats):
+            raise TypeError("Argument 'overheats' should be of type bool")
+
+        if cooldown_time is not None and not isinstance(
+            cooldown_time, (float, int)
+        ):
+            raise TypeError(
+                "Argument 'cooldown_time' should be of type float or None"
+            )
+        if not self.is_valid_cooldown(cooldown_time):
+            raise ValueError(
+                "Argument 'cooldown_time' has an illegal value. Should "
+                "be non-negative"
+            )
+
+        if overheats and cooldown_time is None:
+            raise ValueError(
+                "If the generator overheats a cooldown_time should be given"
+            )
+        if not overheats and cooldown_time is not None:
+            raise ValueError(
+                "If the generator doesn't overheat it cannot have a "
+                "cooldown_time"
+            )
+
+        self.fuel_cost = fuel_cost
+        self.overheats = overheats
+        self.cooldown_time = cooldown_time
+
+    @staticmethod
+    def is_valid_cost(cost: float) -> bool:
+        """Check whether the provided cost is legal."""
+        if not isinstance(cost, (float, int)):
+            return False
+        return cost >= 0
+
+    @staticmethod
+    def is_valid_overheats(flag: bool) -> bool:
+        """Check whether the provide flag is a legal flag."""
+        return isinstance(flag, bool)
+
+    @staticmethod
+    def is_valid_cooldown(time: Optional[float]) -> bool:
+        """Check whether the provided cooldown time is a legal duration."""
+        return time is None or (isinstance(time, (float, int)) and time >= 0)
+
+    # TODO: Convert to python setter
+    def set_fuel_cost(self, cost: float) -> None:
+        """Set the fuel cost for this generator."""
+        if not self.is_valid_cost(cost):
+            raise ValueError(
+                "Argument 'fuel_cost' has an illegal value. Cost should be "
+                "a non-negative float"
+            )
+
+        self.fuel_cost = cost
+
+    # TODO: Convert to python setter
+    def set_overheats(self, overheats: bool) -> None:
+        """Set whether this generator overheats."""
+        if not self.is_valid_overheats(overheats):
+            raise ValueError("Argument 'overheats' should be of type bool")
+
+        if not overheats:
+            self.cooldown_time = None
+
+        self.overheats = overheats
+
+    # TODO: Convert to python setter
+    def set_cooldown_time(self, time: float) -> None:
+        """Set the time required to cool down after overheating."""
+        if not self.is_valid_cooldown(time):
+            raise ValueError(
+                "Argument 'cooldown_time' has an illegal value. Should be "
+                "a non-negative float"
+            )
+        if not self.overheats and time is not None:
+            raise ValueError(
+                "Argument 'cooldown_time' has an illegal value. If the "
+                "generator does not overheat it should be None"
+            )
+
+        self.cooldown_time = time
+
+    def as_dict(self) -> Dict[str, Dict[str, Any]]:
+        """Provide a dictionary representing this instance.
+
+        The provided dictionary contains the attributes of this object as keys
+        with associated values.
+        """
+        return {self.LABEL: super().as_dict()}
+
+    def update(self, **params: Any) -> Generator:
+        """Update this instance with the provided new parameters.
+
+        Valid parameters are those passed to the __init__ method.
+        """
+        # TODO: Check validity of input
+        if "fuel_cost" in params:
+            self.set_fuel_cost(params["fuel_cost"])
+
+        if "overheats" in params:
+            self.set_overheats(params["overheats"])
+
+        if "cooldown_time" in params:
+            self.set_cooldown_time(params["cooldown_time"])
+
+        return self
+
+    def __repr__(self) -> str:
+        """Provide a string representation for this instance."""
+        return (
+            f"Generator("
+            f"fuel_cost={self.fuel_cost}, "
+            f"overheats={self.overheats}, "
+            f"cooldown_time={self.cooldown_time}"
+            f")"
+        )

@@ -92,10 +92,6 @@ class Person(db.Model):
             )
         # pylint: enable=unidiomatic-typecheck
 
-        if not isinstance(name, str):
-            raise TypeError(
-                "Argument 'name' should not be None and of type str"
-            )
         if not self.is_valid_name(name):
             raise ValueError("Argument 'name' should be made up of letters")
 
@@ -187,8 +183,6 @@ class Person(db.Model):
     def update(self, **params: Any) -> Person:
         """Update this instance with the new parameters."""
         if "email" not in params or self.email != params["email"]:
-            print(params["email"])
-            print(self.email)
             raise ValueError(
                 "The provided parameters dictionary does not contain "
                 "a matching email"
@@ -385,10 +379,6 @@ class Supervisor(Person):
         function -- Supervising function (e.g., coach)
         phone    -- Phone number of the supervisor. Including country code
         """
-        if not isinstance(function, str):
-            raise TypeError(
-                "Argument 'function' should not be None and of type str"
-            )
         if not self.is_valid_function(function):
             raise ValueError(
                 "Argument 'function' has invalid content. There should be at "
@@ -480,10 +470,6 @@ class Partner(Person):
         function -- Partner function (e.g., technician)
         phone    -- Phone number of the student. Including country code
         """
-        if not isinstance(function, str):
-            raise TypeError(
-                "Argument 'function' should not be None and of type str"
-            )
         if not self.is_valid_function(function):
             raise ValueError(
                 "Argument 'function' has invalid content. There should be at "
@@ -606,10 +592,6 @@ class Organization(db.Model):
             )
         # pylint: enable=unidiomatic-typecheck
 
-        if not isinstance(name, str):
-            raise TypeError(
-                "Argument 'name' should not be None and of type str"
-            )
         if not self.is_valid_name(name):
             raise ValueError(
                 "Argument 'name' has invalid content. Names should contain "
@@ -822,7 +804,7 @@ class SouthernPartner(Organization):
         )
 
 
-T = TypeVar("T")
+T = TypeVar("T", bound=Person)
 
 
 def construct_person(

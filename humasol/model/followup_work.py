@@ -809,13 +809,15 @@ def filter_dict(params: dict[str, Any], keys: list[str]) -> dict[str, Any]:
     return {key: params["subscriber"][key] for key in keys}
 
 
-T = TypeVar("T")
+T = TypeVar("T", bound=FollowupWork)
+# TODO: Add typed dicts to classes and use those for typing Constructor
+Constructor = Callable[[dict[str, Any]], T]
 
 
 def construct_followup_work(
-    constructor: Callable[[dict[str, Any]], T], params: Dict[str, Any]
+    constructor: Constructor[T], params: Dict[str, Any]
 ) -> T:
-    """Construct the appropriate followup work.
+    """Construct the appropriate follow-up work.
 
     Construct the correct class of followup work based on a factory method
     using the provided constructor and parameters.

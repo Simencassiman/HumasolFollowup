@@ -9,15 +9,19 @@ keeps Humasol and partners informed about the projects' status and operations.
 from functools import reduce
 
 # Local modules
-from ..model.project_categories import ENERGY_PROJECT
+from typing import Optional
+
+from ..model.project_categories import ProjectCategory
 
 # TODO: convert managers lists to automated class detections
 
 
-API_MANAGERS = {ENERGY_PROJECT: {"VictronAPI"}}
+API_MANAGERS = {ProjectCategory.ENERGY: {"VictronAPI"}}
 
 
-def api_manager_exists(manager: str, category: str = None) -> bool:
+def api_manager_exists(
+    manager: str, category: Optional[ProjectCategory] = None
+) -> bool:
     """Check whether the provided API manager exists.
 
     Check whether there is a class corresponding to the provided manager for
@@ -36,7 +40,7 @@ def api_manager_exists(manager: str, category: str = None) -> bool:
 
 
 DATA_MANAGERS = {
-    ENERGY_PROJECT: {
+    ProjectCategory.ENERGY: {
         "GridDataManager",
         "BatteryDataManager",
         "GeneratorDataManager",
@@ -47,7 +51,9 @@ DATA_MANAGERS = {
 }
 
 
-def data_manager_exists(manager: str, category: str = None) -> bool:
+def data_manager_exists(
+    manager: str, category: Optional[ProjectCategory] = None
+) -> bool:
     """Check whether the provided data manager exists.
 
     Check whether there is a class corresponding to the provided manager for
@@ -65,10 +71,12 @@ def data_manager_exists(manager: str, category: str = None) -> bool:
     return manager in data_managers
 
 
-REPORT_MANAGERS = {ENERGY_PROJECT: {"EnergyReportManager"}}
+REPORT_MANAGERS = {ProjectCategory.ENERGY: {"EnergyReportManager"}}
 
 
-def report_manager_exists(manager: str, category: str = None) -> bool:
+def report_manager_exists(
+    manager: str, category: Optional[ProjectCategory] = None
+) -> bool:
     """Check whether the provided report manager exists.
 
     Check whether there is a class corresponding to the provided manager for

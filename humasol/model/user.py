@@ -6,19 +6,23 @@ associated role. The role of a user gives it permissions for different
 functionalities.
 
 Classes:
-Role    -- Set of privileges for a user
-User    -- User dataclass of a webapp user, used for authentication
+UserRole    -- Set of privileges for a user
+User        -- User dataclass of a webapp user, used for authentication
 """
 
 
 # Python Libraries
+from __future__ import annotations
+
+from enum import Enum
+
 from flask_security import RoleMixin, UserMixin
 
 # Local modules
 from ..repository import db
 
-roles_users = db.Table(
-    "roles_users",
+users_roles = db.Table(
+    "users_roles",
     db.Column("user_id", db.Integer(), db.ForeignKey("user.id")),
     db.Column("role_id", db.Integer(), db.ForeignKey("role.id")),
 )
@@ -28,7 +32,47 @@ roles_users = db.Table(
 # pylint: disable=too-few-public-methods
 
 
-class Role(db.Model, RoleMixin):
+class Role(Enum):
+    """Enumeration of valid roles defined by Humasol."""
+
+    ADMIN = "admin"
+    HUMASOL_FOLLOWUP = "humasol_followup"
+    HUMASOL_PR = "humasol_pr"
+    HUMASOL_MEMBER = "humasol_member"
+    HUMASOL_STUDENT = "humasol_student"
+    PARTNER = "partner"
+
+    @staticmethod
+    def humasol() -> tuple[Role, ...]:
+        """Return a list of all roles of Humasol people."""
+        return (
+            Role.HUMASOL_FOLLOWUP,
+            Role.HUMASOL_PR,
+            Role.HUMASOL_MEMBER,
+            Role.HUMASOL_STUDENT,
+        )
+
+    @staticmethod
+    def humasol_members() -> tuple[Role, ...]:
+        """Return a list of all roles working for Humasol."""
+        return Role.HUMASOL_FOLLOWUP, Role.HUMASOL_PR, Role.HUMASOL_MEMBER
+
+    @staticmethod
+    def all() -> tuple[Role, ...]:
+        """Return all values of this enum."""
+        return tuple(Role.__members__.values())
+
+    # pylint doesn't recognize enum subclasses (yet)
+    # pylint: disable=no-member
+    @property
+    def content(self) -> str:
+        """Return the value of the enum object."""
+        return self._value_
+
+    # pylint: enable=no-member
+
+
+class UserRole(db.Model, RoleMixin):
     """Webapp user's role with respect to Humasol.
 
     Users of the webapp can have one of a set of roles associated to them.
@@ -36,9 +80,10 @@ class Role(db.Model, RoleMixin):
     student, ...). The role of a user specifies which privileges they have.
     """
 
+    __tablename__ = "role"
+
     id = db.Column(db.Integer(), primary_key=True)
-    name = db.Column(db.String(80), unique=True)
-    description = db.Column(db.String(255))
+    name = db.Column(db.Enum(Role), primary_key=True)
 
 
 class User(db.Model, UserMixin):
@@ -50,7 +95,10 @@ class User(db.Model, UserMixin):
     active = db.Column(db.Boolean())
     confirmed_at = db.Column(db.DateTime())
     roles = db.relationship(
-        "Role",
-        secondary=roles_users,
+        "UserRole",
+        secondary=users_roles,
         backref=db.backref("users", lazy="dynamic"),
     )
+
+
+# pylint: enable=too-few-public-methods

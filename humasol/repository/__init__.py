@@ -1,4 +1,4 @@
-"""Package responsible for all the data requests."""
+"""Package responsible for all the folder requests."""
 
 from flask_sqlalchemy import SQLAlchemy
 

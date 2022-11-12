@@ -131,3 +131,6 @@ dmypy.json
 
 # Pycharm
 .idea
+
+# Files
+humasol/ui/config.py

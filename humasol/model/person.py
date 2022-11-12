@@ -1,4 +1,4 @@
-"""Person data objects for follow-up work.
+"""Person folder objects for follow-up work.
 
 Projects are executed by and in cooperation with people. This module defines
 a series of classes associated to each function a person can have with respect
@@ -31,6 +31,8 @@ from __future__ import annotations
 import re
 from typing import Any, Callable, Dict, Optional, TypeVar
 
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declared_attr
 
 # Local modules
@@ -40,7 +42,17 @@ from ..repository import db
 
 
 class Person(db.Model):
-    """Abstract base class for a person working for/with Humasol."""
+    """Abstract base class for a person working for/with Humasol.
+
+    Attributes
+    __________
+    id      --  Identifier within people
+    name    --  Personal name
+    email   --  Personal email
+    phone   --  Personal phone number
+    type    --  Subtype of person, used for database mapping
+    organisation    -- Affiliation of the person
+    """
 
     # Definitions for the database tables #
     __tablename__ = "person"
@@ -49,7 +61,7 @@ class Person(db.Model):
     name = db.Column(db.String, nullable=False, index=True)
     email = db.Column(db.String, unique=True, nullable=False, index=True)
     phone = db.Column(db.String, unique=True)
-    type = db.Column(db.String(20))
+    type = db.Column(db.String(20))  # Used by database ORM
 
     __mapper_args__ = {
         "polymorphic_identity": "person",
@@ -58,12 +70,12 @@ class Person(db.Model):
     }
 
     @declared_attr
-    def organization_name(self):
+    def organization_name(self) -> SQLAlchemy.Colum:
         """Return organization name database column."""
         return db.Column(db.String, db.ForeignKey("organization.name"))
 
     @declared_attr
-    def organization(self):
+    def organization(self) -> orm.RelationshipProperty:
         """Return database relationship object to Organization."""
         return db.relationship("Organization", lazy="subquery")
 
@@ -75,10 +87,11 @@ class Person(db.Model):
         email: str,
         phone: Optional[str],
         organization: Organization,
-    ):
+    ) -> None:
         """Instantiate Person object with provided arguments.
 
-        Arguments:
+        Parameters
+        __________
         name    -- Name of the person
         email   -- Email of the person
         phone   -- Phone number of the person. Including country code
@@ -92,30 +105,28 @@ class Person(db.Model):
             )
         # pylint: enable=unidiomatic-typecheck
 
-        if not self.is_valid_name(name):
-            raise ValueError("Argument 'name' should be made up of letters")
-
-        if not isinstance(email, str):
-            raise TypeError(
-                "Argument 'email' should not be None and of type str"
-            )
-        if not self.is_valid_email(email):
+        if not Person.is_legal_name(name):
             raise ValueError(
-                "Argument 'email' has an invalid structure. "
-                "Valid example myname@subdomain.email.com"
+                "Parameter 'name' should be of type str and "
+                "made up of letters and white spaces"
             )
 
-        if phone is not None and not isinstance(phone, str):
-            raise TypeError("Argument 'email' should be of type str or None")
-        if not self.is_valid_phone(phone):
+        if not Person.is_legal_email(email):
             raise ValueError(
-                "Argument 'phone' has an invalid structure. "
-                "Example of a valid "
+                "Parameter 'email' should not be None and of type str."
+                "Valid structure example myname@subdomain.email.com"
             )
 
-        if not isinstance(organization, Organization):
+        if not Person.is_legal_phone(phone):
+            raise ValueError(
+                "Parameter 'phone' should be of type str or None. "
+                "Example of a valid structure (+ or 00)32123456789 "
+                "or 123456789"
+            )
+
+        if not Person.is_legal_organization(organization):
             raise TypeError(
-                "Argument 'organization' should not be None and a subclass "
+                "Parameter 'organization' should not be None and a subclass "
                 "of Organization"
             )
 
@@ -130,22 +141,7 @@ class Person(db.Model):
         self.organization = organization
 
     @staticmethod
-    def is_valid_name(name: str) -> bool:
-        """Check whether this is a legal name for a person."""
-        if not isinstance(name, str):
-            return False
-
-        if len(name) == 0:
-            return False
-
-        regex = re.compile("[@_!#$%^&*()<>?/\\|}{~:]")
-        if regex.search(name) is not None:
-            return False
-
-        return True
-
-    @staticmethod
-    def is_valid_email(email: str) -> bool:
+    def is_legal_email(email: str) -> bool:
         """Check whether this is a legal email.
 
         Check based on the structure and contents, not whether it is actually
@@ -165,7 +161,27 @@ class Person(db.Model):
         return True
 
     @staticmethod
-    def is_valid_phone(phone: Optional[str]) -> bool:
+    def is_legal_name(name: str) -> bool:
+        """Check whether this is a legal name for a person."""
+        if not isinstance(name, str):
+            return False
+
+        if len(name) == 0:
+            return False
+
+        regex = re.compile(r"[@_!#$%^&*()<>?/\\|}{~:]")
+        if regex.search(name) is not None:
+            return False
+
+        return True
+
+    @staticmethod
+    def is_legal_organization(organization: Organization) -> bool:
+        """Check whether the provided organisation is a legal organisation."""
+        return isinstance(organization, Organization)
+
+    @staticmethod
+    def is_legal_phone(phone: Optional[str]) -> bool:
         """Check whether this is a legal phone number.
 
         Check based on the structure and contents, not whether it is actually
@@ -181,18 +197,25 @@ class Person(db.Model):
         return re.fullmatch(regex, phone) is not None
 
     def update(self, **params: Any) -> Person:
-        """Update this instance with the new parameters."""
+        """Update this instance with the new parameters.
+
+        Valid parameters are those provided to the __init__ method.
+
+        Returns
+        _______
+        Return reference to self.
+        """
         if "email" not in params or self.email != params["email"]:
             raise ValueError(
                 "The provided parameters dictionary does not contain "
                 "a matching email"
             )
-        if "name" in params and not self.is_valid_name(params["name"]):
+        if "name" in params and not self.is_legal_name(params["name"]):
             raise ValueError(
                 "Argument 'name' has an illegal value. It should be made "
                 "up of letters"
             )
-        if "phone" in params and not self.is_valid_phone(params["phone"]):
+        if "phone" in params and not self.is_legal_phone(params["phone"]):
             raise ValueError(
                 "Argument 'phone' has an invalid structure. "
                 "Example of a valid "
@@ -215,7 +238,19 @@ class Person(db.Model):
 
 
 class Student(Person):
-    """Class representing a Humasol student."""
+    """Class representing a Humasol student.
+
+    Attributes
+    __________
+    id      --  Identifier within people
+    name    --  Personal name
+    email   --  Personal email
+    phone   --  Personal phone number
+    type    --  Subtype of person, used for database mapping
+    organisation    -- Affiliation of the person
+    university      -- Institution at which the student studies
+    field_of_study  -- Domain of expertise of the student
+    """
 
     LABEL = "stu"
 
@@ -232,7 +267,7 @@ class Student(Person):
     field_of_study = db.Column(db.String, nullable=False)
 
     @declared_attr
-    def organization(self):
+    def organization(self) -> orm.RelationshipProperty:
         """Return database relationship object to Organization."""
         return db.relationship("Organization", lazy="subquery")
 
@@ -247,35 +282,29 @@ class Student(Person):
         university: str,
         field_of_study: str,
         phone: Optional[str] = None,
-    ):
+    ) -> None:
         """Instantiate Student object with provided arguments.
 
-        Arguments:
+        Parameters
+        __________
         name    -- Name of the student
         email   -- Email of the student
         university      -- University at which the student studies
         field_of_study  -- Specialization of the student
         phone   -- Phone number of the student. Including country code
         """
-        if not isinstance(university, str):
-            raise TypeError(
-                "Argument 'university' should not be None and of type str"
-            )
-        if not self.is_valid_university(university):
+        if not Student.is_legal_university(university):
             raise ValueError(
-                "Argument 'university' has invalid content. "
-                "The string should not be empty and should not contain "
-                "special characters"
+                "Parameter 'university' should not be None and of "
+                "type str. The string should not be empty and should "
+                "not contain special characters"
             )
-        if not isinstance(field_of_study, str):
-            raise TypeError(
-                "Argument 'field_of_study' should not be None and of type str"
-            )
-        if not self.is_valid_field_of_study(field_of_study):
+
+        if not Student.is_legal_field_of_study(field_of_study):
             raise ValueError(
-                "Argument 'field_of_study' has invalid content. "
-                "The string should not be empty and should not contain "
-                "special characters"
+                "Parameter 'field_of_study' should not be None and of "
+                "type str. The string should not be empty and "
+                "should not contain special characters"
             )
 
         super().__init__(name, email, phone, Humasol())
@@ -285,24 +314,31 @@ class Student(Person):
     # pylint: enable-msg=too-many-arguments
 
     @staticmethod
-    def is_valid_university(university: str) -> bool:
-        """Check whether the provided university is a valid university name."""
-        if not isinstance(university, str):
-            return False
-
-        return re.fullmatch(r"[A-Z.,\s]+", university.upper()) is not None
-
-    @staticmethod
-    def is_valid_field_of_study(field: str) -> bool:
+    def is_legal_field_of_study(field: str) -> bool:
         """Check whether the provided field is a valid field of study."""
         if not isinstance(field, str):
             return False
 
         return re.fullmatch(r"[A-Z.,\s]+", field.upper()) is not None
 
+    @staticmethod
+    def is_legal_university(university: str) -> bool:
+        """Check whether the provided university is a valid university name."""
+        if not isinstance(university, str):
+            return False
+
+        return re.fullmatch(r"[A-Z.,\s]+", university.upper()) is not None
+
     def update(self, **params: Any) -> Student:
-        """Update this instance with the new parameters."""
-        if "university" in params and not self.is_valid_university(
+        """Update this instance with the new parameters.
+
+        Valid parameters are those passed to the __init__ method.
+
+        Returns
+        _______
+        Return reference to self.
+        """
+        if "university" in params and not self.is_legal_university(
             params["university"]
         ):
             raise ValueError(
@@ -310,7 +346,7 @@ class Student(Person):
                 "The string should not be empty and should not contain "
                 "special characters"
             )
-        if "field_of_study in" in params and not self.is_valid_field_of_study(
+        if "field_of_study in" in params and not self.is_legal_field_of_study(
             params["field_of_study"]
         ):
             raise ValueError(
@@ -339,7 +375,18 @@ class Student(Person):
 
 
 class Supervisor(Person):
-    """Class representing a Humasol member supervising a project."""
+    """Class representing a Humasol member supervising a project.
+
+    Attributes
+    __________
+    id      --  Identifier within people
+    name    --  Personal name
+    email   --  Personal email
+    phone   --  Personal phone number
+    type    --  Subtype of person, used for database mapping
+    organisation    -- Affiliation of the person
+    function        -- Supervising function (e.g., coach)
+    """
 
     LABEL = "sup"
 
@@ -362,7 +409,7 @@ class Supervisor(Person):
         )
 
     @declared_attr
-    def organization(self):
+    def organization(self) -> orm.RelationshipProperty:
         """Return database relationship object to Organization."""
         return db.relationship("Organization", lazy="subquery")
 
@@ -370,19 +417,20 @@ class Supervisor(Person):
 
     def __init__(
         self, name: str, email: str, function: str, phone: Optional[str] = None
-    ):
+    ) -> None:
         """Instantiate Student object with provided arguments.
 
-        Arguments:
+        Parameters
+        __________
         name     -- Name of the student
         email    -- Email of the student
         function -- Supervising function (e.g., coach)
         phone    -- Phone number of the supervisor. Including country code
         """
-        if not self.is_valid_function(function):
+        if not Supervisor.is_valid_function(function):
             raise ValueError(
-                "Argument 'function' has invalid content. There should be at "
-                "least two letters."
+                "Parameter 'function' should not be None and of type "
+                "str. There should be at least two letters."
             )
 
         super().__init__(name, email, phone, Humasol())
@@ -397,7 +445,14 @@ class Supervisor(Person):
         return re.match("[A-Z]{2,}", function.upper()) is not None
 
     def update(self, **params: Any) -> Supervisor:
-        """Update this instance with the new parameters."""
+        """Update this instance with the new parameters.
+
+        Valid parameters are those passed to the __init__ method.
+
+        Returns
+        _______
+        Return reference to self.
+        """
         if "function" in params and not self.is_valid_function(
             params["function"]
         ):
@@ -425,6 +480,17 @@ class Partner(Person):
 
     Partners of Humasol work for an external organisation supporting one of
     the projects.
+
+    Attributes
+    __________
+    id      --  Identifier within people
+    name    --  Personal name
+    email   --  Personal email
+    phone   --  Personal phone number
+    type    --  Subtype of person, used for database mapping
+    organisation    -- Affiliation of the person
+    function        -- Function of the partner within the project
+                        (e.g., technician)
     """
 
     LABEL = "par"
@@ -446,7 +512,7 @@ class Partner(Person):
         )
 
     @declared_attr
-    def organization(self):
+    def organization(self) -> orm.RelationshipProperty:
         """Return database relationship object to Organization."""
         return db.relationship("Organization", lazy="subquery")
 
@@ -461,19 +527,20 @@ class Partner(Person):
         function: str,
         organization: Organization,
         phone: Optional[str] = None,
-    ):
+    ) -> None:
         """Instantiate Student object with provided arguments.
 
-        Arguments:
+        Parameters
+        __________
         name     -- Name of the student
         email    -- Email of the student
         function -- Partner function (e.g., technician)
         phone    -- Phone number of the student. Including country code
         """
-        if not self.is_valid_function(function):
+        if not Partner.is_legal_function(function):
             raise ValueError(
-                "Argument 'function' has invalid content. There should be at "
-                "least two letters."
+                "Parameter 'function' should not be None and of type "
+                "str. There should be at least two letters."
             )
 
         super().__init__(name, email, phone, organization)
@@ -482,7 +549,7 @@ class Partner(Person):
     # pylint: enable-msg=too-many-arguments
 
     @staticmethod
-    def is_valid_function(function: str) -> bool:
+    def is_legal_function(function: str) -> bool:
         """Check whether this function is valid for a partner.
 
         Check whether the characters in the string are valid.
@@ -493,8 +560,15 @@ class Partner(Person):
         return re.match("[A-Z]{2,}", function.upper()) is not None
 
     def update(self, **params: Any) -> Partner:
-        """Update this instance with the provided new parameters."""
-        if "function" in params and not self.is_valid_function(
+        """Update this instance with the provided new parameters.
+
+        Valid parameters are those passed to the __init__ method.
+
+        Returns
+        _______
+        Return reference to self.
+        """
+        if "function" in params and not self.is_legal_function(
             params["function"]
         ):
             raise ValueError(
@@ -564,6 +638,12 @@ class Organization(db.Model):
 
     People related to a project are also related to an organisation. This class
      represents the basic organisation.
+
+    Attributes
+    __________
+    name    -- Name of the organisation
+    logo    -- Local URI to logo
+    type    -- Subclass, used by database mapper
     """
 
     # Definitions for the database tables #
@@ -577,10 +657,11 @@ class Organization(db.Model):
 
     # End of database definitions #
 
-    def __init__(self, name: str, logo: str):
+    def __init__(self, name: str, logo: str) -> None:
         """Instantiate organisation object.
 
-        Arguments:
+        Parameters
+        __________
         name    -- Name of the organisation
         logo    -- URI of the image of the organisation
         """
@@ -592,19 +673,15 @@ class Organization(db.Model):
             )
         # pylint: enable=unidiomatic-typecheck
 
-        if not self.is_valid_name(name):
+        if not Organization.is_legal_name(name):
             raise ValueError(
-                "Argument 'name' has invalid content. Names should contain "
-                "at least one letter"
+                "Parameter 'name' should not be None and of type str. "
+                "Names should contain at least one letter"
             )
 
-        if not isinstance(logo, str):
-            raise TypeError(
-                "Argument 'logo' should not be None and of type str"
-            )
-        if not self.is_valid_logo(logo):
+        if not Organization.is_legal_logo(logo):
             raise ValueError(
-                "Argument 'logo' contains invalid content. "
+                "Parameter 'logo' should not be None and of type str. "
                 "It should be a valid path"
             )
 
@@ -612,19 +689,7 @@ class Organization(db.Model):
         self.logo = logo
 
     @staticmethod
-    def is_valid_name(name: str) -> bool:
-        """Check if the provided name is valid for an organisation.
-
-        Check for illegal characters. A name should only contain letters.
-        """
-        if not isinstance(name, str):
-            return False
-
-        # TODO: add whitespaces and Ü type characters
-        return re.match(r"[A-Z]+", name.upper()) is not None
-
-    @staticmethod
-    def is_valid_logo(logo: str) -> bool:
+    def is_legal_logo(logo: str) -> bool:
         """Check whether the provided logo is a valid URI.
 
         Check the structure of the URI (not whether it actually exists).
@@ -637,10 +702,22 @@ class Organization(db.Model):
             is not None
         )
 
+    @staticmethod
+    def is_legal_name(name: str) -> bool:
+        """Check if the provided name is valid for an organisation.
+
+        Check for illegal characters. A name should only contain letters.
+        """
+        if not isinstance(name, str):
+            return False
+
+        # TODO: add whitespaces and Ü type characters
+        return re.match(r"[A-Z]+", name.upper()) is not None
+
     # TODO: convert to python setter
     def set_name(self, name: str) -> None:
         """Set the name of this organisation."""
-        if not self.is_valid_name(name):
+        if not self.is_legal_name(name):
             raise ValueError("Illegal 'name' for an organization")
 
         self.name = name
@@ -648,13 +725,20 @@ class Organization(db.Model):
     # TODO: convert to python setter
     def set_logo(self, logo: str) -> None:
         """Set the logo of this organisation."""
-        if not self.is_valid_logo(logo):
+        if not self.is_legal_logo(logo):
             raise ValueError("Illegal logo path for an organization")
 
         self.logo = logo
 
     def update(self, **params: Any) -> Organization:
-        """Update this instance with the provided new parameters."""
+        """Update this instance with the provided new parameters.
+
+        Valid parameters are those passed to the __init__ method.
+
+        Returns
+        _______
+        Return reference to self.
+        """
         # TODO: create method to update instance
 
     def __repr__(self) -> str:
@@ -672,7 +756,7 @@ class Humasol(Organization):
 
     # End database definitions #
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Instantiate Humasol organisation."""
         # TODO: add correct logo URI
         super().__init__("Humasol", "logo.png")
@@ -707,9 +791,9 @@ class BelgianPartner(Organization):
     def update(self, **params: Any) -> Organization:
         """Update instance with provided new parameters."""
         # TODO: call super when it is implemented
-        if "name" in params and not self.is_valid_name(params["name"]):
+        if "name" in params and not self.is_legal_name(params["name"]):
             raise ValueError("Illegal name for BelgianPartner update")
-        if "logo" in params and not self.is_valid_logo(params["logo"]):
+        if "logo" in params and not self.is_legal_logo(params["logo"]):
             raise ValueError("Illegal logo path for BelgianPartner update")
 
         if "name" in params:
@@ -736,20 +820,19 @@ class SouthernPartner(Organization):
 
     # End database definitions #
 
-    def __init__(self, name: str, logo: str, country: str):
+    def __init__(self, name: str, logo: str, country: str) -> None:
         """Instantiate obeject of this class.
 
-        Arguments:
+        Parameters
+        __________
         name    -- Name of the organisation
         logo    -- URI of the image of the organisation
         country -- Country of origin of the organisation or where it has its
                     HQ
         """
-        if country is not None and not isinstance(country, str):
-            raise TypeError("Argument 'country' should be of type str or None")
-        if not self.is_valid_country(country):
+        if not SouthernPartner.is_legal_country(country):
             raise ValueError(
-                "Argument 'country' has invalid content. A country should be "
+                "Parameter 'country' has invalid content. A country should be "
                 "made up of letters"
                 "(spaces, periods and commas are also accepted)"
             )
@@ -757,31 +840,37 @@ class SouthernPartner(Organization):
         self.country = country
 
     @staticmethod
-    def is_valid_country(country: str) -> bool:
+    def is_legal_country(country: str) -> bool:
         """Check whether this is a valid country for a southern partner."""
-        if country is None:
-            return True
-        if not isinstance(country, str):
-            return False
+        # TODO: Check from list
+        return country is None or (
+            isinstance(country, str)
+            and re.fullmatch(r"^[A-Z][A-Z\s.,]*", country.upper()) is not None
+        )
 
-        return re.fullmatch(r"^[A-Z][A-Z\s.,]*", country.upper()) is not None
-
+    # TODO: implement as python setter
     def set_country(self, country: str) -> None:
         """Set the country for this organisation."""
-        # TODO: implement as python setter
-        if not self.is_valid_country(country):
+        if not self.is_legal_country(country):
             raise ValueError("Illegal country for an organization")
 
         self.country = country
 
     def update(self, **params: Any) -> Organization:
-        """Update this instance with the provided new parameters."""
+        """Update this instance with the provided new parameters.
+
+        Valid parameters are those passed to the __init__ method.
+
+        Returns
+        _______
+        Return reference to self.
+        """
         # TODO: call super when it is implemented
-        if "name" in params and not self.is_valid_name(params["name"]):
+        if "name" in params and not self.is_legal_name(params["name"]):
             raise ValueError("Illegal name for SouthernPartner update")
-        if "logo" in params and not self.is_valid_logo(params["logo"]):
+        if "logo" in params and not self.is_legal_logo(params["logo"]):
             raise ValueError("Illegal logo path for SouthernPartner update")
-        if "country" in params and not self.is_valid_country(
+        if "country" in params and not self.is_legal_country(
             params["country"]
         ):
             raise ValueError("Illegal country name for SouthernPartner update")
@@ -800,7 +889,8 @@ class SouthernPartner(Organization):
         return (
             "SouthernPartner("
             + super().__repr__()
-            + f", country={self.country})"
+            + f", country={self.country}"
+            f")"
         )
 
 
@@ -817,10 +907,15 @@ def construct_person(
     Constructs an object subclassing Person with the provided parameters. Do
     this using the provided class constructor.
 
-    Arguments:
+    Parameters
+    __________
     constructor -- Class constructor of the appropriate subtype
     params      -- Parameters for populating the person object
     is_partner  -- Indicates whether the subtype is Partner
+
+    Returns
+    _______
+    Return object subclassing Person.
     """
     # TODO: check if it's a partner based on the constructor
     if is_partner:
@@ -854,16 +949,21 @@ def construct_person(
 
 
 def get_constructor_from_type(person_type: str) -> Callable[[Dict], Person]:
-    """Return class constructor associated with the provided type label.
+    """Return class constructor associated with the given person_type label.
 
     Provides the constructor callable for a subclass of person.
 
-    Arguments:
+    Parameters
+    __________
     person_type -- Identifier of the desired class (classes have LABEL
                     attribute for this purpose)
+
+    Returns
+    _______
+    Return constructor for a subclass of person.
     """
     # TODO: convert to dict access
-    # Lambda is necessary for the correct return type
+    # Lambda is necessary for the correct return person_type
     # pylint: disable=unnecessary-lambda
     if person_type == Student.LABEL:
         return lambda p: Student(**p)
@@ -873,4 +973,4 @@ def get_constructor_from_type(person_type: str) -> Callable[[Dict], Person]:
         return lambda p: Partner(**p)
     # pylint: enable=unnecessary-lambda
 
-    raise ValueError(f"Unexpected person type. Got: {person_type}")
+    raise ValueError(f"Unexpected person person_type. Got: {person_type}")

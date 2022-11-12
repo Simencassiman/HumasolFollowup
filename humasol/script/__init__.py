@@ -54,7 +54,7 @@ DATA_MANAGERS = {
 def data_manager_exists(
     manager: str, category: Optional[ProjectCategory] = None
 ) -> bool:
-    """Check whether the provided data manager exists.
+    """Check whether the provided folder manager exists.
 
     Check whether there is a class corresponding to the provided manager for
     the given category that implements the DataManager interface.
@@ -98,7 +98,7 @@ def same_category_managers(api: str, data: str, report: str) -> bool:
 
     Arguments:
     api     -- Name of a class implementing the APIManager interface
-    data    -- Name of a class implementing the DataManager interface
+    folder    -- Name of a class implementing the DataManager interface
     report  -- Name of a class implementing the ReportManager interface
     """
     for key, managers in API_MANAGERS.items():

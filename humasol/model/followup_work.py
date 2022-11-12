@@ -1,12 +1,12 @@
-"""Follow-up work data classes.
+"""Follow-up work folder classes.
 
-A project could be followed by receiving updates about its data or by
+A project could be followed by receiving updates about its folder or by
 performing specific tasks. This module defines a task and subscription class
 for this purpose.
 
 Classes:
 FollowupWork    -- Abstract base class for work related to project followup
-Subscription    -- Class for a project data subscription
+Subscription    -- Class for a project folder subscription
 Task            -- Class representing a task for a project
 Period          -- Class containing information about the period during wich
                     such work is to be carried out
@@ -22,6 +22,7 @@ from enum import Enum, unique
 from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 from dateutil.relativedelta import relativedelta
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -39,7 +40,8 @@ class FollowupWork(db.Model):
     about the project's operations.
     Work related to followup should subclass this base class.
 
-    Attributes:
+    Attributes
+    __________
     id          -- Work identifier
     subscriber  -- Person interested/responsible in the work
     periods     -- Periods of activity for this work
@@ -58,26 +60,26 @@ class FollowupWork(db.Model):
     # Certain attributes are declared as functions to allow the creation
     # of separate tables for the subclasses
     @declared_attr
-    def subscriber_id(self):
+    def subscriber_id(self) -> SQLAlchemy.Column:
         """Provide subscriber ID database column."""
         return db.Column(
             db.Integer, db.ForeignKey(person.Person.id), nullable=False
         )
 
     @declared_attr
-    def subscriber(self):
+    def subscriber(self) -> orm.RelationshipProperty:
         """Provide database relation to subscriber."""
         return db.relationship(person.Person, lazy=False, uselist=False)
 
     @declared_attr
-    def project_id(self):
+    def project_id(self) -> SQLAlchemy.Column:
         """Provide project ID database column."""
         return db.Column(
             db.Integer, db.ForeignKey("project.id"), nullable=False
         )
 
     @declared_attr
-    def periods(self):
+    def periods(self) -> orm.RelationshipProperty:
         """Provide database relation to periods."""
         return db.relationship(
             "Period", lazy=False, cascade="all, delete-orphan"
@@ -92,10 +94,11 @@ class FollowupWork(db.Model):
         subscriber: person.Person,
         periods: List[Period],
         last_notification: Optional[date] = None,
-    ):
+    ) -> None:
         """Instantiate this object.
 
-        Arguments:
+        Parameters
+        __________
         subscriber  -- Person interested in this job
         periods     -- List of periods when this job should be active and the
                         subscriber should be notified
@@ -109,29 +112,21 @@ class FollowupWork(db.Model):
             )
         # pylint: enable=unidiomatic-typecheck
 
-        if not self.is_valid_subscriber(subscriber):
+        if not FollowupWork.is_legal_subscriber(subscriber):
             raise TypeError(
-                "Argument 'subscriber' should not be None and of a "
+                "Parameter 'subscriber' should not be None and of a "
                 "subclass of Person"
             )
 
-        if not isinstance(periods, list):
-            raise TypeError(
-                "Argument 'periods' should not be None and of type list"
-            )
-        if not self.are_valid_periods(periods):
-            raise ValueError("Argument 'periods' contains invalid periods")
-
-        if last_notification is not None and not isinstance(
-            last_notification, date
-        ):
-            raise TypeError(
-                "Argument 'last_notification' should be of type date or None"
-            )
-        if not self.is_valid_last_notification(last_notification):
+        if not FollowupWork.are_legal_periods(periods):
             raise ValueError(
-                "Argument 'last_notification' has an invalid value. "
-                "Last notification cannot be in the future"
+                "Parameter 'periods' must be a list and contain unique Periods"
+            )
+
+        if not FollowupWork.is_legal_last_notification(last_notification):
+            raise ValueError(
+                "Parameter 'last_notification' should be a date "
+                "(of type datetime.date) in the future, or None"
             )
 
         self.subscriber = subscriber
@@ -139,12 +134,7 @@ class FollowupWork(db.Model):
         self.last_notification = last_notification
 
     @staticmethod
-    def is_valid_subscriber(sub: person.Person) -> bool:
-        """Check if the provided subscriber is a valid subscriber."""
-        return isinstance(sub, person.Person)
-
-    @staticmethod
-    def are_valid_periods(periods: List[Period]) -> bool:
+    def are_legal_periods(periods: List[Period]) -> bool:
         """Check if the provided periods are valid periods."""
         if not isinstance(periods, list):
             return False
@@ -174,16 +164,8 @@ class FollowupWork(db.Model):
 
         return True
 
-    def is_valid_period(self, period: Period) -> bool:
-        """Check whether this is a valid period for this instance.
-
-        Checks whether this period is valid for this particular instance with
-        its particular periods.
-        """
-        return self.are_valid_periods(list(self.periods) + [period])
-
     @staticmethod
-    def is_valid_last_notification(last_notification: Optional[date]) -> bool:
+    def is_legal_last_notification(last_notification: Optional[date]) -> bool:
         """Check whether the provided date is valid for a last notification."""
         if last_notification is None:
             return True
@@ -193,10 +175,15 @@ class FollowupWork(db.Model):
 
         return last_notification <= date.today()
 
+    @staticmethod
+    def is_legal_subscriber(sub: person.Person) -> bool:
+        """Check if the provided subscriber is a valid subscriber."""
+        return isinstance(sub, person.Person)
+
     # TODO: convert to python setter
     def set_subscriber(self, subscriber: person.Person) -> None:
         """Set the subscriber for this job."""
-        if not self.is_valid_subscriber(subscriber):
+        if not self.is_legal_subscriber(subscriber):
             raise ValueError(
                 "Argument 'subscriber' should not be None and of a subclass "
                 "of Person"
@@ -208,7 +195,7 @@ class FollowupWork(db.Model):
     # TODO: Convert to python setter
     def set_periods(self, periods: List[Period]) -> None:
         """Set the periods for this job."""
-        if not self.are_valid_periods(periods):
+        if not self.are_legal_periods(periods):
             raise ValueError(
                 "Argument 'periods' should be a non-empty list containing "
                 "periods"
@@ -219,35 +206,13 @@ class FollowupWork(db.Model):
     # TODO: Convert to python setter
     def set_last_notification(self, last_notification: date) -> None:
         """Set the last notification date for this job."""
-        if not self.is_valid_last_notification(last_notification):
+        if not self.is_legal_last_notification(last_notification):
             raise ValueError(
                 "Argument 'last_notification' has an invalid value. "
                 "Last notification should be None or a date in the past."
             )
 
         self.last_notification = last_notification
-
-    def should_notify(self) -> bool:
-        """Indicate whether the subscriber should be notified.
-
-        The subscriber should be notified if one of the periods of this job is
-        active and if the time since the last notification is at least equal
-        to the time interval indicated by that period.
-        """
-        return any(
-            map(
-                lambda p: p.should_update(self.last_notification), self.periods
-            )
-        )
-
-    def clean_periods(self) -> None:
-        """Remove any passed periods."""
-        items_to_pop = [
-            i for i, p in enumerate(self.periods) if p.has_past(date.today())
-        ]
-
-        for idx in reversed(items_to_pop):
-            self.periods.pop(idx)
 
     def add_period(self, period: Period) -> None:
         """Add the provided period to the job's periods list."""
@@ -261,6 +226,23 @@ class FollowupWork(db.Model):
 
         self.periods += [period]
 
+    def clean_periods(self) -> None:
+        """Remove any passed periods."""
+        items_to_pop = [
+            i for i, p in enumerate(self.periods) if p.has_past(date.today())
+        ]
+
+        for idx in reversed(items_to_pop):
+            self.periods.pop(idx)
+
+    def is_valid_period(self, period: Period) -> bool:
+        """Check whether this is a valid period for this instance.
+
+        Checks whether this period is valid for this particular instance with
+        its particular periods.
+        """
+        return self.are_legal_periods(list(self.periods) + [period])
+
     def remove_period(self, period: Period) -> None:
         """Remove the given period from this job's periods list."""
         if period in self.periods:
@@ -268,10 +250,31 @@ class FollowupWork(db.Model):
                 raise TypeError("Invalid operation. Cannot remove only period")
             self.periods.remove(period)
 
+    def should_notify(self) -> bool:
+        """Indicate whether the subscriber should be notified.
+
+        The subscriber should be notified if one of the periods of this job is
+        active and if the time since the last notification is at least equal
+        to the time interval indicated by that period.
+
+        Returns
+        _______
+        Return true if the subscriber should be notified. False otherwise.
+        """
+        return any(
+            map(
+                lambda p: p.should_update(self.last_notification), self.periods
+            )
+        )
+
     def update(self, **params: Any) -> FollowupWork:
         """Update this instance with the provided new parameters.
 
         Valid parameters are those passed to the __init__ method.
+
+        Returns
+        _______
+        Return reference to self.
         """
         if "last_notification" in params:
             self.set_last_notification(params["last_notification"])
@@ -303,7 +306,7 @@ class FollowupWork(db.Model):
         ):
             raise ValueError(f"Invalid value for last notification: {value}")
 
-        if key == "periods" and not self.are_valid_periods(value):
+        if key == "periods" and not self.are_legal_periods(value):
             raise ValueError("Argument 'periods' contains invalid periods")
 
         super().__setattr__(key, value)
@@ -321,7 +324,7 @@ class Subscription(FollowupWork):
     """Class representing a subscription to a project.
 
     A project can log data about its operations. People related to Humasol can
-    subscribe to data updates of a project to keep up to date with its
+    subscribe to folder updates of a project to keep up to date with its
     operations.
     """
 
@@ -336,7 +339,7 @@ class Subscription(FollowupWork):
         subscriber: person.Person,
         periods: List[Period],
         last_notification: date = None,
-    ):
+    ) -> None:
         """Instantiate object of this class.
 
         For arguments see FollowupWork.__init__.
@@ -355,7 +358,8 @@ class Task(FollowupWork):
     maintenance). This class can be used to represent such a task and to
     notify responsible people in a timely fashion.
 
-    Attributes:
+    Attributes
+    __________
     id          -- Work identifier
     subscriber  -- Person interested/responsible in the work
     periods     -- Periods of activity for this work
@@ -381,33 +385,26 @@ class Task(FollowupWork):
         name: str,
         function: str,
         last_notification: date = None,
-    ):
+    ) -> None:
         """Instantiate object of this class.
 
-        Arguments:
-         subscriber  -- Person interested/responsible in the work
+        Parameters
+        __________
+        subscriber  -- Person interested/responsible in the work
         periods     -- Periods of activity for this work
         name        -- Task title
         function    -- Description of the task
         last_notification -- Date on which the subscriber was last notified
         """
-        if not isinstance(name, str):
-            raise TypeError(
-                "Argument 'name' should not be None and of type str"
-            )
-        if not self.is_valid_name(name):
+        if not Task.is_legal_name(name):
             raise ValueError(
-                "Argument 'name' should only contain letters (at least one) "
-                "and white spaces"
+                "Parameter 'name' should be of type str and only "
+                "contain letters (at least one) and white spaces"
             )
 
-        if not isinstance(function, str):
-            raise TypeError(
-                "Argument 'function' should not be None and of type str"
-            )
-        if not self.is_valid_function(function):
+        if not Task.is_legal_function(function):
             raise ValueError(
-                "Argument 'function' should only contain letters "
+                "Parameter 'function' should only contain letters "
                 "(at least one), white spaces, commas or periods"
             )
 
@@ -418,25 +415,25 @@ class Task(FollowupWork):
     # pylint: enable=too-many-arguments
 
     @staticmethod
-    def is_valid_name(name: str) -> bool:
-        """Check whether the provided name is composed of valid characters."""
-        if not isinstance(name, str):
-            return False
-
-        return re.fullmatch(r"^[A-Z][A-Z\s]*", name.upper()) is not None
-
-    @staticmethod
-    def is_valid_function(function: str) -> bool:
+    def is_legal_function(function: str) -> bool:
         """Check whether the provided function contains valid characters."""
         if not isinstance(function, str):
             return False
 
         return re.fullmatch(r"^[A-Z][A-Z\s,.]*", function.upper()) is not None
 
+    @staticmethod
+    def is_legal_name(name: str) -> bool:
+        """Check whether the provided name is composed of valid characters."""
+        if not isinstance(name, str):
+            return False
+
+        return re.fullmatch(r"^[A-Z][A-Z\s]*", name.upper()) is not None
+
     # TODO: Convert to python setter
     def set_name(self, name: str) -> None:
         """Set the name of this task."""
-        if not self.is_valid_name(name):
+        if not self.is_legal_name(name):
             raise ValueError(
                 "Argument 'name' should be a string containing only "
                 "letters (at least one) and white spaces"
@@ -447,7 +444,7 @@ class Task(FollowupWork):
     # TODO: Convert to python setter
     def set_function(self, function: str) -> None:
         """Set the function of this task."""
-        if not self.is_valid_function(function):
+        if not self.is_legal_function(function):
             raise ValueError(
                 "Argument 'function' should only contain letters "
                 "(at least one), white spaces, commas or periods"
@@ -460,12 +457,12 @@ class Task(FollowupWork):
 
         Valid parameters are those passed to the __init__ method.
         """
-        if "name" in params and not self.is_valid_name(params["name"]):
+        if "name" in params and not self.is_legal_name(params["name"]):
             raise ValueError(
                 "Argument 'name' should be a string containing only "
                 "letters (at least one) and white spaces"
             )
-        if "function" in params and not self.is_valid_function(
+        if "function" in params and not self.is_legal_function(
             params["function"]
         ):
             raise ValueError(
@@ -500,7 +497,8 @@ class Period(db.Model):
     Jobs can be active for different intervals during different extents of
     time. The activity of a job can be controlled using this class.
 
-    Attributes:
+    Attributes
+    __________
     id          -- Period identifier
     period      -- Number of time units between activity
     unit        -- Unit of time of the interval (e.g., month)
@@ -519,6 +517,17 @@ class Period(db.Model):
         MONTH = "month"
         YEAR = "year"
 
+        @staticmethod
+        def get_unit(unit: str) -> Period.TimeUnit:
+            """Provide a time unit object from a string."""
+            unit = unit.upper()
+
+            for key, val in Period.TimeUnit.__members__.items():
+                if unit == key:
+                    return val
+
+            raise ValueError("Parameter 'unit' has an unknown value")
+
         def __str__(self) -> str:
             """Convert instance to string."""
             return self._value_
@@ -531,6 +540,7 @@ class Period(db.Model):
         @property
         def seconds(self) -> int:
             """Provide the amount of seconds in the unit."""
+            return -1
 
     # pylint: enable=no-member
 
@@ -538,6 +548,7 @@ class Period(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     subscription_id = db.Column(db.Integer, db.ForeignKey(Subscription.id))
     task_id = db.Column(db.Integer, db.ForeignKey(Task.id))
+    # TODO: Change name to interval when recreating the database
     period = db.Column(db.Integer, nullable=False)
     unit = db.Column(db.Enum(TimeUnit), nullable=False)
     start = db.Column(db.DateTime, nullable=False)
@@ -547,91 +558,91 @@ class Period(db.Model):
 
     def __init__(
         self,
-        period: int,
+        interval: int,
         unit: TimeUnit,
         *,
         start: date,
         end: Optional[date] = None,
-    ):
+    ) -> None:
         """Instantiate object of this class.
 
-        Arguments:
-        period      -- Interval between activities (in number of units)
+        Parameters
+        __________
+        interval    -- Interval between activities (in number of units)
         unit        -- Unit of the period interval
         start       -- Start date of the period of activity
         end         -- End date of the period of activity (none for indefinite)
         """
-        if not isinstance(period, int):
-            raise TypeError(
-                "Argument 'period' should not be none and of type int"
-            )
-        if not self.is_valid_period(period):
+        if not Period.is_legal_interval(interval):
             raise ValueError(
-                "Argument 'period' has an invalid value. Only positive "
+                "Parameter 'interval' has an invalid value. Only positive "
                 "integers are allowed"
             )
 
-        if not self.is_valid_unit(unit):
-            raise TypeError(
-                "Argument 'unit' should not be None and of type "
+        if not Period.is_legal_unit(unit):
+            raise ValueError(
+                "Parameter 'unit' should not be None and of type "
                 "Period.TimeUnit"
             )
 
-        if not self.is_valid_start_date(start):
-            raise TypeError(
-                "Argument 'start' should not be None and of type datetime.date"
-            )
-
-        if not self.is_valid_end_date(end):
-            raise TypeError(
-                "Argument 'end' should be of type datetime.date or None"
-            )
-
-        self.period = period
-        self.unit = unit
-        self.start = start
-
-        if not self.is_legal_end_date(end):
+        if not Period.is_legal_start(start):
             raise ValueError(
-                "Argument 'end' has invalid content. End date should be "
+                "Parameter 'start' should not be None and of type "
+                "datetime.date"
+            )
+
+        if not Period.is_legal_end(end):
+            raise ValueError(
+                "Parameter 'end' should be of type datetime.date or None"
+            )
+
+        if not Period.are_legal_dates(start, end):
+            raise ValueError(
+                "Parameter 'end' has invalid content. End date should be "
                 "after start date"
             )
+
+        self.period = interval
+        self.unit = unit
+        self.start = start
         self.end = end
 
     @staticmethod
-    def is_valid_period(period: int) -> bool:
+    def are_legal_dates(start: date, end: Optional[date]) -> bool:
+        """Check whether the combination of dates is legal."""
+        return (
+            Period.is_legal_start(start)
+            and Period.is_legal_end(end)
+            and (end is None or end > start)
+        )
+
+    @staticmethod
+    def is_legal_end(end: Optional[date]) -> bool:
+        """Check whether the provided end date is valid for a period."""
+        return end is None or isinstance(end, date)
+
+    @staticmethod
+    def is_legal_interval(interval: int) -> bool:
         """Check if the provided period is a valid interval length."""
-        if not isinstance(period, int):
+        if not isinstance(interval, int):
             return False
 
-        return period > 0
+        return interval > 0
 
     @staticmethod
-    def is_valid_unit(unit: Period.TimeUnit) -> bool:
-        """Check whether the provided unit is a valid time unit."""
-        return isinstance(unit, Period.TimeUnit)
-
-    @staticmethod
-    def is_valid_start_date(start: date) -> bool:
+    def is_legal_start(start: date) -> bool:
         """Check whether the provided start date is valid for a period."""
         return isinstance(start, date)
 
     @staticmethod
-    def is_valid_end_date(end: Optional[date]) -> bool:
-        """Check whether the provided end date is valid for a period."""
-        return end is None or isinstance(end, date)
-
-    def is_legal_end_date(self, end: Optional[date]) -> bool:
-        """Check if the provided end date is legal for this instance."""
-        if not self.is_valid_end_date(end):
-            return False
-
-        return end is None or end > self.start
+    def is_legal_unit(unit: Period.TimeUnit) -> bool:
+        """Check whether the provided unit is a valid time unit."""
+        return isinstance(unit, Period.TimeUnit)
 
     # TODO: Convert to python setter
     def set_period(self, period: int) -> None:
         """Set the period interval for this instance."""
-        if not self.is_valid_period(period):
+        if not self.is_legal_interval(period):
             raise ValueError(
                 "Argument 'period' has an invalid value. Only positive "
                 "integers are allowed"
@@ -642,7 +653,7 @@ class Period(db.Model):
     # TODO: Convert to python setter
     def set_unit(self, unit: TimeUnit) -> None:
         """Set the time unit of this period interval."""
-        if not self.is_valid_unit(unit):
+        if not self.is_legal_unit(unit):
             raise ValueError(
                 "Argument 'unit' should not be None and of type "
                 "Period.TimeUnit"
@@ -653,7 +664,7 @@ class Period(db.Model):
     # TODO: Convert to python setter
     def set_start_date(self, start: date) -> None:
         """Set the start date for this period."""
-        if not self.is_valid_start_date(start):
+        if not self.is_legal_start(start):
             raise ValueError(
                 "Argument 'start_date' should not be None and of type "
                 "datetime.date"
@@ -662,7 +673,7 @@ class Period(db.Model):
     # TODO: Convert to python setter
     def set_end_date(self, end: date) -> None:
         """Set the end date for this period."""
-        if not self.is_legal_end_date(end):
+        if not self.is_valid_end(end):
             raise ValueError(
                 "Argument 'end_date' has invalid content. End date should be "
                 "after start date"
@@ -673,6 +684,47 @@ class Period(db.Model):
     def get_unit(self) -> str:
         """Provide the unit of this period as a string."""
         return str(self.unit)
+
+    def has_past(self, day: date) -> bool:
+        """Check whether this period has passed.
+
+        A period has passed if the current date is past its end date.
+
+        Parameters
+        __________
+        day     -- Date for which to check if the period has passed
+
+        Returns
+        _______
+        Return true if the end date of this period has past on the given day.
+        False otherwise.
+        """
+        return self.end is not None and day > self.end
+
+    def is_applicable(self, day: date) -> bool:
+        """Check whether this period is active on the provided date.
+
+        Parameters
+        __________
+        day     -- Date for which to check if the period is applicable
+
+        Returns
+        _______
+        Return true if the period is active on the give day. False otherwise.
+        """
+        if day is None:
+            return False
+
+        after_start = day >= self.start
+        before_end = self.end is None or day <= self.end
+        return after_start and before_end
+
+    def is_valid_end(self, end: Optional[date]) -> bool:
+        """Check if the provided end date is legal for this instance."""
+        if not self.is_legal_end(end):
+            return False
+
+        return end is None or end > self.start
 
     # Decorator used to call function when the object is loaded from the db
     @orm.reconstructor
@@ -687,53 +739,6 @@ class Period(db.Model):
         if isinstance(self.end, datetime.datetime):
             self.end = self.end.date()
 
-    def update(self, **params: Any) -> Period:
-        """Update this instance with the provided new parameters.
-
-        Valid parameters are those passed to the __init__ method.
-        """
-        # TODO: Complete error messages
-        if "period" in params and not self.is_valid_period(params["period"]):
-            raise ValueError
-        if "unit" in params and not self.is_valid_unit(params["unit"]):
-            raise ValueError
-        if "start_date" in params and not self.is_valid_start_date(
-            params["start_date"]
-        ):
-            raise ValueError
-        if "end_date" in params and (
-            not self.is_valid_end_date(params["end_date"])
-            or self.end is not None
-        ):
-            raise ValueError
-
-        if "period" in params:
-            self.set_period(params["period"])
-
-        if "unit" in params:
-            self.set_unit(params["unit"])
-
-        if "start_date" in params:
-            self.set_start_date(params["start_date"])
-
-        if "end_date" in params:
-            self.set_end_date(params["end_date"])
-
-        return self
-
-    def is_applicable(self, day: date) -> bool:
-        """Check whether this period is active on the provided date.
-
-        Arguments:
-        day     -- Date for which to check if the period is applicable
-        """
-        if day is None:
-            return False
-
-        after_start = day >= self.start
-        before_end = self.end is None or day <= self.end
-        return after_start and before_end
-
     def should_update(self, last_notification: date) -> bool:
         """Check whether an update is required.
 
@@ -741,9 +746,15 @@ class Period(db.Model):
         its subscriber based on the last notification date and the current
         date.
 
-        Arguments:
+        Parameters
+        __________
         last_notification   -- Date on which the last notification was sent
                                 about the parent job of this period
+
+        Returns
+        _______
+        Return true if the subscriber should be updated on the current day.
+        False otherwise.
         """
         if last_notification is None or last_notification < self.start:
             return self.first_ckeck_today()
@@ -764,29 +775,42 @@ class Period(db.Model):
 
         return False
 
-    # TODO: correct spelling
-    def first_ckeck_today(self) -> bool:
-        """Check whether this period is active for the first time today."""
-        if self.unit == Period.TimeUnit.WEEK:
-            return date.today().isoweekday() == 1
+    def update(self, **params: Any) -> Period:
+        """Update this instance with the provided new parameters.
 
-        if self.unit == Period.TimeUnit.MONTH:
-            return date.today().day == 1
+        Valid parameters are those passed to the __init__ method.
 
-        if self.unit == Period.TimeUnit.MONTH:
-            return date.today().day == 1
-
-        return False
-
-    def has_past(self, day: date) -> bool:
-        """Check whether this period has passed.
-
-        A period has passed if the current date is past its end date.
-
-        Arguments:
-        day     -- Date for which to check if the period has passed
+        Returns
+        _______
+        Return reference to self.
         """
-        return self.end is not None and day > self.end
+        # TODO: Complete error messages
+        if "period" in params and not self.is_legal_interval(params["period"]):
+            raise ValueError
+        if "unit" in params and not self.is_legal_unit(params["unit"]):
+            raise ValueError
+        if "start_date" in params and not self.is_legal_start(
+            params["start_date"]
+        ):
+            raise ValueError
+        if "end_date" in params and (
+            not self.is_legal_end(params["end_date"]) or self.end is not None
+        ):
+            raise ValueError
+
+        if "period" in params:
+            self.set_period(params["period"])
+
+        if "unit" in params:
+            self.set_unit(params["unit"])
+
+        if "start_date" in params:
+            self.set_start_date(params["start_date"])
+
+        if "end_date" in params:
+            self.set_end_date(params["end_date"])
+
+        return self
 
     def __repr__(self) -> str:
         """Provide a string representation for this instance."""
@@ -802,9 +826,14 @@ class Period(db.Model):
 def filter_dict(params: dict[str, Any], keys: list[str]) -> dict[str, Any]:
     """Filter the dictionary based on the provided keys.
 
-    Arguments:
+    Parameters
+    __________
     params -- Dictionary to be filtered
     keys   -- Keys to keep in the filtered dictionary
+
+    Returns
+    _______
+    Return a dictionary with desired entries.
     """
     return {key: params["subscriber"][key] for key in keys}
 
@@ -822,9 +851,14 @@ def construct_followup_work(
     Construct the correct class of followup work based on a factory method
     using the provided constructor and parameters.
 
-    Arguments:
+    Parameters
+    __________
     constructor -- Constructor function for the desired object class
     params      -- Parameters to pass to the constructor
+
+    Returns
+    _______
+    An object subclassing FollowupWork.
     """
     sub_type = params.pop("sub_type")
 

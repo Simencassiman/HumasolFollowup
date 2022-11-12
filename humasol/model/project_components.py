@@ -308,7 +308,6 @@ class Coordinates(db.Model):
         return self
 
 
-# TODO: Use composition of Address and Coordinates
 class Location(db.Model):
     """Class representing a physical location in the world."""
 
@@ -316,171 +315,51 @@ class Location(db.Model):
     project_id = db.Column(
         db.Integer, db.ForeignKey("project.id"), primary_key=True
     )
-    street = db.Column(db.String)
-    number = db.Column(db.Integer)
-    place = db.Column(db.String, nullable=False, index=True)
-    country = db.Column(db.String, nullable=False, index=True)
-    longitude = db.Column(db.Float, nullable=False)
-    latitude = db.Column(db.Float, nullable=False)
+    address = db.relationship(
+        Address,
+        lazy=True,
+        cascade="all, delete-orphan",
+        uselist=False,
+        nullable=False,
+    )
+    coordinates = db.relationship(
+        Coordinates,
+        lazy=True,
+        cascade="all, delete-orphan",
+        uselist=False,
+        nullable=False,
+    )
 
     # End database definitions #
 
-    # pylint: disable=too-many-arguments
-    # pylint: disable=too-many-branches
-    def __init__(
-        self,
-        latitude: float,
-        longitude: float,
-        country: str,
-        place: str,
-        street: Optional[str] = None,
-        number: Optional[int] = None,
-    ) -> None:
+    def __init__(self, address: Address, coordinates: Coordinates) -> None:
         """Instantiate location object.
 
         Parameters
         __________
-        latitude    -- Geographical coordinate
-        longitude   -- Geographical coordinate
-        country     -- Country of the location
-        place       -- City or town (e.g., Leuven)
-        street      -- Street name
-        number      -- Street number
+        address     -- Address to find the location on a map
+        coordinates -- Geographical coordinates of the location
         """
-        if not Address.is_legal_street(street):
+        if not Location.is_legal_address(address):
+            raise ValueError("Parameter 'address' should be of type Address")
+
+        if not Location.are_legal_coordinates(coordinates):
             raise ValueError(
-                "Parameter 'street' should be of type str or None."
-                " It should contain only letters (at least one), spaces, "
-                "hyphens, commas and periods"
+                "Parameter 'coordinates' should be of type Coordinates"
             )
 
-        if street is None and number is not None:
-            raise ValueError("Cannot have a street number without a street")
+        self.address = address
+        self.coordinates = coordinates
 
-        if not Address.is_legal_number(number):
-            raise ValueError(
-                "Parameter 'number' should be a positive integer or None"
-            )
+    @staticmethod
+    def are_legal_coordinates(coordinates: Coordinates) -> bool:
+        """Check whether the provided coordinates are legal."""
+        return isinstance(coordinates, Coordinates)
 
-        if not Address.is_legal_place(place):
-            raise ValueError(
-                "Parameter 'place' should not be none and of type "
-                "str. It should only contain letters (at least one), spaces, "
-                "hyphens, commas and periods"
-            )
-
-        if not Address.is_legal_country(country):
-            raise ValueError(
-                "Parameter 'country' should not be None and of type "
-                "str. It should only contain letters (at least one), space, "
-                "hyphens, commas and periods"
-            )
-
-        if not isinstance(latitude, (float, int)):
-            raise TypeError(
-                "Argument 'latitude' should not be None and of type float"
-            )
-        if not self.is_valid_latitude(latitude):
-            raise ValueError(
-                "Argument 'latitude' should be in the range [-90,90]"
-            )
-
-        if not Coordinates.is_legal_latitude(latitude):
-            raise ValueError(
-                "Parameter 'latitude' should not be None and of type "
-                "float. It should be in the range from -90º to 90º"
-            )
-
-        if not Coordinates.is_legal_longitude(longitude):
-            raise ValueError(
-                "Parameter 'longitude' should not be none and of type "
-                "float. It should be in the range from -180º to 180"
-            )
-
-        self.street = street
-        self.number = number
-        self.place = place
-        self.country = country
-        self.longitude = longitude
-        self.latitude = latitude
-
-    # pylint: enable=too-many-branches
-    # pylint: enable=too-many-arguments
-
-    # TODO: convert to python setter
-    def set_street(self, street: Optional[str]) -> None:
-        """Set the street name for this location."""
-        if not self.is_valid_street(street):
-            raise ValueError(
-                "Argument 'street' should contain only letters "
-                "(at least one), spaces, hyphens,"
-                "commas and periods"
-            )
-
-        if street is None:
-            self.number = None
-        self.street = street
-
-    # TODO: convert to python setter
-    def set_number(self, number: Optional[int]) -> None:
-        """Set the street number for this location."""
-        if not self.is_valid_number(number):
-            raise ValueError(
-                "Argument 'number' should be a valid street "
-                "number (integer, positive, etc.)"
-            )
-        if self.street is None and number is not None:
-            raise ValueError(
-                "Argument 'number' should be None if the street is None"
-            )
-
-        self.number = number
-
-    # TODO: convert to python setter
-    def set_place(self, place: str) -> None:
-        """Set the place for this location."""
-        if not self.is_valid_place(place):
-            raise ValueError(
-                "Argument 'place' should be a string and only "
-                "contain letters (at least one), spaces,"
-                " hyphens, commas and periods"
-            )
-
-        self.place = place
-
-    # TODO: convert to python setter
-    def set_country(self, country: str) -> None:
-        """Set the country for this location."""
-        if not self.is_valid_country(country):
-            raise ValueError(
-                "Argument 'country' should be a string and only "
-                "contain letters (at least one), space,"
-                " hyphens, commas and periods"
-            )
-
-        self.country = country
-
-    # TODO: convert to python setter
-    def set_latitude(self, latitude: float) -> None:
-        """Set the latitude coordinate for this location."""
-        if not self.is_valid_latitude(latitude):
-            raise ValueError(
-                "Argument 'latitude' should be a float in "
-                "the range [-90,90]"
-            )
-
-        self.latitude = latitude
-
-    # TODO: convert to python setter
-    def set_longitude(self, longitude: float) -> None:
-        """Set the longitude coordinate for this location."""
-        if not self.is_valid_longitude(longitude):
-            raise ValueError(
-                "Argument 'longitude' should be a float in "
-                "the range [-180,180]"
-            )
-
-        self.longitude = longitude
+    @staticmethod
+    def is_legal_address(address: Address) -> bool:
+        """Check whether the provided address is a legal location address."""
+        return isinstance(address, Address)
 
     def update(self, **params: Any) -> Location:
         """Update this instance with the provided new parameters.

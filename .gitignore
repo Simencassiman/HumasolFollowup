@@ -133,4 +133,4 @@ dmypy.json
 .idea
 
 # Files
-humasol/ui/config.py
+humasol/config.py

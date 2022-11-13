@@ -548,8 +548,7 @@ class Period(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     subscription_id = db.Column(db.Integer, db.ForeignKey(Subscription.id))
     task_id = db.Column(db.Integer, db.ForeignKey(Task.id))
-    # TODO: Change name to interval when recreating the database
-    period = db.Column(db.Integer, nullable=False)
+    interval = db.Column(db.Integer, nullable=False)
     unit = db.Column(db.Enum(TimeUnit), nullable=False)
     start = db.Column(db.DateTime, nullable=False)
     end = db.Column(db.DateTime)
@@ -602,7 +601,7 @@ class Period(db.Model):
                 "after start date"
             )
 
-        self.period = interval
+        self.interval = interval
         self.unit = unit
         self.start = start
         self.end = end
@@ -648,7 +647,7 @@ class Period(db.Model):
                 "integers are allowed"
             )
 
-        self.period = period
+        self.interval = period
 
     # TODO: Convert to python setter
     def set_unit(self, unit: TimeUnit) -> None:
@@ -766,12 +765,12 @@ class Period(db.Model):
             years, months = time_passed.years, time_passed.months
 
             if self.unit is Period.TimeUnit.YEAR:
-                return years >= self.period
+                return years >= self.interval
             if self.unit is Period.TimeUnit.MONTH:
-                return months + years * 12 >= self.period
+                return months + years * 12 >= self.interval
             if self.unit is Period.TimeUnit.WEEK:
                 days = (date.today() - last_notification).days // 7
-                return days >= self.period
+                return days >= self.interval
 
         return False
 
@@ -816,7 +815,7 @@ class Period(db.Model):
         """Provide a string representation for this instance."""
         return (
             f"Period("
-            f"period={self.period}, "
+            f"period={self.interval}, "
             f"unit={repr(self.unit)}, "
             f"start={repr(self.start)}, "
             f"end={repr(self.end)})"

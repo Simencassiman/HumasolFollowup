@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Humasol Follow-up</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+    <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+</head>
+<body id="body">
+    <header class="main-header">
+        <a href="{{ url_for('index') }}">
+            <img class="main-header-image" src="{{ url_for('static', filename='img/humasol_logo_light.png') }}">
+        </a>
+    </header>
+    <div class="loader">
+
+    </div>
+    <main class="content-section container">
+
+        {% block content%}
+
+        {% endblock %}
+
+    </main>
+
+</body>
+</html>

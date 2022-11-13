@@ -4,11 +4,13 @@
 from typing import Any
 
 from flask import Flask
+from flask_security import Security, SQLAlchemyUserDatastore
 
 # Local modules
-from humasol.model.project import Project
-
-from ..model.user import User
+from .. import config as cf
+from ..model.project import Project
+from ..model.user import Role, User
+from ..repository import db
 
 
 class HumasolApp(Flask):
@@ -20,16 +22,31 @@ class HumasolApp(Flask):
     requests.
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Instantiate HumasolApp object.
 
         Parameters
         __________
         kwargs  -- Arguments for the flask App superclass
         """
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
 
         # TODO: create objects it depends on
+        self._configure()
+
+    def _configure(self) -> None:
+        self.config["DEBUG"] = True
+
+        self.config["SECRET_KEY"] = cf.SECRET_KEY
+        self.config["SECURITY_PASSWORD_SALT"] = cf.SECURITY_PASSWORD_SALT
+        self.config["SECURITY_REGISTERABLE"] = True
+
+        # TODO: do this through repo
+        self.config["SQLALCHEMY_DATABASE_URI"] = cf.DB_URI
+
+        # Setup Flask-Security
+        user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+        self.security = Security(self, user_datastore)
 
     def archive_project(self, project_id: int) -> None:
         """Mark an existing project as archived.

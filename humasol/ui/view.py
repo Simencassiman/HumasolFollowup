@@ -5,7 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from flask import Blueprint
+import flask_login
+from flask import Blueprint, render_template
 from flask_security import roles_accepted
 
 from humasol.model import model_authorization as ma
@@ -56,7 +57,8 @@ class GUI(Blueprint):
     def _bind_routes(self) -> None:
         """Bind the URL routes to the interface functions."""
         self.add_url_rule("/", "view_projects", self.view_projects)
-        self.add_url_rule("/projects-list", "get_projects", self.get_projects)
+        # self.add_url_rule("/projects-list", "get_projects",
+        # self.get_projects)
 
     def accept_task(self, task_id: int, accepted: bool) -> None:
         """Accept or reject a task.
@@ -271,7 +273,7 @@ class GUI(Blueprint):
     def view_projects(self) -> HtmlPage:
         """Retrieve the page to display the projects list.
 
-        Retrieve the page that will contain the a list of all the projects
+        Retrieve the page that will contain a list of all the projects
         registered in the system. The page does not initially contain this
         information. Rather, it retrieves it while showing a loading screen.
 
@@ -280,3 +282,13 @@ class GUI(Blueprint):
         Return an empty HTML projects page that will fetch the data while
         loading.
         """
+        user = flask_login.current_user
+        permission = user and any(
+            map(lambda role: role in ma.get_roles_humasol(), user.roles)
+        )
+
+        return render_template(
+            "projects.html",
+            logged_in=user is not None,
+            add_permissions=permission,
+        )

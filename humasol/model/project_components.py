@@ -65,6 +65,9 @@ class Address(db.Model):
     """
 
     # Definitions for database tables #
+    location_id = db.Column(
+        db.Integer, db.ForeignKey("location.project_id"), primary_key=True
+    )
     street = db.Column(db.String)
     number = db.Column(db.Integer)
     place = db.Column(db.String, nullable=False, index=True)
@@ -237,6 +240,9 @@ class Coordinates(db.Model):
     """
 
     # Definitions for database tables #
+    location_id = db.Column(
+        db.Integer, db.ForeignKey("location.project_id"), primary_key=True
+    )
     longitude = db.Column(db.Float, nullable=False)
     latitude = db.Column(db.Float, nullable=False)
 
@@ -316,18 +322,10 @@ class Location(db.Model):
         db.Integer, db.ForeignKey("project.id"), primary_key=True
     )
     address = db.relationship(
-        Address,
-        lazy=True,
-        cascade="all, delete-orphan",
-        uselist=False,
-        nullable=False,
+        Address, lazy=True, cascade="all, delete-orphan", uselist=False
     )
     coordinates = db.relationship(
-        Coordinates,
-        lazy=True,
-        cascade="all, delete-orphan",
-        uselist=False,
-        nullable=False,
+        Coordinates, lazy=True, cascade="all, delete-orphan", uselist=False
     )
 
     # End database definitions #

@@ -56,7 +56,7 @@ project_contact = db.Table(
 project_sdg_table = db.Table(
     "project_sdg",
     db.Column("project_id", db.Integer, db.ForeignKey("project.id")),
-    db.Column("role", db.Enum(pc.SDG), db.ForeignKey("sdg_db.role")),
+    db.Column("sdg", db.Enum(pc.SDG), db.ForeignKey("sdg_db.sdg")),
 )
 
 
@@ -68,7 +68,6 @@ project_sdg_table = db.Table(
 # These models are also used to create the database entities
 # through the inheritance of db.Model
 # TODO: check if can remove pylint deactivation when used setters
-# TODO: add User reference
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-instance-attributes
 class Project(db.Model):
@@ -117,6 +116,7 @@ class Project(db.Model):
     MIN_SDGS = 1
     MIN_STUDENTS = 3
     MAX_STUDENTS = 4
+
     T = TypeVar("T")
     V = TypeVar("V")
 
@@ -125,8 +125,10 @@ class Project(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String, index=True, nullable=False)
+    creator = db.relationship("User", lazy=True)
     code = db.Column(db.String, index=True, unique=True, nullable=False)
-    date = db.Column(db.DateTime, index=True, nullable=False)
+    creation_date = db.Column(db.DateTime, index=True, nullable=False)
+    implementation_date = db.Column(db.DateTime, index=True, nullable=False)
     # description saved to file
     category = db.Column(db.String, index=True, nullable=False)
     type = db.Column(db.String(50))  # Used for internal mapping by SQLAlchemy
@@ -205,6 +207,8 @@ class Project(db.Model):
         self,
         *,  # Force usage of keywords
         name: str,
+        creator: User,
+        creation_date: datetime.date,
         implementation_date: datetime.date,
         description: str,
         category: ProjectCategory,
@@ -260,6 +264,15 @@ class Project(db.Model):
             raise ValueError(
                 "Parameter 'name' should be a non-empty string with "
                 "only letters"
+            )
+
+        if not Project.is_legal_creator(creator):
+            raise ValueError("Parameter 'creator' should be of type User")
+
+        if not Project.is_legal_creation_date(creation_date):
+            raise ValueError(
+                "Parameter 'creation_date' should be of type datetime.date "
+                "and can only be as recent as the current day"
             )
 
         if not Project.is_legal_implementation_date(implementation_date):
@@ -360,7 +373,9 @@ class Project(db.Model):
         super().__init__()
 
         self.name = name
-        self.date = implementation_date
+        self.creator = creator
+        self.creation_date = creation_date
+        self.implementation_date = implementation_date
         self.description = description
         self.category = category
         self.location = location
@@ -479,6 +494,13 @@ class Project(db.Model):
     def is_legal_contact_person(contact: person.Person) -> bool:
         """Check whether the provided person is a legal person."""
         return isinstance(contact, person.Person)
+
+    @staticmethod
+    def is_legal_creation_date(date: datetime.date) -> bool:
+        """Check whether the provided date is a legal creation date."""
+        return (
+            isinstance(date, datetime.date) and date <= datetime.date.today()
+        )
 
     @staticmethod
     def is_legal_creator(creator: User) -> bool:
@@ -602,7 +624,7 @@ class Project(db.Model):
                 "(and including) this year can be implemented"
             )
 
-        self.date = date
+        self.implementation_date = date
 
     # TODO: Convert to python setter
     def set_description(self, description: str) -> None:
@@ -881,7 +903,7 @@ class Project(db.Model):
             self.name = params["name"]
 
         if "implementation_date" in params:
-            self.date = params["implementation_date"]
+            self.implementation_date = params["implementation_date"]
 
         if "description" in params:
             self.description = params["description"]
@@ -1131,7 +1153,7 @@ class Project(db.Model):
         """Provide a string representation for this instance."""
         return (
             f"name={self.name}, "
-            f"date={self.date}, "
+            f"date={self.implementation_date}, "
             f"description={self.description}, "
             f"category={self.category}, "
             f"location={repr(self.location)}, "
@@ -1160,6 +1182,8 @@ class EnergyProject(Project):
 
     # Definitions for the database tables #
     power = db.Column(db.Float)
+
+    __mapper_args__ = {"polymorphic_identity": "energy_project"}
 
     # End database definitions #
 

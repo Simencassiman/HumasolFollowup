@@ -24,7 +24,7 @@ from ..repository import db
 users_roles = db.Table(
     "users_roles",
     db.Column("user_id", db.Integer(), db.ForeignKey("user.id")),
-    db.Column("role_id", db.Integer(), db.ForeignKey("role.id")),
+    db.Column("user_role_id", db.Integer(), db.ForeignKey("user_role.id")),
 )
 
 # Disable pylint. These are dataclasses to be represented in the database
@@ -80,10 +80,10 @@ class UserRole(db.Model, RoleMixin):
     student, ...). The role of a user specifies which privileges they have.
     """
 
-    __tablename__ = "role"
+    __tablename__ = "user_role"
 
     id = db.Column(db.Integer(), primary_key=True)
-    name = db.Column(db.Enum(Role), primary_key=True)
+    name = db.Column(db.Enum(Role), nullable=False)
 
 
 class User(db.Model, UserMixin):

@@ -11,6 +11,7 @@ from .. import config as cf
 from ..model.project import Project
 from ..model.user import Role, User
 from ..repository import db
+from .view import GUI
 
 
 class HumasolApp(Flask):
@@ -29,10 +30,11 @@ class HumasolApp(Flask):
         __________
         kwargs  -- Arguments for the flask App superclass
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(__name__, *args, **kwargs)
 
         # TODO: create objects it depends on
         self._configure()
+        self._gui = GUI(self)
 
     def _configure(self) -> None:
         self.config["DEBUG"] = True
@@ -46,7 +48,11 @@ class HumasolApp(Flask):
 
         # Setup Flask-Security
         user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-        self.security = Security(self, user_datastore)
+        self.security = Security(
+            self, user_datastore, register_blueprint=False
+        )
+        # See if this is necessary or not for this use case
+        # self.context_processor(core._context_processor())
 
     def archive_project(self, project_id: int) -> None:
         """Mark an existing project as archived.

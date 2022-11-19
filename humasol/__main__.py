@@ -1,3 +1,5 @@
 """This module will run the main code."""
 
-print("Hello world!")
+from .ui.app import HumasolApp
+
+app = HumasolApp()

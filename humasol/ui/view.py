@@ -6,12 +6,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import flask_login
+import flask_security.views as sv
 from flask import Blueprint, render_template
 from flask_security import roles_accepted
 
+# Local modules
 from humasol.model import model_authorization as ma
 
-# Local modules
 from .forms import ProjectForm
 
 if TYPE_CHECKING:
@@ -39,7 +40,7 @@ class GUI(Blueprint):
         __________
         kwargs  -- Arguments for the flask Blueprint superclass
         """
-        super().__init__(**kwargs)
+        super().__init__("gui", __name__, **kwargs)
 
         self.app = app
 
@@ -59,6 +60,9 @@ class GUI(Blueprint):
         self.add_url_rule("/", "view_projects", self.view_projects)
         # self.add_url_rule("/projects-list", "get_projects",
         # self.get_projects)
+        self.add_url_rule("/login", "view_login", self.view_login)
+        self.add_url_rule("/login-user", "login", self.login)
+        self.add_url_rule("/logout", "logout", self.logout)
 
     def accept_task(self, task_id: int, accepted: bool) -> None:
         """Accept or reject a task.
@@ -170,17 +174,21 @@ class GUI(Blueprint):
         Return HTML code (not a full page) listing all the projects.
         """
 
-    def login(self, username: str, password: str) -> None:
+    def login(self) -> HtmlPage:
         """Authenticate a user.
+
+        Authentication parameters are passed through the request.
 
         Parameters
         __________
         username    -- Username of a registered user
         password    -- Corresponding password
         """
+        return sv.login()
 
-    def logout(self) -> None:
+    def logout(self) -> HtmlPage:
         """End the session of an authenticated user."""
+        return sv.logout()
 
     @roles_accepted(ma.get_role_admin(), ma.get_role_humasol_followup())
     def register_user(
@@ -255,6 +263,7 @@ class GUI(Blueprint):
 
     def view_login(self) -> HtmlPage:
         """Retrieve the login page."""
+        return sv.login()
 
     @roles_accepted(*ma.get_roles_all())
     def view_project(self, project_id: int) -> HtmlPage:
@@ -288,7 +297,7 @@ class GUI(Blueprint):
         )
 
         return render_template(
-            "projects.html",
+            "project/projects.html",
             logged_in=user is not None,
             add_permissions=permission,
         )

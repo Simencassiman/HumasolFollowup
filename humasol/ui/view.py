@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import flask_login
 import flask_security.views as sv
-from flask import Blueprint, render_template
+from flask import Blueprint, Response, redirect, render_template
 from flask_security import roles_accepted
 
 # Local modules
@@ -57,14 +57,15 @@ class GUI(Blueprint):
 
     def _bind_routes(self) -> None:
         """Bind the URL routes to the interface functions."""
+        self.add_url_rule("/favicon.ico", "favicon", self.favicon)
+
+        self.add_url_rule("/login", "view_login", self.view_login)
+        self.add_url_rule("/login-user", "login", self.login, methods=["POST"])
+        self.add_url_rule("/logout", "logout", self.logout)
+
         self.add_url_rule("/", "view_projects", self.view_projects)
         # self.add_url_rule("/projects-list", "get_projects",
         # self.get_projects)
-        self.add_url_rule("/login", "view_login", self.view_login)
-        self.add_url_rule(
-            "/login-user", "login", self.login, methods=["GET", "POST"]
-        )
-        self.add_url_rule("/logout", "logout", self.logout)
 
     def accept_task(self, task_id: int, accepted: bool) -> None:
         """Accept or reject a task.
@@ -111,6 +112,14 @@ class GUI(Blueprint):
         project_id  -- Identifier of the project to update
         form        -- New inputs with which to update the project
         """
+
+    def favicon(self) -> Response:
+        """Provide icon for web browser tab.
+
+        Web browsers try to retrieve an icon to display on the tab next to the
+        page title.
+        """
+        return redirect("static/img/favicon.ico")
 
     @roles_accepted(ma.get_role_admin_as_str(), *ma.get_roles_humasol())
     def get_api_token(

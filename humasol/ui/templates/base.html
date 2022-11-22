@@ -19,10 +19,20 @@
     <body id="body" {% block body_attribs %}{% endblock body_attribs %}>
     {% block body -%}
         <header class="main-header">
-            <a href="#">
+            <a href="{{ url_for('gui.view_projects') }}">
                 <img class="main-header-image" src="{{ url_for('static', filename='img/humasol_logo_light.png') }}">
             </a>
             {% block navbar %}
+            <nav class="nav main-nav">
+                <ul>
+                    <li><a href="{{ url_for('gui.view_projects') }}">Projects</a></li>
+                    {% if current_user.is_authenticated %}
+                        <li><a href="{{ url_for('gui.logout') }}">Logout</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('gui.view_login') }}">Login</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
             {%- endblock navbar %}
         </header>
         <div class="loader">

@@ -21,10 +21,16 @@ from flask_security import RoleMixin, UserMixin
 # Local modules
 from ..repository import db
 
-users_roles = db.Table(
-    "users_roles",
-    db.Column("user_id", db.Integer(), db.ForeignKey("user.id")),
-    db.Column("user_role_id", db.Integer(), db.ForeignKey("user_role.id")),
+users_role = db.Table(
+    "users_role",
+    db.Column(
+        "user_id", db.Integer(), db.ForeignKey("user.id", ondelete="CASCADE")
+    ),
+    db.Column(
+        "user_role_id",
+        db.Integer(),
+        db.ForeignKey("user_role.id", ondelete="CASCADE"),
+    ),
 )
 
 # Disable pylint. These are dataclasses to be represented in the database
@@ -96,8 +102,9 @@ class User(db.Model, UserMixin):
     confirmed_at = db.Column(db.DateTime())
     roles = db.relationship(
         "UserRole",
-        secondary=users_roles,
+        secondary=users_role,
         backref=db.backref("users", lazy="dynamic"),
+        cascade="all, delete",
     )
 
 

@@ -1,15 +1,19 @@
 """Module responsible for the webapp business logic."""
 
 # Python libraries
+import datetime
 from typing import Any
 
 from flask import Flask
-from flask_security import Security, SQLAlchemyUserDatastore
+from flask_migrate import Migrate
+from flask_security import Security, SQLAlchemyUserDatastore, core
+from flask_security import utils as sec_util
 
 # Local modules
 from .. import config as cf
+from ..model import model_authorization as ma
 from ..model.project import Project
-from ..model.user import Role, User
+from ..model.user import User, UserRole
 from ..repository import db
 from .view import GUI
 
@@ -33,10 +37,51 @@ class HumasolApp(Flask):
         super().__init__(__name__, *args, **kwargs)
 
         # TODO: create objects it depends on
-        self._configure()
+        self._migrate = None
+
+        self._setup()
+        self._setup_db()
+        # Setup Flask-Security
+        self._setup_security()
+
         self._gui = GUI(self)
 
-    def _configure(self) -> None:
+    def _create_admin(self, user_datastore: SQLAlchemyUserDatastore) -> None:
+        """Create admin user if none exists."""
+        # TODO: do this through model_ops
+        with self.app_context():
+            if db.engine.execute(
+                db.text(
+                    """
+                SELECT user_id
+                FROM users_role
+                WHERE user_role_id in (
+                                SELECT id
+                                FROM user_role
+                                WHERE name = :role_name
+                                )
+                """
+                ),
+                {"role_name": ma.get_role_admin().name},
+            ).first():
+                return
+
+            user_datastore.create_role(name=ma.get_role_admin())
+            user_datastore.create_user(
+                email="admin@example.com",
+                password=sec_util.hash_password("admin"),
+                roles=[ma.get_role_admin()],
+                active=True,
+                confirmed_at=datetime.datetime.now(),
+            )
+
+            # Pylint says the session has no commit member...
+            # pylint: disable=no-member
+            db.session.commit()
+            # pylint: enable=no-member
+
+    def _setup(self) -> None:
+        """Configure this application instance."""
         self.config["DEBUG"] = True
 
         self.config["SECRET_KEY"] = cf.SECRET_KEY
@@ -46,13 +91,23 @@ class HumasolApp(Flask):
         # TODO: do this through repo
         self.config["SQLALCHEMY_DATABASE_URI"] = cf.DB_URI
 
-        # Setup Flask-Security
-        user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+    def _setup_db(self) -> None:
+        """Set up the database connection."""
+        db.init_app(self)
+        self._migrate = Migrate(self, db)
+
+    def _setup_security(self) -> None:
+        """Set up required security for this app."""
+        user_datastore = SQLAlchemyUserDatastore(db, User, UserRole)
         self.security = Security(
             self, user_datastore, register_blueprint=False
         )
         # See if this is necessary or not for this use case
-        # self.context_processor(core._context_processor())
+        # pylint: disable=protected-access
+        self.context_processor(core._context_processor)
+        # pylint: enable=protected-access
+
+        self._create_admin(user_datastore)
 
     def archive_project(self, project_id: int) -> None:
         """Mark an existing project as archived.

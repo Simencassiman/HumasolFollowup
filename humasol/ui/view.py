@@ -61,7 +61,9 @@ class GUI(Blueprint):
         # self.add_url_rule("/projects-list", "get_projects",
         # self.get_projects)
         self.add_url_rule("/login", "view_login", self.view_login)
-        self.add_url_rule("/login-user", "login", self.login)
+        self.add_url_rule(
+            "/login-user", "login", self.login, methods=["GET", "POST"]
+        )
         self.add_url_rule("/logout", "logout", self.logout)
 
     def accept_task(self, task_id: int, accepted: bool) -> None:
@@ -76,7 +78,7 @@ class GUI(Blueprint):
         accepted    -- Whether the responsibility has been accepted or not
         """
 
-    @roles_accepted(*ma.get_roles_humasol())
+    @roles_accepted(ma.get_role_admin_as_str(), *ma.get_roles_humasol())
     def add_project(self, form: ProjectForm) -> None:
         """Add a new project to the system.
 
@@ -88,7 +90,7 @@ class GUI(Blueprint):
         form    -- Completed project form
         """
 
-    @roles_accepted(*ma.get_roles_humasol())
+    @roles_accepted(ma.get_role_admin_as_str(), *ma.get_roles_humasol())
     def archive_project(self, project_id: int) -> None:
         """Mark an existing project as archived.
 
@@ -100,7 +102,7 @@ class GUI(Blueprint):
         project_id  -- Identifier of the project to archive
         """
 
-    @roles_accepted(*ma.get_roles_humasol())
+    @roles_accepted(ma.get_role_admin_as_str(), *ma.get_roles_humasol())
     def edit_project(self, project_id: int, form: ProjectForm) -> None:
         """Update the referenced project with the provided input.
 
@@ -110,7 +112,7 @@ class GUI(Blueprint):
         form        -- New inputs with which to update the project
         """
 
-    @roles_accepted(*ma.get_roles_humasol())
+    @roles_accepted(ma.get_role_admin_as_str(), *ma.get_roles_humasol())
     def get_api_token(
         self, username: str, password: str, api_interface: str
     ) -> str:
@@ -190,7 +192,9 @@ class GUI(Blueprint):
         """End the session of an authenticated user."""
         return sv.logout()
 
-    @roles_accepted(ma.get_role_admin(), ma.get_role_humasol_followup())
+    @roles_accepted(
+        ma.get_role_admin_as_str(), ma.get_role_humasol_followup_as_str()
+    )
     def register_user(
         self, username: str, password: str, role: str, email: str
     ) -> None:
@@ -218,7 +222,7 @@ class GUI(Blueprint):
         Return HTML code (not a full page) listing all matching projects.
         """
 
-    @roles_accepted(*ma.get_roles_humasol())
+    @roles_accepted(ma.get_role_admin_as_str(), *ma.get_roles_humasol())
     def view_add_project(self) -> HtmlPage:
         """Retrieve new project form.
 
@@ -244,7 +248,7 @@ class GUI(Blueprint):
         loading.
         """
 
-    @roles_accepted(*ma.get_roles_humasol())
+    @roles_accepted(ma.get_role_admin_as_str(), *ma.get_roles_humasol())
     def view_edit_project(self, project_id: int) -> HtmlPage:
         """Retrieve the requested project in editable form.
 

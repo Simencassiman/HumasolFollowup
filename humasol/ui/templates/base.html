@@ -1,27 +1,44 @@
+{% block doc -%}
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Humasol Follow-up</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
-    <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
-</head>
-<body id="body">
-    <header class="main-header">
-        <a href="#">
-            <img class="main-header-image" src="{{ url_for('static', filename='img/humasol_logo_light.png') }}">
-        </a>
-    </header>
-    <div class="loader">
+<html{% block html_attribs %}{% endblock html_attribs %}>
+{%- block html %}
+    <head>
+    {%- block head %}
+        <title>Humasol | {% block title %}{% endblock title %}</title>
 
-    </div>
-    <main class="content-section container">
+        {%- block metas %}
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        {%- endblock metas %}
 
-        {% block content%}
+        {%- block styles %}
+            <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+        {%- endblock styles %}
+    {%- endblock head %}
+    </head>
+    <body id="body" {% block body_attribs %}{% endblock body_attribs %}>
+    {% block body -%}
+        <header class="main-header">
+            <a href="#">
+                <img class="main-header-image" src="{{ url_for('static', filename='img/humasol_logo_light.png') }}">
+            </a>
+            {% block navbar %}
+            {%- endblock navbar %}
+        </header>
+        <div class="loader">
 
-        {% endblock %}
+        </div>
+        <main class="content-section container">
+            {% block content -%}
+            {%- endblock content %}
+        </main>
 
-    </main>
 
-</body>
+        {% block scripts %}
+            <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+        {%- endblock scripts %}
+    {%- endblock body %}
+    </body>
+{%- endblock html %}
 </html>
+{% endblock doc -%}

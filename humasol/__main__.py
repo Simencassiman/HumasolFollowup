@@ -1,5 +1,7 @@
 """This module will run the main code."""
 
-from .ui.app import HumasolApp
+from . import app
 
-app = HumasolApp()
+if __name__ == "__main__":
+    with app.app_context():
+        app.run()

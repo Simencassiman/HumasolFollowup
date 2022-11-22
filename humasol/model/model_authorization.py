@@ -8,17 +8,32 @@ def _transform_to_str(roles: tuple[Role, ...]) -> tuple[str, ...]:
     return tuple(map(lambda ro: ro.content, roles))
 
 
-def get_role_admin() -> str:
+def get_role_admin() -> Role:
+    """Return admin role."""
+    return Role.ADMIN
+
+
+def get_role_admin_as_str() -> str:
     """Return admin role string."""
     return Role.ADMIN.content
 
 
-def get_role_humasol_followup() -> str:
+def get_role_humasol_followup() -> Role:
+    """Return Humasol followup member role."""
+    return Role.HUMASOL_FOLLOWUP
+
+
+def get_role_humasol_followup_as_str() -> str:
     """Return Humasol followup member role string."""
     return Role.HUMASOL_FOLLOWUP.content
 
 
-def get_role_humasol_member() -> str:
+def get_role_humasol_member() -> Role:
+    """Return Humasol member role."""
+    return Role.HUMASOL_MEMBER
+
+
+def get_role_humasol_member_as_str() -> str:
     """Return Humasol member role string."""
     return Role.HUMASOL_MEMBER.content
 

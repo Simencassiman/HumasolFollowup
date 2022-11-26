@@ -192,15 +192,12 @@ class GUI(Blueprint):
         _______
         Return HTML code (not a full page) listing all the projects.
         """
-        projects = self.app.get_projects()
-
-        if projects_exist := len(projects) > 0:
-            cat_projects = utils.categorize_projects(projects)
+        projects = utils.categorize_projects(ul_ps := self.app.get_projects())
 
         return render_template(
             "project/projects_list.html",
-            projects=cat_projects,
-            no_projects=not projects_exist,
+            projects=projects,
+            no_projects=len(ul_ps) == 0,
         )
 
     def login(self) -> Response | HtmlPage:

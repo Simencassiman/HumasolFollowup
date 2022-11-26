@@ -14,6 +14,8 @@
         {%- block styles %}
             <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
         {%- endblock styles %}
+
+        <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
     {%- endblock head %}
     </head>
     <body id="body" {% block body_attribs %}{% endblock body_attribs %}>
@@ -45,7 +47,6 @@
 
 
         {% block scripts %}
-            <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
         {%- endblock scripts %}
     {%- endblock body %}
     </body>

@@ -78,7 +78,7 @@ class Role(Enum):
     # pylint: enable=no-member
 
 
-class UserRole(db.Model, RoleMixin):
+class UserRole(RoleMixin, db.Model):
     """Webapp user's role with respect to Humasol.
 
     Users of the webapp can have one of a set of roles associated to them.
@@ -92,7 +92,7 @@ class UserRole(db.Model, RoleMixin):
     name = db.Column(db.Enum(Role), nullable=False)
 
 
-class User(db.Model, UserMixin):
+class User(UserMixin, db.Model):
     """Webapp user dataclass used for authentication purposes."""
 
     id = db.Column(db.Integer, primary_key=True)
@@ -100,6 +100,7 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(255))
     active = db.Column(db.Boolean())
     confirmed_at = db.Column(db.DateTime())
+    fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False)
     roles = db.relationship(
         "UserRole",
         secondary=users_role,

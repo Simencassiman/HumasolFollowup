@@ -10,8 +10,16 @@
         <h1 class="page-title">Projects</h1>
         <a class="nav button button-secondary" href="#">Add Project</a>
     </div>
-    <section>
+    <section id="projects-content">
         <!-- Project list will be added here dynamically -->
     </section>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $.get("{{ url_for('gui.get_projects') }}", function( data ) {
+      $( "#projects-content" ).html( data );
+    })
+</script>
 {% endblock %}

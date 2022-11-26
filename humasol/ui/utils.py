@@ -1,14 +1,43 @@
 """Module providing utility functions for Flask and app setup."""
+# Python Libraries
+from functools import reduce
+from typing import TypeVar
+
+# Local modules
+from ..model import Project
+
+T = TypeVar("T")
 
 
-from ..repository import db
-from .app import HumasolApp
+def add_to_dict(
+    dic: dict[str, list[T]], key: str, value: T
+) -> dict[str, list[T]]:
+    """Add the provided value to the dictionary with corresponding key.
+
+    Append the given value to the list correspinding to the given key in the
+    dictionary.
+
+    Parameters
+    __________
+    dic     -- Dictionary with keys mapping to lists
+    key     -- Key on which to index dic
+    value   -- Object to add to the dictionary
+    """
+    if key in dic:
+        dic[key].append(value)
+    else:
+        dic[key] = [value]
+
+    return dic
 
 
-def create_db_tables() -> None:
-    """Create the database schemas defined in model."""
-    app = HumasolApp(__name__)
-    db.init_app(app)
+def categorize_projects(projects: list[Project]) -> dict[str, list[Project]]:
+    """Group projects by category."""
+    if projects is None:
+        return {}
 
-    with app.app_context():
-        db.create_all()
+    return reduce(
+        lambda dic, kv: add_to_dict(dic, *kv),
+        map(lambda pr: (pr.category.content, pr), projects),
+        {},
+    )

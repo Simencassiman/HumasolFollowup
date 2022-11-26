@@ -1,24 +1,30 @@
-{% for category, ps in projects.items() %}
-    <div class="content-row">
-        <h2 class="section-title">{{ category|capitalize }}</h2>
+{% if no_projects %}
+    <div>
+        <p>No projects have been registered...</p>
+    </div>
+{% else %}
+    {% for category, ps in projects.items() %}
+        <div class="content-row">
+            <h2 class="section-title">{{ category|capitalize }}</h2>
 
-        {% for project in ps %}
-            <div class="project">
-                <a href="{{ url_for('project', id=project.id) }}">
-                    <div class="project-card">
-                        <div class="col">
-                            <div class="row">
-                                <h3>{{ project.name }}</h3>
-                                <p>{{ project.date.strftime('%d-%m-%Y') }}</p>
-                            </div>
-                            <div class="row">
-                                <p>{{ project.location.country }}</p>
+            {% for project in ps %}
+                <div class="project">
+                    <a href="{{ url_for('project', id=project.id) }}">
+                        <div class="project-card">
+                            <div class="col">
+                                <div class="row">
+                                    <h3>{{ project.name }}</h3>
+                                    <p>{{ project.date.strftime('%d-%m-%Y') }}</p>
+                                </div>
+                                <div class="row">
+                                    <p>{{ project.location.country }}</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </a>
-            </div>
-        {% endfor %}
+                    </a>
+                </div>
+            {% endfor %}
 
-    </div>
-{% endfor %}
+        </div>
+    {% endfor %}
+{% endif %}

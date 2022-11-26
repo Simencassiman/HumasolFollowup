@@ -4,14 +4,23 @@
 import datetime
 from typing import Any
 
-from flask import Flask
+from flask import Flask, after_this_request, session
+from flask_login import current_user
 from flask_migrate import Migrate
-from flask_security import Security, SQLAlchemyUserDatastore, core
+from flask_security import (
+    Security,
+    SQLAlchemyUserDatastore,
+    core,
+    login_user,
+    logout_user,
+)
 from flask_security import utils as sec_util
+from werkzeug.local import LocalProxy
 
 # Local modules
 from .. import config as cf
 from ..model import model_authorization as ma
+from ..model import model_ops
 from ..model.project import Project
 from ..model.user import User, UserRole
 from ..repository import db
@@ -38,6 +47,8 @@ class HumasolApp(Flask):
 
         # TODO: create objects it depends on
         self._migrate = None
+        self._current_user = LocalProxy(lambda: current_user)
+        self._session = LocalProxy(lambda: session)
 
         self._setup()
         self._setup_db()
@@ -68,7 +79,7 @@ class HumasolApp(Flask):
 
             user_datastore.create_role(name=ma.get_role_admin())
             user_datastore.create_user(
-                email="admin@example.com",
+                email="admin@humasol.com",
                 password=sec_util.hash_password("admin"),
                 roles=[ma.get_role_admin()],
                 active=True,
@@ -195,8 +206,14 @@ class HumasolApp(Flask):
         _______
         Return a list of project objects.
         """
+        # TODO: catch errors and solve or wrap
+        return model_ops.get_projects()
 
-    def login(self, username: str, password: str) -> bool:
+    def get_session(self) -> LocalProxy:
+        """Return this apps current session."""
+        return self._session
+
+    def login(self, form) -> bool:
         """Authenticate the user with provided credentials.
 
         Parameters
@@ -204,9 +221,30 @@ class HumasolApp(Flask):
         username    -- Username of the user in this system
         password    -- Matching password for this system
         """
+        # TODO: remove dependence on forms
+        # TODO: Catch any errors
+        assert form.user is not None
+        remember_me = form.remember.data if "remember" in form else None
+        # response = _security.two_factor_plugins.tf_enter(
+        #     form.user, remember_me, "password"
+        # )
+        # if response:
+        #     return response
+        # two factor not required - login user
+        after_this_request(sec_util.view_commit)
+        login_user(form.user, remember=remember_me, authn_via=["password"])
 
-    def logout(self, user: User) -> bool:
-        """En the provided user's session."""
+        # if _security._want_json(request):
+        #     return base_render_json(form, include_auth_token=True)
+        return True
+
+    def logout(self) -> bool:
+        """End the provided user's session."""
+        # TODO: catch potential errors
+        if self._current_user.is_authenticated:
+            logout_user()
+
+        return True
 
     def register_user(
         self, username: str, password: str, email: str, role: str

@@ -6,13 +6,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import flask_login
-import flask_security.views as sv
-from flask import Blueprint, Response, redirect, render_template
+from flask import (
+    Blueprint,
+    Response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_security import roles_accepted
+from flask_security import utils as sec_util
+from flask_security.forms import form_errors_munge
 
 # Local modules
 from humasol.model import model_authorization as ma
 
+from . import utils
 from .forms import ProjectForm
 
 if TYPE_CHECKING:
@@ -64,8 +73,7 @@ class GUI(Blueprint):
         self.add_url_rule("/logout", "logout", self.logout)
 
         self.add_url_rule("/", "view_projects", self.view_projects)
-        # self.add_url_rule("/projects-list", "get_projects",
-        # self.get_projects)
+        self.add_url_rule("/projects-list", "get_projects", self.get_projects)
 
     def accept_task(self, task_id: int, accepted: bool) -> None:
         """Accept or reject a task.
@@ -184,22 +192,58 @@ class GUI(Blueprint):
         _______
         Return HTML code (not a full page) listing all the projects.
         """
+        projects = self.app.get_projects()
 
-    def login(self) -> HtmlPage:
+        if projects_exist := len(projects) > 0:
+            cat_projects = utils.categorize_projects(projects)
+
+        return render_template(
+            "project/projects_list.html",
+            projects=cat_projects,
+            no_projects=not projects_exist,
+        )
+
+    def login(self) -> Response | HtmlPage:
         """Authenticate a user.
 
         Authentication parameters are passed through the request.
-
-        Parameters
-        __________
-        username    -- Username of a registered user
-        password    -- Corresponding password
         """
-        return sv.login()
+        security_app = self.app.extensions["security"]
+        form_class = security_app.login_form
 
-    def logout(self) -> HtmlPage:
+        form = form_class(request.form, meta=sec_util.suppress_form_csrf())
+
+        if form.validate_on_submit():
+            login_success = self.app.login(form)
+            if login_success:
+                return redirect("/")
+
+        # Validation failed - make sure all error messages are generic
+        if (
+            request.method == "POST"
+            and self.app.config.get("SECURITY_RETURN_GENERIC_RESPONSES", None)
+            and not form.user_authenticated
+        ):
+            fields_to_squash = dict(
+                email=dict(replace_msg="GENERIC_AUTHN_FAILED"),
+                password=dict(replace_msg="GENERIC_AUTHN_FAILED"),
+            )
+            if hasattr(form, "username"):
+                fields_to_squash["username"] = dict(
+                    replace_msg="GENERIC_AUTHN_FAILED"
+                )
+            form_errors_munge(form, fields_to_squash)
+
+        if form.is_submitted() and not form.validate():
+            self.app.get_session()["formdata"] = request.form
+
+        return redirect(url_for("gui.view_login"))
+
+    def logout(self) -> Response:
         """End the session of an authenticated user."""
-        return sv.logout()
+        self.app.logout()
+
+        return redirect("/")
 
     @roles_accepted(
         ma.get_role_admin_as_str(), ma.get_role_humasol_followup_as_str()
@@ -276,7 +320,26 @@ class GUI(Blueprint):
 
     def view_login(self) -> HtmlPage:
         """Retrieve the login page."""
-        return sv.login()
+        security_app = self.app.extensions["security"]
+        iattrs = self.app.config["SECURITY_USER_IDENTITY_ATTRIBUTES"]
+
+        form_class = security_app.login_form
+        formdata = self.app.get_session().get("formdata", None)
+        if formdata:
+            form = form_class(request.form, meta=sec_util.suppress_form_csrf())
+            form.validate()
+            self.app.get_session().pop("formdata")
+        else:
+            form = form_class()
+
+        # pylint: disable=protected-access
+        return render_template(
+            "security/login_user.html",
+            login_user_form=form,
+            identity_attributes=[[*f][0] for f in iattrs] if iattrs else [],
+            **security_app._run_ctx_processor("login"),
+        )
+        # pylint: enable=protected-access
 
     @roles_accepted(*ma.get_roles_all())
     def view_project(self, project_id: int) -> HtmlPage:

@@ -19,6 +19,7 @@ Flask-Principal==0.4.0
 Flask-Security-Too==5.0.2
 Flask-SQLAlchemy==3.0.2
 Flask-WTF==1.0.1
+gunicorn==20.1.0
 identify==2.5.6
 idna==3.4
 isort==5.10.1
@@ -33,9 +34,10 @@ nodeenv==1.7.0
 passlib==1.7.4
 platformdirs==2.5.2
 pre-commit==2.20.0
-psycopg2 @ file:///Users/runner/miniforge3/conda-bld/psycopg2-split_1667025589491/work
+psycopg2==2.9.5
 pylint==2.15.4
 python-dateutil==2.8.2
+python-dotenv==0.21.0
 pytz==2022.5
 PyYAML==6.0
 six==1.16.0

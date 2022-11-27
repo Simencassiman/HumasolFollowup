@@ -18,7 +18,7 @@ from flask_security import utils as sec_util
 from werkzeug.local import LocalProxy
 
 # Local modules
-from .. import config as cf
+from ..config import config as cf
 from ..model import model_authorization as ma
 from ..model import model_ops
 from ..model.project import Project
@@ -79,8 +79,8 @@ class HumasolApp(Flask):
 
             user_datastore.create_role(name=ma.get_role_admin())
             user_datastore.create_user(
-                email="admin@humasol.com",
-                password=sec_util.hash_password("admin"),
+                email=cf.ADMIN_EMAIL,
+                password=sec_util.hash_password(cf.ADMIN_PWD),
                 roles=[ma.get_role_admin()],
                 active=True,
                 confirmed_at=datetime.datetime.now(),
@@ -100,7 +100,7 @@ class HumasolApp(Flask):
         self.config["SECURITY_REGISTERABLE"] = True
 
         # TODO: do this through repo
-        self.config["SQLALCHEMY_DATABASE_URI"] = cf.DB_URI
+        self.config["SQLALCHEMY_DATABASE_URI"] = cf.DATABASE_URL
 
     def _setup_db(self) -> None:
         """Set up the database connection."""

@@ -93,7 +93,7 @@ class HumasolApp(Flask):
 
     def _setup(self) -> None:
         """Configure this application instance."""
-        self.config["DEBUG"] = True
+        # self.config["DEBUG"] = True
 
         self.config["SECRET_KEY"] = cf.SECRET_KEY
         self.config["SECURITY_PASSWORD_SALT"] = cf.SECURITY_PASSWORD_SALT

@@ -108,6 +108,7 @@ class HumasolApp(Flask):
         self._migrate = Migrate(self, db)
 
         # Create tables if they do not exist
+        # TODO: do this through model_ops
         with self.app_context():
             if not db.engine.execute(
                 db.text(
@@ -135,7 +136,7 @@ class HumasolApp(Flask):
         self.context_processor(core._context_processor)
         # pylint: enable=protected-access
 
-        # self._create_admin(user_datastore)
+        self._create_admin(user_datastore)
 
     def archive_project(self, project_id: int) -> None:
         """Mark an existing project as archived.

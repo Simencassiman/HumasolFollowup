@@ -107,6 +107,23 @@ class HumasolApp(Flask):
         db.init_app(self)
         self._migrate = Migrate(self, db)
 
+        # Create tables if they do not exist
+        with self.app_context():
+            if not db.engine.execute(
+                db.text(
+                    """
+                    SELECT EXISTS (
+                        SELECT FROM
+                            pg_tables
+                        WHERE
+                            schemaname = 'public' AND
+                            tablename  = 'user'
+                    );
+                    """
+                )
+            ):
+                db.create_all()
+
     def _setup_security(self) -> None:
         """Set up required security for this app."""
         user_datastore = SQLAlchemyUserDatastore(db, User, UserRole)
@@ -118,7 +135,7 @@ class HumasolApp(Flask):
         self.context_processor(core._context_processor)
         # pylint: enable=protected-access
 
-        self._create_admin(user_datastore)
+        # self._create_admin(user_datastore)
 
     def archive_project(self, project_id: int) -> None:
         """Mark an existing project as archived.

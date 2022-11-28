@@ -6,8 +6,7 @@ from .app import HumasolApp
 
 def create_db_tables() -> None:
     """Create the database schemas defined in model."""
-    app = HumasolApp(__name__)
-    db.init_app(app)
+    app = HumasolApp()
 
     with app.app_context():
         db.create_all()

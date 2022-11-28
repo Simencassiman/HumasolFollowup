@@ -64,14 +64,14 @@ class HumasolApp(Flask):
             if db.engine.execute(
                 db.text(
                     """
-                SELECT user_id
-                FROM users_role
-                WHERE user_role_id in (
-                                SELECT id
-                                FROM user_role
-                                WHERE name = :role_name
-                                )
-                """
+                    SELECT user_id
+                    FROM users_role
+                    WHERE user_role_id in (
+                                    SELECT id
+                                    FROM user_role
+                                    WHERE name = :role_name
+                                    )
+                    """
                 ),
                 {"role_name": ma.get_role_admin().name},
             ).first():

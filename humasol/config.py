@@ -2,6 +2,7 @@
 
 # Python Libraries
 import os
+import re
 from typing import Union, get_type_hints
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -78,6 +79,16 @@ class AppConfig:
                     f'Unable to cast value of "{env[field]}" to type '
                     f'"{var_type}" for "{field}" field'
                 ) from exc
+
+        self._correct_sql_dialect()
+
+    # pylint: disable=invalid-name
+    def _correct_sql_dialect(self) -> None:
+        """Convert the sql dialect to the correct name for SQLAlchemy."""
+        if matched := re.match(r"postgres(://.*)", self.DATABASE_URL):
+            self.DATABASE_URL = f"postgresql{matched.groups()[0]}"
+
+    # pylint: enable=invalid-name
 
     def __repr__(self):
         """Provide a representation of this instance."""

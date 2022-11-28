@@ -1,1 +1,1 @@
-web: gunicorn app:humasol
+web: gunicorn humasol:app

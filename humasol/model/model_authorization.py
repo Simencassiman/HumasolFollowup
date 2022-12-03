@@ -3,11 +3,6 @@
 from humasol.model.user import Role
 
 
-def _transform_to_str(roles: tuple[Role, ...]) -> tuple[str, ...]:
-    """Transform tuple of roles into tuple of strings."""
-    return tuple(map(lambda ro: ro.content, roles))
-
-
 def get_role_admin() -> Role:
     """Return admin role."""
     return Role.ADMIN
@@ -53,16 +48,16 @@ def get_role_partner() -> str:
     return Role.PARTNER.content
 
 
-def get_roles_all() -> tuple[str, ...]:
+def get_roles_all() -> tuple[Role, ...]:
     """Return all defined roles as strings."""
-    return _transform_to_str(Role.all())
+    return Role.all()
 
 
-def get_roles_humasol_member() -> tuple[str, ...]:
+def get_roles_humasol_member() -> tuple[Role, ...]:
     """Return all roles of people working for humasol."""
-    return _transform_to_str(Role.humasol_members())
+    return Role.humasol_members()
 
 
-def get_roles_humasol() -> tuple[str, ...]:
+def get_roles_humasol() -> tuple[Role, ...]:
     """Return all roles of humasol people as strings."""
-    return _transform_to_str(Role.humasol())
+    return Role.humasol()

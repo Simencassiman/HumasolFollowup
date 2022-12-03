@@ -9,6 +9,8 @@ import humasol.model.followup_work as fw
 import humasol.model.person as pn
 import humasol.model.project_components as pc
 from humasol.model.project import EnergyProject, Project
+from humasol.model.project_categories import ProjectCategory
+from humasol.script import api_manager_exists
 
 
 def are_legal_datasource_managers(
@@ -50,6 +52,13 @@ def is_legal_address_place(place: str) -> bool:
 def is_legal_address_street(street: Optional[str]) -> bool:
     """Check whether the provided street is legal for an address."""
     return pc.Address.is_legal_street(street)
+
+
+def is_legal_api_manager(api_manager: str, category: str) -> bool:
+    """Check whether the given API manager is legal for the given category."""
+    return api_manager_exists(
+        api_manager, ProjectCategory.from_string(category)
+    )
 
 
 def is_legal_battery_base_soc(soc: float) -> bool:

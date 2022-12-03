@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import flask_login
 from flask import (
     Blueprint,
     Response,
@@ -42,6 +41,13 @@ class GUI(Blueprint):
     # TODO: add error handler
     # TODO: add logging
 
+    ROLES_ADD_PROJECT = {ma.get_role_admin(), *ma.get_roles_humasol()}
+    ROLES_ARCHIVE_PROJECT = {ma.get_role_admin(), *ma.get_roles_humasol()}
+    ROLES_REGISTER_USER = {ma.get_role_admin(), ma.get_role_humasol_followup()}
+    ROLES_SEARCH_PROJECT = {*ma.get_roles_all()}
+    ROLES_VIEW_DASHBOARD = {*ma.get_roles_all()}
+    ROLES_VIEW_PROJECT = {*ma.get_roles_all()}
+
     def __init__(self, app: HumasolApp, **kwargs) -> None:
         """Instantiate GUI object.
 
@@ -52,6 +58,8 @@ class GUI(Blueprint):
         super().__init__("gui", __name__, **kwargs)
 
         self.app = app
+
+        self.context_processor(self._set_context)
 
         self._bind_routes()
         self._bind_app()
@@ -75,6 +83,30 @@ class GUI(Blueprint):
         self.add_url_rule("/", "view_projects", self.view_projects)
         self.add_url_rule("/projects-list", "get_projects", self.get_projects)
 
+        self.add_url_rule("/project", "view_project", self.view_project)
+        self.add_url_rule("/project-content", "get_project", self.get_project)
+
+        self.add_url_rule(
+            "/add-project", "view_add_project", self.view_add_project
+        )
+        self.add_url_rule(
+            "/save-project", "add_project", self.add_project, methods=["POST"]
+        )
+
+    def _set_context(self) -> dict[str, bool]:
+        """Set the context to render a template.
+
+        Set the context of user rights to correctly render a template.
+        """
+        user = self.app.get_user()
+        return dict(
+            user_authenticated=user.is_authenticated,
+            can_add_project=len(
+                set(user.roles).intersection(self.ROLES_ADD_PROJECT)
+            )
+            > 0,
+        )
+
     def accept_task(self, task_id: int, accepted: bool) -> None:
         """Accept or reject a task.
 
@@ -87,8 +119,8 @@ class GUI(Blueprint):
         accepted    -- Whether the responsibility has been accepted or not
         """
 
-    @roles_accepted(ma.get_role_admin_as_str(), *ma.get_roles_humasol())
-    def add_project(self, form: ProjectForm) -> None:
+    @roles_accepted(*ROLES_ADD_PROJECT)
+    def add_project(self) -> Response:
         """Add a new project to the system.
 
         Parse the completed project form to contruct a project and save it
@@ -98,8 +130,9 @@ class GUI(Blueprint):
         __________
         form    -- Completed project form
         """
+        return redirect(url_for("gui.view_projects"))
 
-    @roles_accepted(ma.get_role_admin_as_str(), *ma.get_roles_humasol())
+    @roles_accepted(*ROLES_ARCHIVE_PROJECT)
     def archive_project(self, project_id: int) -> None:
         """Mark an existing project as archived.
 
@@ -111,7 +144,7 @@ class GUI(Blueprint):
         project_id  -- Identifier of the project to archive
         """
 
-    @roles_accepted(ma.get_role_admin_as_str(), *ma.get_roles_humasol())
+    @roles_accepted(*ROLES_ADD_PROJECT)
     def edit_project(self, project_id: int, form: ProjectForm) -> None:
         """Update the referenced project with the provided input.
 
@@ -129,7 +162,7 @@ class GUI(Blueprint):
         """
         return redirect("static/img/favicon.ico")
 
-    @roles_accepted(ma.get_role_admin_as_str(), *ma.get_roles_humasol())
+    @roles_accepted(*ROLES_ADD_PROJECT)
     def get_api_token(
         self, username: str, password: str, api_interface: str
     ) -> str:
@@ -151,7 +184,7 @@ class GUI(Blueprint):
         Return the requested API token as a string.
         """
 
-    @roles_accepted(*ma.get_roles_all())
+    @roles_accepted(*ROLES_VIEW_DASHBOARD)
     def get_dashboard(self) -> HtmlContent:
         """Retrieve the dashboard content for the current user.
 
@@ -166,7 +199,7 @@ class GUI(Blueprint):
         """
 
     @roles_accepted(*ma.get_roles_all())
-    def get_project(self, project_id: int) -> HtmlContent:
+    def get_project(self) -> HtmlContent | Response:
         """Retrieve project information.
 
         Retrieve and render the details of the requested project.
@@ -181,6 +214,26 @@ class GUI(Blueprint):
         information of the project. The role of the user defines the amount
         of authorised information.
         """
+        if not (p_id := request.args.get("id", None)):
+            # TODO: raise 403
+            return redirect(url_for("gui.view_projects"))
+
+        project_id = int(p_id)
+        project = self.app.get_project(project_id)
+        can_edit = (
+            set((user := self.app.get_user()).roles).intersection(
+                {ma.get_role_admin(), ma.get_role_humasol_followup()}
+            )
+            or user.id == project.creator.id
+        )
+
+        if not project:
+            # TODO: raise 403
+            return redirect(url_for("gui.view_projects"))
+
+        return render_template(
+            "project/project_content.html", project=project, editable=can_edit
+        )
 
     def get_projects(self) -> HtmlContent:
         """List all projects in the system.
@@ -192,7 +245,8 @@ class GUI(Blueprint):
         _______
         Return HTML code (not a full page) listing all the projects.
         """
-        projects = utils.categorize_projects(ul_ps := self.app.get_projects())
+        ul_ps = self.app.get_projects()
+        projects = utils.categorize_projects(ul_ps)
 
         return render_template(
             "project/projects_list.html",
@@ -242,9 +296,7 @@ class GUI(Blueprint):
 
         return redirect("/")
 
-    @roles_accepted(
-        ma.get_role_admin_as_str(), ma.get_role_humasol_followup_as_str()
-    )
+    @roles_accepted(*ROLES_REGISTER_USER)
     def register_user(
         self, username: str, password: str, role: str, email: str
     ) -> None:
@@ -259,7 +311,7 @@ class GUI(Blueprint):
         email       -- Email of the person behind the user
         """
 
-    @roles_accepted(*ma.get_roles_all())
+    @roles_accepted(*ROLES_SEARCH_PROJECT)
     def search_project(self, value: str) -> HtmlPage:
         """Search the database for a project with attribute matching the value.
 
@@ -272,7 +324,7 @@ class GUI(Blueprint):
         Return HTML code (not a full page) listing all matching projects.
         """
 
-    @roles_accepted(ma.get_role_admin_as_str(), *ma.get_roles_humasol())
+    @roles_accepted(*ROLES_ADD_PROJECT)
     def view_add_project(self) -> HtmlPage:
         """Retrieve new project form.
 
@@ -283,8 +335,13 @@ class GUI(Blueprint):
         _______
         Return a HTML project form page.
         """
+        form = ProjectForm()
 
-    @roles_accepted(*ma.get_roles_all())
+        return render_template(
+            "project/form_add_project.html", form=form, show_followup=False
+        )
+
+    @roles_accepted(*ROLES_VIEW_DASHBOARD)
     def view_dashboard(self) -> HtmlPage:
         """Retrieve the page for the dashboard view.
 
@@ -298,7 +355,7 @@ class GUI(Blueprint):
         loading.
         """
 
-    @roles_accepted(ma.get_role_admin_as_str(), *ma.get_roles_humasol())
+    @roles_accepted(*ROLES_ADD_PROJECT)
     def view_edit_project(self, project_id: int) -> HtmlPage:
         """Retrieve the requested project in editable form.
 
@@ -338,8 +395,8 @@ class GUI(Blueprint):
         )
         # pylint: enable=protected-access
 
-    @roles_accepted(*ma.get_roles_all())
-    def view_project(self, project_id: int) -> HtmlPage:
+    @roles_accepted(*ROLES_VIEW_PROJECT)
+    def view_project(self) -> HtmlPage | Response:
         """Retrieve the page to contain the project info.
 
         Retrieve the page which will contain the project details. It does not
@@ -351,6 +408,13 @@ class GUI(Blueprint):
         Return an empty HTML project page that will fetch the data while
         loading.
         """
+        if not (p_id := request.args.get("id", None)):
+            # TODO: raise exception instead
+            return redirect(url_for("gui.view_projects"))
+
+        project_id = int(p_id)
+
+        return render_template("project/project.html", project_id=project_id)
 
     def view_projects(self) -> HtmlPage:
         """Retrieve the page to display the projects list.
@@ -364,7 +428,7 @@ class GUI(Blueprint):
         Return an empty HTML projects page that will fetch the data while
         loading.
         """
-        user = flask_login.current_user
+        user = self.app.get_user()
         permission = user and any(
             map(lambda role: role in ma.get_roles_humasol(), user.roles)
         )

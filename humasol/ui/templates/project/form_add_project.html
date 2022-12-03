@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+{% import 'project/form_blank_items.html' as blanks %}
+{% import 'project/form_project_specifics.html' as project_specifics %}
+
+{% block title %}
+  Add Project
+{% endblock %}
+
+{% block content%}
+
+    <div class="page-header">
+        <h1 class="page-title">Add Project</h1>
+    </div>
+
+    <form action="save-project" method="POST" >
+        {{ form.hidden_tag() }}
+
+        <div id="project-general" class="form-section">
+            <div class="form-row form-item">
+                <h4>General information</h4>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col form-item grow-four">
+                    {{ form.name.label(class="form-input-label") }}
+                    {{ form.name(class="form-input") }}
+                </div>
+
+                <div class="form-col form-item grow-one">
+                    {{ form.date.label(class="form-input-label") }}
+                    {{ form.date(class="form-input") }}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col form-item grow-one">
+                    {{ form.description.label(class="form-input-label") }}
+                    {{ form.description(class="form-input large", rows=7) }}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col form-item grow-one">
+                    {{ form.category.label(class="form-input-label") }}
+                    {{ form.category(class="form-list", onChange="projectSpecifics(this)") }}
+                </div>
+            </div>
+
+            <div class="form-row">
+                {% include 'project/location.html' %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-col grow-one form-item">
+                    {{ form.work_folder.label(class="form-input-label") }}
+                    {{ form.work_folder(class="form-input") }}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col grow-one">
+                    <div class="form-row form-item">
+                        {{ form.students.label(class="form-input-label") }}
+                    </div>
+                    <div class="form-row">
+                        <div id="students" class="form-col grow-one">
+
+                            {% set deletable = True %}
+                            {% for student in form.students %}
+                                {% include 'project/student.html' %}
+                            {% endfor %}
+
+                        </div>
+                    </div>
+                    <div class="form-row form-item grow-one">
+                        <button id="students-button" type="button" onclick="addStudent()" class="button-placeholder">
+                            Add Student
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col grow-one">
+                    <div class="form-row form-item">
+                        {{ form.supervisors.label(class="form-input-label") }}
+                    </div>
+                    <div class="form-row">
+                        <div id="supervisors" class="form-col grow-one">
+                            {% set deletable = True %}
+                            {% for supervisor in form.supervisors %}
+                                {% include 'project/supervisor.html' %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-row form-item grow-one">
+                        <button id="supervisors-button" type="button" onclick="addSupervisor()" class="button-placeholder">
+                            Add Supervisor
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col grow-one">
+                    <div class="form-row form-item">
+                        {{ form.partners.label(class="form-input-label") }}
+                    </div>
+                    <div class="form-row">
+                        <div id="partners" class="form-col grow-one">
+                            {% set deletable = True %}
+                            {% for partner in form.partners %}
+                                {% include 'project/partner.html' %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-row form-item grow-one">
+                        <button id="partners-button" type="button" onclick="addPartner()" class="button-placeholder">
+                            Add Partner
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="form-row">
+                <div class="form-col grow-one form-item">
+                    {{ form.sdgs.label(class="form-input-label") }}
+                    {{ form.sdgs(class="form-input-large", multiple=True) }}
+                </div>
+            </div>
+
+        </div>
+
+        <div id="project-specific" class="form-section">
+                <div class="form-row form-item">
+                    <h4>Project specific information</h4>
+                </div>
+                <div id="specifics-content">
+                    <!-- Specific forms for subclasses of project will be inserted here -->
+                    {% if form.category.data %}
+                        {{ project_specifics.get(form) }}
+                    {% else %}
+                        <p class="form-item">Please select a project category...</p>
+                    {% endif %}
+                </div>
+            </div>
+
+        <div id="project-followup" class="form-section {% if not show_followup %} hidden {% endif %}">
+            <div class="form-row form-item">
+                <h4>Follow-up information</h4>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col grow-one">
+                    <div class="form-row form-item">
+                        {{ form.tasks.label(class="form-input-label") }}
+                    </div>
+                    <div class="form-row">
+                        <div id="tasks" class="form-col grow-one">
+                            {% for task in form.tasks %}
+                                {% include 'project/task.html' %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-row form-item grow-one">
+                        <button id="tasks-button" type="button" onclick="addTask()" class="button-placeholder">
+                            Add Task
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col grow-one">
+                    <div class="form-row">
+                        <div class="form-col form-item grow-one">
+                            {{ form.data_source.source.label(class="form-input-label") }}
+                            {{ form.data_source.source(class="form-input") }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col form-item grow-one">
+                            {{ form.data_source.api_manager.label(class="form-input-label") }}
+                            {{ form.data_source.api_manager(class="form-input") }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-col grow-one">
+                    <div class="form-row">
+                        <div class="form-col form-item grow-one">
+                            {{ form.data_source.username.label(class="form-input-label") }}
+                            {{ form.data_source.username(class="form-input") }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col form-item grow-one">
+                            {{ form.data_source.password.label(class="form-input-label") }}
+                            {{ form.data_source.password(class="form-input") }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col form-item grow-one">
+                            <!--  -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col grow-one form-item">
+                    {{ form.dashboard.label(class="form-input-label") }}
+                    {{ form.dashboard(class="form-input") }}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col form-item">
+                    {{ form.save_data.label(class="form-input-label") }}
+                </div>
+                <div class="form-col form-item">
+                    {{ form.save_data() }}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col grow-one">
+                    <div class="form-row form-item">
+                        {{ form.subscriptions.label(class="form-input-label") }}
+                    </div>
+
+                    <div class="form-card form-row">
+                        <div class="form-col col-center grow-one">
+                            <img class="form-profile-image" src="{{ url_for('static', filename='img/humasol_icon_light.png') }}">
+                        </div>
+                        <div class="form-col grow-eight">
+                            <div class="form-row row-center">
+                                <div class="form-col grow-one">
+                                    <h4 class="form-item form-input-label">Humasol Follow-up</h4>
+                                    <h4 class="form-item form-input-label">Interval: 1</h4>
+                                </div>
+                                <div class="form-col grow-one">
+                                    <h4 class="form-item form-input-label">followup@humasol.be</h4>
+                                    <h4 class="form-item form-input-label">Interval Unit: Month</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div id="subscriptions" class="form-col grow-one">
+                            {% for subscription in form.subscriptions %}
+                                {% include 'project/subscription.html' %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-row form-item grow-one">
+                        <button id="subscriptions-button" type="button" onclick="addSubscription()" class="button-placeholder">
+                            Add Subscription
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-col grow-one">
+                <button id="btn-followup" type="button"
+                        class="button button-secondary {% if show_followup %} hidden {% endif %}"
+                        onclick="showFollowup()">
+                    Follow-Up
+                </button>
+            </div>
+            <div class="form-col grow-three">
+                <!-- Used for spacing -->
+            </div>
+            <div class="form-col grow-one">
+                {{ form.submit(class="button button-primary") }}
+            </div>
+        </div>
+    </form>
+
+{% endblock %}
+
+{% block scripts %}
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/add_project.js') }}"></script>
+    <script type="text/javascript">
+        function projectSpecifics(category) {
+            var elements = $(category).find("input")
+
+            var selected
+            for(var i in elements) {
+                if(elements[i].checked) {
+                    selected = elements[i].value
+                    break;
+                }
+            }
+
+            var content;
+            switch(selected) {
+                case "energy":
+                    content = {{ blanks.wrap(project_specifics.energy(form.specifics)) }};
+                    break;
+                default:
+                    content = '';
+            }
+
+            setProjectSpecifics(content);
+        }
+
+        function addStudent() {
+            addElementToList('#students', {{ blanks.wrap(blanks.student()) }} );
+        }
+
+        function addSupervisor() {
+            addElementToList('#supervisors', {{ blanks.wrap(blanks.supervisor()) }} );
+        }
+
+        function addPartner() {
+            addElementToList('#partners', {{ blanks.wrap(blanks.partner()) }} );
+        }
+
+        function addTask() {
+            addElementToList('#tasks', {{ blanks.wrap(blanks.task()) }} );
+        }
+
+        function addSubscription() {
+            addElementToList('#subscriptions', {{ blanks.wrap(blanks.subscription()) }} );
+        }
+
+        function taskSubscriberType(selector, origin) {
+            {% set origin = origin %}
+            switch(selector.value) {
+                case "stu":
+                    replaceSubscriber(selector, {{ blanks.wrap(blanks.student(False, "tasks-x-subscriber")) }});
+                    break;
+                case "sup":
+                    replaceSubscriber(selector, {{ blanks.wrap(blanks.supervisor(False, "tasks-x-subscriber")) }});
+                    break;
+                case "par":
+                    replaceSubscriber(selector, {{ blanks.wrap(blanks.partner(False, "tasks-x-subscriber")) }}, true);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        function subscriptionSubscriberType(selector, origin) {
+            {% set origin = origin %}
+            switch(selector.value) {
+                case "stu":
+                    replaceSubscriber(selector, {{ blanks.wrap(blanks.student(False, "subscriptions-x-subscriber")) }});
+                    break;
+                case "sup":
+                    replaceSubscriber(selector, {{ blanks.wrap(blanks.supervisor(False, "subscriptions-x-subscriber")) }});
+                    break;
+                case "par":
+                    replaceSubscriber(selector, {{ blanks.wrap(blanks.partner(False, "subscriptions-x-subscriber")) }}, true);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        function addPeriod(elem, prefix) {
+            addPeriodToList(elem, {{ blanks.wrap(blanks.period(prefix)) }}, prefix);
+        }
+    </script>
+{% endblock %}

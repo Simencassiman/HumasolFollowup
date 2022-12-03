@@ -6,7 +6,7 @@ import re
 from typing import Union, get_type_hints
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-
+PROJECT_FILES = os.path.join(dir_path, "project_files")
 
 # Disable some pylint checks which should be ok
 # pylint: disable=no-member

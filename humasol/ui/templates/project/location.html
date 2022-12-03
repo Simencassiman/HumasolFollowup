@@ -1,0 +1,45 @@
+<div class="form-col grow-one">
+    <div class="form-row form-item">
+        {{ form.location.label(class="form-input-label") }}
+    </div>
+    <div class="form-row">
+        <div class="form-col grow-one">
+            <div class="form-row">
+                <div class="form-col form-item grow-one">
+                    {{ form.location.street.label(class="form-input-label") }}
+                    {{ form.location.street(class="form-input") }}
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-col form-item grow-one">
+                    {{ form.location.number.label(class="form-input-label") }}
+                    {{ form.location.number(class="form-input") }}
+                </div>
+            </div>
+        </div>
+        <div class="form-col grow-one">
+            <div class="form-row">
+                <div class="form-col form-item grow-one">
+                    {{ form.location.place.label(class="form-input-label") }}
+                    {{ form.location.place(class="form-input") }}
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-col form-item grow-one">
+                    {{ form.location.country.label(class="form-input-label") }}
+                    {{ form.location.country(class="form-input") }}
+                </div>
+            </div>
+
+        </div>
+        <div class="form-col col-bottom grow-one">
+            <div class="form-row">
+                <div class="form-col form-item grow-one">
+                    <button type="button" class="button button-secondary" onclick="">
+                        Use Coordinates
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

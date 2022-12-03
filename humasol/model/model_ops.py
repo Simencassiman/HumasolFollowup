@@ -1,6 +1,16 @@
-"""Provides ModelOps interface."""
+"""Provides ModelOps interface.
 
-from . import Project, Role, User
+All functions must be called from within an application context.
+"""
+
+# Python Libraries
+import json
+import os
+
+# Local modules
+from .. import config as cf
+from .. import model
+from ..repository import db
 
 # TODO: remove pylint disable
 # pylint: disable=unused-argument
@@ -19,9 +29,14 @@ def archive_project(project_id: int) -> None:
     """
 
 
+def create_db_tables() -> None:
+    """Create database tables for all the defined models."""
+    db.create_all()
+
+
 # Pylint doesn't seem to detect inner class
 # pylint: disable=no-member
-def create_project(parameters: Project.ProjectArgs) -> Project:
+def create_project(parameters: model.Project.ProjectArgs) -> model.Project:
     """Create a project from the provided project parameters.
 
     Parameters
@@ -41,8 +56,8 @@ def create_project(parameters: Project.ProjectArgs) -> Project:
 # Pylint doesn't seem to detect inner class
 # pylint: disable=no-member
 def edit_project(
-    project: Project, new_parameters: Project.ProjectArgs
-) -> Project:
+    project: model.Project, new_parameters: model.Project.ProjectArgs
+) -> model.Project:
     """Update the provided project with the new parameters.
 
     Parameters
@@ -60,26 +75,34 @@ def edit_project(
 # pylint: enable=no-member
 
 
-def get_project(project_id: int) -> Project:
+def get_project(project_id: int) -> model.Project:
     """Retrieve project with provided ID from the database.
 
     Parameters
     __________
     project_id  -- Project identifier in the database
     """
+    project = model.Project.query.get(project_id)
+
+    with open(
+        os.path.join(cf.PROJECT_FILES, project.data_file), encoding="utf-8"
+    ) as data:
+        project.load_from_file(json.load(data))
+
+    return project
 
 
-def get_projects() -> list[Project]:
+def get_projects() -> list[model.Project]:
     """Retrieve all projects from the database.
 
     Returns
     _______
     Unsorted list of all projects.
     """
-    return []
+    return model.Project.query.all()
 
 
-def register_user(email: str, password: str, role: Role) -> User:
+def register_user(email: str, password: str, role: model.Role) -> model.User:
     """Create a new user and save it to the database.
 
     Parameters
@@ -95,7 +118,7 @@ def register_user(email: str, password: str, role: Role) -> User:
     """
 
 
-def save_project(project: Project) -> None:
+def save_project(project: model.Project) -> None:
     """Save a new project to the database.
 
     By saving the project to the database, a new ID will be given to it.
@@ -104,7 +127,7 @@ def save_project(project: Project) -> None:
     """
 
 
-def search(value: str) -> list[Project]:
+def search(value: str) -> list[model.Project]:
     """Search the database for projects with attributes matching the value.
 
     Parameters
@@ -116,6 +139,23 @@ def search(value: str) -> list[Project]:
     Unsorted list of projects with attributes (partially) matching the
     provided value.
     """
+
+
+def tables_exist() -> bool:
+    """Check whether the database tables have been created."""
+    return db.engine.execute(
+        db.text(
+            """
+            SELECT EXISTS (
+                SELECT FROM
+                    pg_tables
+                WHERE
+                    schemaname = 'public' AND
+                    tablename  = 'user'
+            );
+            """
+        )
+    ).first()[0]
 
 
 # pylint: enable=unused-argument

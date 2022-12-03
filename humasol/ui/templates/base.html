@@ -28,7 +28,12 @@
             <nav class="nav main-nav">
                 <ul>
                     <li><a href="{{ url_for('gui.view_projects') }}">Projects</a></li>
-                    {% if current_user.is_authenticated %}
+                    {% if can_add_project %}
+                        <li>
+                            <a href="{{ url_for('gui.view_add_project') }}">Add Project</a>
+                        </li>
+                    {% endif %}
+                    {% if user_authenticated %}
                         <li><a href="{{ url_for('gui.logout') }}">Logout</a></li>
                     {% else %}
                         <li><a href="{{ url_for('gui.view_login') }}">Login</a></li>
@@ -40,14 +45,14 @@
         <div class="loader">
 
         </div>
-        <main class="content-section container">
+        <main id="main-content" class="content-section container">
             {% block content -%}
             {%- endblock content %}
         </main>
 
-
         {% block scripts %}
         {%- endblock scripts %}
+
     {%- endblock body %}
     </body>
 {%- endblock html %}

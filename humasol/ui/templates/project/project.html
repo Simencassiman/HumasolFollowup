@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  Project
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $.get("{{ url_for('gui.get_project') }}?id={{ project_id }}", function( data ) {
+      $( "#projects-content" ).html( data );
+    })
+</script>
+<script type="text/javascript" src="{{ url_for('static', filename='scripts/project.js') }}" defer></script>
+{% endblock %}

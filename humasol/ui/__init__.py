@@ -1,5 +1,4 @@
 """Package responsible for the UI."""
-
 from ..repository import db
 from .app import HumasolApp
 
@@ -10,3 +9,4 @@ def create_db_tables() -> None:
 
     with app.app_context():
         db.create_all()
+        db.session().close()

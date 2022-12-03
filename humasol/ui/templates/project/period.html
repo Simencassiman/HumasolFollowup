@@ -1,0 +1,22 @@
+<div class="form-container">
+    <div class="form-row no-wrap">
+        <div class="form-col grow-four form-item">
+            {{ period.period.label(class="form-input-label") }}
+            {{ period.period(class="form-input") }}
+
+            {{ period.unit.label(class="form-input-label") }}
+            {{ period.unit(class="form-input") }}
+        </div>
+        <div class="form-col grow-four form-item">
+            {{ period.start.label(class="form-input-label") }}
+            {{ period.start(class="form-input") }}
+
+            {{ period.end.label(class="form-input-label") }}
+            {{ period.end(class="form-input") }}
+        </div>
+
+        <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-period-del"
+             onclick="deletePeriod(this)">
+
+    </div>
+</div>

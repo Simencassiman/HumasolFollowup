@@ -1,0 +1,50 @@
+<div class="form-card form-row">
+    <div class="from-col grow-one">
+        <div class="form-row">
+            <div class="form-col grow-four form-item">
+                {{ task.task_name.label(class="form-input-label") }}
+                {{ task.task_name(class="form-input") }}
+
+                {{ task.sub_type.label(class="form-input-label") }}
+                {{ task.sub_type(class="form-input random", onChange="taskSubscriberType(this)") }}
+            </div>
+            <div class="form-col grow-four form-item">
+                {{ task.function.label(class="form-input-label") }}
+                {{ task.function(class="form-input-large") }}
+            </div>
+            <div class="form-col col-center grow-one">
+                <!-- delete button -->
+                <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del"
+                     onclick="deleteElement(this, levels=4)">
+            </div>
+        </div>
+
+        <div class="form-item">
+            {{ task.subscriber.label(class="form-input-label") }}
+
+            {% set deletable = False %}
+            {% set student = task.subscriber %}
+            {% include 'student.html' %}
+        </div>
+
+        <div class="form-item">
+            <div class="form-card">
+                <div class="form-row form-center">
+                    <div class="form-col grow-one form-item">
+                        {{ task.periods.label(class="form-input-label") }}
+                    </div>
+                    <div class="form-col col-end form-item">
+                        <button type="button" class="button button-secondary" onclick="addPeriod(this, 'tasks')">
+                            Add Period
+                        </button>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    {% for period in task.periods %}
+                        {% include 'period.html' %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

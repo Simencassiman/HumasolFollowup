@@ -5,6 +5,7 @@ import datetime
 from typing import Any
 
 from flask import Flask, after_this_request, session
+from flask.sessions import SessionMixin
 from flask_login import current_user
 from flask_migrate import Migrate
 from flask_security import (
@@ -15,6 +16,7 @@ from flask_security import (
     logout_user,
 )
 from flask_security import utils as sec_util
+from flask_sqlalchemy.session import Session
 from werkzeug.local import LocalProxy
 
 # Local modules
@@ -47,8 +49,8 @@ class HumasolApp(Flask):
 
         # TODO: create objects it depends on
         self._migrate = None
-        self._current_user = LocalProxy(lambda: current_user)
-        self._session = LocalProxy(lambda: session)
+        self._current_user = LocalProxy[User](lambda: current_user)
+        self._session: LocalProxy[SessionMixin] = LocalProxy(lambda: session)
 
         self._setup()
         self._setup_db()
@@ -93,13 +95,12 @@ class HumasolApp(Flask):
 
     def _setup(self) -> None:
         """Configure this application instance."""
-        # self.config["DEBUG"] = True
+        self.config["DEBUG"] = True
 
         self.config["SECRET_KEY"] = cf.SECRET_KEY
         self.config["SECURITY_PASSWORD_SALT"] = cf.SECURITY_PASSWORD_SALT
         self.config["SECURITY_REGISTERABLE"] = True
 
-        # TODO: do this through repo
         self.config["SQLALCHEMY_DATABASE_URI"] = cf.DATABASE_URL
 
     def _setup_db(self) -> None:
@@ -110,20 +111,8 @@ class HumasolApp(Flask):
         # Create tables if they do not exist
         # TODO: do this through model_ops
         with self.app_context():
-            if not db.engine.execute(
-                db.text(
-                    """
-                    SELECT EXISTS (
-                        SELECT FROM
-                            pg_tables
-                        WHERE
-                            schemaname = 'public' AND
-                            tablename  = 'user'
-                    );
-                    """
-                )
-            ):
-                db.create_all()
+            if not model_ops.tables_exist():
+                model_ops.create_db_tables()
 
     def _setup_security(self) -> None:
         """Set up required security for this app."""
@@ -216,6 +205,7 @@ class HumasolApp(Flask):
         _______
         Return complete project object.
         """
+        return model_ops.get_project(project_id)
 
     def get_projects(self) -> list[Project]:
         """Retrieve a list of all projects in the system.
@@ -227,9 +217,13 @@ class HumasolApp(Flask):
         # TODO: catch errors and solve or wrap
         return model_ops.get_projects()
 
-    def get_session(self) -> LocalProxy:
+    def get_session(self) -> Session:
         """Return this apps current session."""
         return self._session
+
+    def get_user(self) -> User:
+        """Return currently logged in user."""
+        return self._current_user
 
     def login(self, form) -> bool:
         """Authenticate the user with provided credentials.

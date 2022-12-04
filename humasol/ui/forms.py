@@ -25,11 +25,11 @@ from wtforms.fields import DateField, DecimalRangeField
 from wtforms.validators import ValidationError
 
 # Local Modules
-from ..model import model_interface
-from ..model import model_validation as model_val
+from humasol.model import model_interface
+from humasol.model import model_validation as model_val
 
 if TYPE_CHECKING:
-    from .. import model
+    from humasol import model
 
 
 class PersonForm(NoCsrfForm):
@@ -484,7 +484,7 @@ class DataSourceForm(NoCsrfForm):
 
     def validate(self, extra_validators=None) -> bool:
         """Validate form inputs if a data source is provided."""
-        if self.source.data is None or len(self.source.data) != 0:
+        if self.source.data is None or len(self.source.data.strip()) == 0:
             return True
 
         return super().validate(extra_validators)
@@ -887,10 +887,7 @@ class ProjectForm(FlaskForm):
     partners = FieldList(FormField(PartnerForm))
     sdgs = SelectMultipleField(
         "SDGs",
-        choices=[
-            (str(n), member)
-            for n, (_, member) in enumerate(model_interface.get_sdgs())
-        ],
+        choices=model_interface.get_sdgs(),
     )
 
     specifics = FormField(ProjectSpecificForm)
@@ -903,7 +900,7 @@ class ProjectForm(FlaskForm):
 
     submit = SubmitField("Save Project")
 
-    def __init__(self, project: model.Project = None) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Instantiate project form object.
 
         Initialize all form input fields. If a project is provided use the
@@ -915,9 +912,7 @@ class ProjectForm(FlaskForm):
         project     -- Optional project object as field data initializer
         should_populate     -- Whether the project data should be used
         """
-        super().__init__()
-
-        self.project = project
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def get_attributes(cls) -> dict[str, None | list | str | bool]:
@@ -948,20 +943,10 @@ class ProjectForm(FlaskForm):
         }
 
     def validate(self, extra_validators=None) -> bool:
-        """Validate form input.
+        """Validate the form inputs."""
+        self.data_source.set_category(self.category.data)
 
-        Set state of subforms for correct validation.
-        """
-        if (
-            self.data_source.source.data is not None
-            and len(self.data_source.source.data) != 0
-        ):
-            self.data_source.set_should_validate(True)
-            self.data_source.set_category(self.category.data)
-        else:
-            self.data_source.set_should_validate(False)
-
-        return super().validate(extra_validators=extra_validators)
+        return super().validate(extra_validators)
 
     def validate_name(self, name: wtforms.StringField) -> None:
         """Validate form input for project name."""
@@ -986,7 +971,7 @@ class ProjectForm(FlaskForm):
 
     def validate_category(self, category: wtforms.RadioField) -> None:
         """Validate form input for project category."""
-        if category.data not in model_interface.get_project_categories():
+        if not model_val.is_legal_project_category(category.data):
             raise ValidationError("Invalid project category")
 
     def validate_work_folder(self, folder: wtforms.StringField) -> None:
@@ -1004,12 +989,6 @@ class ProjectForm(FlaskForm):
         # TODO: do this through model interface
         if len(sdgs.data) == 0:
             raise ValidationError("At least one SDG must be selected")
-        for sdg in sdgs.data:
-            if not sdg.isnumeric():
-                ValidationError("Invalid SDG type")
-            sdg = int(sdg)
-            if sdg < 0 or sdg > 16:
-                raise ValidationError("SDG must go from 1 to 17")
 
     def validate_dashboard(self, dashboard: wtforms.StringField) -> None:
         """Validate form input for project dashboard."""

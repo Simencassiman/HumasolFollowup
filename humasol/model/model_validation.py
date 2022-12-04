@@ -5,12 +5,11 @@ import datetime
 from typing import Optional
 
 # Local modules
+import humasol
 import humasol.model.followup_work as fw
 import humasol.model.person as pn
 import humasol.model.project_components as pc
-from humasol.model.project import EnergyProject, Project
-from humasol.model.project_categories import ProjectCategory
-from humasol.script import api_manager_exists
+from humasol import model
 
 
 def are_legal_datasource_managers(
@@ -31,7 +30,7 @@ def are_legal_period_dates(
 
 def are_legal_project_extra_data(data: dict[str, str]) -> bool:
     """Check whether the provided extra data are legal for a project."""
-    return Project.are_legal_extra_data(data)
+    return model.Project.are_legal_extra_data(data)
 
 
 def is_legal_address_country(country: str) -> bool:
@@ -56,8 +55,8 @@ def is_legal_address_street(street: Optional[str]) -> bool:
 
 def is_legal_api_manager(api_manager: str, category: str) -> bool:
     """Check whether the given API manager is legal for the given category."""
-    return api_manager_exists(
-        api_manager, ProjectCategory.from_string(category)
+    return humasol.script.api_manager_exists(
+        api_manager, model.ProjectCategory.from_string(category)
     )
 
 
@@ -128,7 +127,7 @@ def is_legal_energy_project_component_primary_flag(flag: bool) -> bool:
 
 def is_legal_energy_project_power(power: float) -> bool:
     """Check whether the provided power is legal for an energy project."""
-    return EnergyProject.is_legal_power(power)
+    return model.EnergyProject.is_legal_power(power)
 
 
 def is_legal_followup_last_notification(
@@ -228,39 +227,44 @@ def is_legal_person_phone(phone: str) -> bool:
     return pn.Person.is_legal_phone(phone)
 
 
+def is_legal_project_category(category: str) -> bool:
+    """Check whether the provided project category is a defined category."""
+    return category in model.ProjectCategory.__members__
+
+
 def is_legal_project_dashboard(dashboard: str) -> bool:
     """Check whether the provided dashboard is a legal dashboard address."""
-    return Project.is_legal_dashboard(dashboard)
+    return model.Project.is_legal_dashboard(dashboard)
 
 
 def is_legal_project_data_folder(folder: str) -> bool:
     """Check whether the provided folder is a legal folder URL."""
-    return Project.is_legal_data_folder(folder)
+    return model.Project.is_legal_data_folder(folder)
 
 
 def is_legal_project_description(description: str) -> bool:
     """Check whether the provided description is legal for a project."""
-    return Project.is_legal_description(description)
+    return model.Project.is_legal_description(description)
 
 
 def is_legal_project_implementation_date(date: datetime.date) -> bool:
     """Check if the provided date is a legal project implementation date."""
-    return Project.is_legal_implementation_date(date)
+    return model.Project.is_legal_implementation_date(date)
 
 
 def is_legal_project_name(name: str) -> bool:
     """Check whether the provided name is legal for a project."""
-    return Project.is_legal_name(name)
+    return model.Project.is_legal_name(name)
 
 
 def is_legal_project_data_flag(flag: bool) -> bool:
     """Check whether the provided flag is a legal project save data flag."""
-    return Project.is_legal_save_data_flag(flag)
+    return model.Project.is_legal_save_data_flag(flag)
 
 
 def is_legal_project_work_folder(folder: str) -> bool:
     """Check whether the provided folder is a legal work folder URL."""
-    return Project.is_legal_work_folder(folder)
+    return model.Project.is_legal_work_folder(folder)
 
 
 def is_legal_source_component_price(price: float) -> bool:

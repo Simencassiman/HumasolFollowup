@@ -10,6 +10,9 @@ Classes:
 Project       -- Abstract base class for all Humasol projects
 EnergyProject -- Class representing projects with a focus on an electrical
                     system
+ProjectFactory -- Class providing static methods for project creation.
+ProjectCategory -- Enum class providing the defined project categories and
+                    matching classes.
 """
 # Python Libraries
 from __future__ import annotations
@@ -17,20 +20,15 @@ from __future__ import annotations
 import datetime
 import re
 from abc import abstractmethod
+from enum import Enum
 from functools import reduce
 from typing import Any, Optional, Type, TypedDict, TypeVar, Union
 
 from sqlalchemy import orm
 
-from ..repository import db
-from . import followup_work as fw
-from . import person
-from . import project_components as pc
-from . import utils
-
 # Local modules
-from .project_categories import ProjectCategory
-from .user import User
+from humasol import model
+from humasol.repository import db
 
 # Relationship tables between database entities
 project_students = db.Table(
@@ -56,7 +54,11 @@ project_contact = db.Table(
 project_sdg_table = db.Table(
     "project_sdg",
     db.Column("project_id", db.Integer, db.ForeignKey("project.id")),
-    db.Column("sdg", db.Enum(pc.SDG), db.ForeignKey("sdg_db.sdg")),
+    db.Column(
+        "sdg",
+        db.Enum(model.project_components.SDG),
+        db.ForeignKey("sdg_db.sdg"),
+    ),
 )
 
 
@@ -126,7 +128,7 @@ class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String, index=True, nullable=False)
     creator = db.relationship("User", lazy=True)
-    creator_id = db.Column(db.Integer, db.ForeignKey(User.id))
+    creator_id = db.Column(db.Integer, db.ForeignKey(model.User.id))
     code = db.Column(db.String, index=True, unique=True, nullable=False)
     creation_date = db.Column(db.DateTime, index=True, nullable=False)
     implementation_date = db.Column(db.DateTime, index=True, nullable=False)
@@ -180,16 +182,17 @@ class Project(db.Model):
         """Class used for typing project arguments."""
 
         name: str
+        category: str
         implementation_date: datetime.date
         description: str
         location: dict[str, dict[str, str] | dict[str, int | float]]
         work_folder: str
         students: list[dict[str, Any]]
         supervisors: list[dict[str, Any]]
-        contact_person: person.Person
+        contact_person: dict[str, Any]
         partners: list[dict[str, Any]]
         code: Optional[str]
-        sdgs: list[pc.SDG]
+        sdgs: list[str]
         tasks: Optional[list[dict[str, Any]]]
         data_source: Optional[dict[str, str]]
         dashboard: Optional[str]
@@ -208,24 +211,24 @@ class Project(db.Model):
         self,
         *,  # Force usage of keywords
         name: str,
-        creator: User,
+        creator: model.User,
         creation_date: datetime.date,
         implementation_date: datetime.date,
         description: str,
         category: ProjectCategory,
-        location: pc.Location,
+        location: model.project_components.Location,
         work_folder: str,
-        students: list[person.Student],
-        supervisors: list[person.Supervisor],
-        contact_person: person.Person,
-        partners: list[person.Partner],
-        sdgs: list[pc.SDG],
-        tasks: Optional[list[fw.Task]] = None,
-        data_source: Optional[pc.DataSource] = None,
+        students: list[model.person.Student],
+        supervisors: list[model.person.Supervisor],
+        contact_person: model.person.Person,
+        partners: list[model.person.Partner],
+        sdgs: list[model.project_components.SDG],
+        tasks: Optional[list[model.followup_work.Task]] = None,
+        data_source: Optional[model.project_components.DataSource] = None,
         dashboard: Optional[str] = None,
         save_data: bool = False,
         project_data: Optional[str] = None,
-        subscriptions: Optional[list[fw.Subscription]] = None,
+        subscriptions: Optional[list[model.followup_work.Subscription]] = None,
         extra_data: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
@@ -386,7 +389,9 @@ class Project(db.Model):
         self.project_data = project_data
         self.extra_data = extra_data if extra_data is not None else {}
         self.sdgs = sdgs if sdgs is not None else []
-        self.sdgs_db = [pc.SdgDB(sdg) for sdg in self.sdgs]
+        self.sdgs_db = [
+            model.project_components.SdgDB(sdg) for sdg in self.sdgs
+        ]
         self.data_source = data_source
         self.students = students
         self.supervisors = supervisors
@@ -396,7 +401,9 @@ class Project(db.Model):
         self.tasks = tasks if tasks is not None else []
 
         self._updated = False
-        self.project_components: list[pc.ProjectComponent] = []
+        self.project_components: list[
+            model.project_components.ProjectComponent
+        ] = []
 
         if self.code is None:
             self._create_code()
@@ -425,7 +432,7 @@ class Project(db.Model):
         )
 
     @staticmethod
-    def are_legal_partners(partners: list[person.Partner]) -> bool:
+    def are_legal_partners(partners: list[model.person.Partner]) -> bool:
         """Check whether the provided list is a legal partners list."""
         return (
             isinstance(partners, (list, tuple))
@@ -436,7 +443,7 @@ class Project(db.Model):
 
     @staticmethod
     def are_legal_project_components(
-        components: list[pc.ProjectComponent],
+        components: list[model.project_components.ProjectComponent],
     ) -> bool:
         """Check whether the provided list is a legal components list."""
         return isinstance(components, (list, tuple)) and all(
@@ -444,7 +451,7 @@ class Project(db.Model):
         )
 
     @staticmethod
-    def are_legal_sdgs(sdgs: list[pc.SDG]) -> bool:
+    def are_legal_sdgs(sdgs: list[model.project_components.SDG]) -> bool:
         """Check whether the provided SDG list is legal."""
         return (
             isinstance(sdgs, (list, tuple))
@@ -453,7 +460,7 @@ class Project(db.Model):
         )
 
     @staticmethod
-    def are_legal_students(students: list[person.Student]) -> bool:
+    def are_legal_students(students: list[model.person.Student]) -> bool:
         """Check whether the provided list is a legal student list."""
         return (
             isinstance(students, (list, tuple))
@@ -464,7 +471,7 @@ class Project(db.Model):
 
     @staticmethod
     def are_legal_subscriptions(
-        subscriptions: Optional[list[fw.Subscription]],
+        subscriptions: Optional[list[model.followup_work.Subscription]],
     ) -> bool:
         """Check whether the provided list is a legal subscriptions list."""
         return subscriptions is None or (
@@ -474,7 +481,7 @@ class Project(db.Model):
         )
 
     @staticmethod
-    def are_legal_supervisors(supers: list[person.Supervisor]) -> bool:
+    def are_legal_supervisors(supers: list[model.person.Supervisor]) -> bool:
         """Check whether the provided list is a legal supervisor list."""
         return (
             isinstance(supers, (list, tuple))
@@ -483,7 +490,9 @@ class Project(db.Model):
         )
 
     @staticmethod
-    def are_legal_tasks(tasks: Optional[list[fw.Task]]) -> bool:
+    def are_legal_tasks(
+        tasks: Optional[list[model.followup_work.Task]],
+    ) -> bool:
         """Check whether the provided list is a legal tasks list."""
         return tasks is None or (
             isinstance(tasks, list)
@@ -492,9 +501,9 @@ class Project(db.Model):
         )
 
     @staticmethod
-    def is_legal_contact_person(contact: person.Person) -> bool:
+    def is_legal_contact_person(contact: model.person.Person) -> bool:
         """Check whether the provided person is a legal person."""
-        return isinstance(contact, person.Person)
+        return isinstance(contact, model.person.Person)
 
     @staticmethod
     def is_legal_creation_date(date: datetime.date) -> bool:
@@ -504,9 +513,9 @@ class Project(db.Model):
         )
 
     @staticmethod
-    def is_legal_creator(creator: User) -> bool:
+    def is_legal_creator(creator: model.User) -> bool:
         """Check whether the provided creator is a legal User."""
-        return isinstance(creator, User)
+        return isinstance(creator, model.User)
 
     @staticmethod
     def is_legal_dashboard(dashboard: Optional[str]) -> bool:
@@ -521,9 +530,13 @@ class Project(db.Model):
         return folder is None or (isinstance(folder, str) and len(folder) > 0)
 
     @staticmethod
-    def is_legal_data_source(source: Optional[pc.DataSource]) -> bool:
+    def is_legal_data_source(
+        source: Optional[model.project_components.DataSource],
+    ) -> bool:
         """Check whether the provided source is a legal project data source."""
-        return source is None or isinstance(source, pc.DataSource)
+        return source is None or isinstance(
+            source, model.project_components.DataSource
+        )
 
     @staticmethod
     def is_legal_description(description: str) -> bool:
@@ -543,9 +556,9 @@ class Project(db.Model):
         )
 
     @staticmethod
-    def is_legal_location(location: pc.Location) -> bool:
+    def is_legal_location(location: model.project_components.Location) -> bool:
         """Check whether the provided location is a legal location."""
-        return isinstance(location, pc.Location)
+        return isinstance(location, model.project_components.Location)
 
     @staticmethod
     def is_legal_name(name: str) -> bool:
@@ -557,14 +570,16 @@ class Project(db.Model):
         )
 
     @staticmethod
-    def is_legal_partner(partner: person.Partner) -> bool:
+    def is_legal_partner(partner: model.person.Partner) -> bool:
         """Check whether the provided partner is legal for a project."""
-        return isinstance(partner, person.Partner)
+        return isinstance(partner, model.person.Partner)
 
     @staticmethod
-    def is_legal_project_component(component: pc.ProjectComponent) -> bool:
+    def is_legal_project_component(
+        component: model.project_components.ProjectComponent,
+    ) -> bool:
         """Check if the provided component is a legal project component."""
-        return isinstance(component, pc.ProjectComponent)
+        return isinstance(component, model.project_components.ProjectComponent)
 
     @staticmethod
     def is_legal_save_data_flag(flag: bool) -> bool:
@@ -572,29 +587,29 @@ class Project(db.Model):
         return isinstance(flag, bool)
 
     @staticmethod
-    def is_legal_sdg(sdg: pc.SDG) -> bool:
+    def is_legal_sdg(sdg: model.project_components.SDG) -> bool:
         """Check whether the provided SDG is legal."""
-        return isinstance(sdg, pc.SDG)
+        return isinstance(sdg, model.project_components.SDG)
 
     @staticmethod
-    def is_legal_student(student: person.Student) -> bool:
+    def is_legal_student(student: model.person.Student) -> bool:
         """Check whether the provided student is legal for a project."""
-        return isinstance(student, person.Student)
+        return isinstance(student, model.person.Student)
 
     @staticmethod
-    def is_legal_subscription(sub: fw.Subscription) -> bool:
+    def is_legal_subscription(sub: model.followup_work.Subscription) -> bool:
         """Check whether the provided subscription is a legal subscription."""
-        return isinstance(sub, fw.Subscription)
+        return isinstance(sub, model.followup_work.Subscription)
 
     @staticmethod
-    def is_legal_supervisor(supervisor: person.Supervisor) -> bool:
+    def is_legal_supervisor(supervisor: model.person.Supervisor) -> bool:
         """Check whether the provided supervisor is legal for a project."""
-        return isinstance(supervisor, person.Supervisor)
+        return isinstance(supervisor, model.person.Supervisor)
 
     @staticmethod
     def is_legal_task(task: Any) -> bool:
         """Check whether the provided task is legal."""
-        return isinstance(task, fw.Task)
+        return isinstance(task, model.followup_work.Task)
 
     @staticmethod
     def is_legal_work_folder(folder: str) -> bool:
@@ -639,7 +654,9 @@ class Project(db.Model):
         self.description = description
 
     # TODO: Convert to python setter
-    def set_location(self, location: pc.Location) -> None:
+    def set_location(
+        self, location: model.project_components.Location
+    ) -> None:
         """Set the location for this project."""
         if not self.is_legal_location(location):
             raise ValueError(
@@ -662,7 +679,7 @@ class Project(db.Model):
     # TODO: Add python getter
     # TODO: Add addition and removal functions for SDG
     # TODO: Convert to python setter
-    def set_sdgs(self, sdgs: list[pc.SDG]) -> None:
+    def set_sdgs(self, sdgs: list[model.project_components.SDG]) -> None:
         """Set the list of SDGs for this project."""
         if not self.are_legal_sdgs(sdgs):
             raise ValueError(
@@ -671,10 +688,12 @@ class Project(db.Model):
             )
 
         self.sdgs = sdgs if sdgs else []
-        self.sdgs_db = [pc.SdgDB(sdg) for sdg in self.sdgs]
+        self.sdgs_db = [
+            model.project_components.SdgDB(sdg) for sdg in self.sdgs
+        ]
 
     # TODO: Convert to python setter
-    def set_contact_person(self, contact: person.Person) -> None:
+    def set_contact_person(self, contact: model.person.Person) -> None:
         """Set the contact person for this project."""
         if not self.is_legal_contact_person(contact):
             raise ValueError(
@@ -687,7 +706,7 @@ class Project(db.Model):
     # TODO: Add getter
     # TODO: Add addition and removal methods
     # TODO: Convert to python setter
-    def set_students(self, students: list[person.Student]) -> None:
+    def set_students(self, students: list[model.person.Student]) -> None:
         """Set the students for this project."""
         if not self.are_legal_students(students):
             raise ValueError(
@@ -700,7 +719,7 @@ class Project(db.Model):
     # TODO: Add getter
     # TODO: Add addition and removal methods
     # TODO: Convert to python setter
-    def set_supervisors(self, supers: list[person.Supervisor]) -> None:
+    def set_supervisors(self, supers: list[model.person.Supervisor]) -> None:
         """Set the supervisors for this project."""
         if not self.are_legal_supervisors(supers):
             raise ValueError(
@@ -713,7 +732,7 @@ class Project(db.Model):
     # TODO: Add getter
     # TODO: Add addition and removal methods
     # TODO: Convert to python setter
-    def set_partners(self, partners: list[person.Partner]) -> None:
+    def set_partners(self, partners: list[model.person.Partner]) -> None:
         """Set the partners for this project."""
         if not self.are_legal_partners(partners):
             raise ValueError(
@@ -724,7 +743,9 @@ class Project(db.Model):
         self.partners = partners
 
     # TODO: Convert to python setter
-    def set_data_source(self, source: Optional[pc.DataSource]) -> None:
+    def set_data_source(
+        self, source: Optional[model.project_components.DataSource]
+    ) -> None:
         """Set the datasource for this project."""
         if not self.is_legal_data_source(source):
             raise ValueError(
@@ -795,7 +816,7 @@ class Project(db.Model):
     # TODO: Add getter
     # TODO: Add addition and removal methods
     # TODO: Convert to python setter
-    def set_tasks(self, tasks: list[fw.Task]) -> None:
+    def set_tasks(self, tasks: list[model.followup_work.Task]) -> None:
         """Set the tasks for this project."""
         if not self.are_legal_tasks(tasks):
             raise ValueError("Provided tasks list is invalid")
@@ -805,7 +826,9 @@ class Project(db.Model):
     # TODO: Add getter
     # TODO: Add addition and removal methods
     # TODO: Convert to python setter
-    def set_subscriptions(self, subs: list[fw.Subscription]) -> None:
+    def set_subscriptions(
+        self, subs: list[model.followup_work.Subscription]
+    ) -> None:
         """Set the subscriptions for this project."""
         if not self.are_legal_subscriptions(subs):
             raise ValueError("Provided subscriptions list is invalid")
@@ -819,9 +842,13 @@ class Project(db.Model):
 
     # Other methods #
 
-    def _add_component(self, component: pc.ProjectComponent) -> None:
+    def _add_component(
+        self, component: model.project_components.ProjectComponent
+    ) -> None:
         """Add a project component to this project's components list."""
-        if not isinstance(component, pc.ProjectComponent):
+        if not isinstance(
+            component, model.project_components.ProjectComponent
+        ):
             raise TypeError(
                 "Argument 'component' should not be None and of type "
                 "ProjectComponent"
@@ -855,39 +882,39 @@ class Project(db.Model):
     @staticmethod
     def _update_params_check(params: ProjectArgs) -> None:
         """Check whether the provided update parameters a legal."""
-        if "name" in params and not Project.is_legal_name(params["name"]):
-            raise ValueError(
-                "Argument 'name' has an illegal value for updating."
-            )
-
-        if (
-            "implementation_date" in params
-            and not Project.is_legal_implementation_date(
-                params["implementation_date"]
-            )
-        ):
-            raise ValueError(
-                "Argument 'date' has an illegal value for updating."
-            )
-
-        if "description" in params and not Project.is_legal_description(
-            params["description"]
-        ):
-            raise ValueError(
-                "Argument 'description' has an illegal value for updating."
-            )
-
-        if "work_folder" in params and not Project.is_legal_work_folder(
-            params["work_folder"]
-        ):
-            raise ValueError(
-                "Argument 'work_folder' has an illegal value for updating."
-            )
-
-        if "sdgs" in params and not Project.are_legal_sdgs(params["sdgs"]):
-            raise ValueError(
-                "Argument 'sdgs' has an illegal value for updating."
-            )
+        # if "name" in params and not Project.is_legal_name(params["name"]):
+        #     raise ValueError(
+        #         "Argument 'name' has an illegal value for updating."
+        #     )
+        #
+        # if (
+        #     "implementation_date" in params
+        #     and not Project.is_legal_implementation_date(
+        #         params["implementation_date"]
+        #     )
+        # ):
+        #     raise ValueError(
+        #         "Argument 'date' has an illegal value for updating."
+        #     )
+        #
+        # if "description" in params and not Project.is_legal_description(
+        #     params["description"]
+        # ):
+        #     raise ValueError(
+        #         "Argument 'description' has an illegal value for updating."
+        #     )
+        #
+        # if "work_folder" in params and not Project.is_legal_work_folder(
+        #     params["work_folder"]
+        # ):
+        #     raise ValueError(
+        #         "Argument 'work_folder' has an illegal value for updating."
+        #     )
+        #
+        # if "sdgs" in params and not Project.are_legal_sdgs(params["sdgs"]):
+        #     raise ValueError(
+        #         "Argument 'sdgs' has an illegal value for updating."
+        #     )
 
     # pylint: disable=too-many-branches
     def _update_general(self, params: ProjectArgs) -> None:
@@ -896,155 +923,163 @@ class Project(db.Model):
         Update the attributes of this object that refer to general aspects of
         a project. These attributes are applicable to all projects.
         """
-        if "location" in params:
-            # TODO: find a way to separate checks (di and snapshot maybe)
-            self.location.update(**params["location"])
-
-        if "name" in params:
-            self.name = params["name"]
-
-        if "implementation_date" in params:
-            self.implementation_date = params["implementation_date"]
-
-        if "description" in params:
-            self.description = params["description"]
-
-        if "work_folder" in params:
-            self.work_folder = params["work_folder"]
-
-        if "sdgs" in params:
-            self.set_sdgs(params["sdgs"])
-
-        if "students" in params:
-            self.set_students(
-                utils.merge_update_list(
-                    self.students,
-                    params["students"],
-                    list(map(lambda dic: dic["email"], params["students"])),
-                    lambda stu: stu.email,
-                    lambda stu, dic: stu.update(**dic),
-                    lambda dic: person.construct_person(
-                        lambda stu: person.Student(**stu), dic
-                    ),
-                )
-            )
-        if "supervisors" in params:
-            self.set_supervisors(
-                utils.merge_update_list(
-                    self.supervisors,
-                    params["supervisors"],
-                    list(map(lambda dic: dic["email"], params["supervisors"])),
-                    lambda sup: sup.email,
-                    lambda sup, dic: sup.update(**dic),
-                    lambda dic: person.construct_person(
-                        lambda sup: person.Supervisor(**sup), dic
-                    ),
-                )
-            )
-        if "partners" in params:
-            self.set_partners(
-                utils.merge_update_list(
-                    self.partners,
-                    params["partners"],
-                    list(map(lambda dic: dic["email"], params["partners"])),
-                    lambda par: par.email,
-                    lambda par, dic: par.update(**dic),
-                    lambda dic: person.construct_person(
-                        lambda par: person.Partner(**par), dic, True
-                    ),
-                )
-            )
-        if "contact_person" in params:
-            # First use the existing people as a contact person
-            # if that person already exists
-            for per in self.students + self.supervisors + self.partners:
-                if per.email == params["contact_person"]["email"]:
-                    self.contact_person = per
-                    break
-            else:
-                # This code block is only executed if the beak
-                # statement wasn't called
-                contact = person.construct_person(
-                    person.get_constructor_from_type(
-                        params["contact_person"].pop("contact_type")
-                    ),
-                    params["contact_person"],
-                )
-
-                if not self.is_legal_contact_person(contact):
-                    raise ValueError(
-                        "Argument 'contact_person' has an illegal value "
-                        "for updating."
-                    )
-
-                self.contact_person = contact
+        # if "location" in params:
+        #     # TODO: find a way to separate checks (di and snapshot maybe)
+        #     self.location.update(**params["location"])
+        #
+        # if "name" in params:
+        #     self.name = params["name"]
+        #
+        # if "implementation_date" in params:
+        #     self.implementation_date = params["implementation_date"]
+        #
+        # if "description" in params:
+        #     self.description = params["description"]
+        #
+        # if "work_folder" in params:
+        #     self.work_folder = params["work_folder"]
+        #
+        # if "sdgs" in params:
+        #     self.set_sdgs(params["sdgs"])
+        #
+        # if "students" in params:
+        #     self.set_students(
+        #         model.utils.merge_update_list(
+        #             self.students,
+        #             params["students"],
+        #             list(map(lambda dic: dic["email"], params["students"])),
+        #             lambda stu: stu.email,
+        #             lambda stu, dic: stu.update(**dic),
+        #             lambda dic: model.person.construct_person(
+        #                 lambda stu: model.person.Student(**stu), dic
+        #             ),
+        #         )
+        #     )
+        # if "supervisors" in params:
+        #     self.set_supervisors(
+        #         model.utils.merge_update_list(
+        #             self.supervisors,
+        #             params["supervisors"],
+        #             list(map(
+        #               lambda dic: dic["email"],
+        #               params["supervisors"]
+        #             )),
+        #             lambda sup: sup.email,
+        #             lambda sup, dic: sup.update(**dic),
+        #             lambda dic: model.person.construct_person(
+        #                 lambda sup: model.person.Supervisor(**sup), dic
+        #             ),
+        #         )
+        #     )
+        # if "partners" in params:
+        #     self.set_partners(
+        #         model.utils.merge_update_list(
+        #             self.partners,
+        #             params["partners"],
+        #             list(map(lambda dic: dic["email"], params["partners"])),
+        #             lambda par: par.email,
+        #             lambda par, dic: par.update(**dic),
+        #             lambda dic: model.person.construct_person(
+        #                 lambda par: model.person.Partner(**par), dic, True
+        #             ),
+        #         )
+        #     )
+        # if "contact_person" in params:
+        #     # First use the existing people as a contact person
+        #     # if that person already exists
+        #     for per in self.students + self.supervisors + self.partners:
+        #         if per.email == params["contact_person"]["email"]:
+        #             self.contact_person = per
+        #             break
+        #     else:
+        #         # This code block is only executed if the beak
+        #         # statement wasn't called
+        #         contact = model.person.construct_person(
+        #             model.person.get_constructor_from_type(
+        #                 params["contact_person"].pop("contact_type")
+        #             ),
+        #             params["contact_person"],
+        #         )
+        #
+        #         if not self.is_legal_contact_person(contact):
+        #             raise ValueError(
+        #                 "Argument 'contact_person' has an illegal value "
+        #                 "for updating."
+        #             )
+        #
+        #         self.contact_person = contact
 
     # pylint: enable=too-many-branches
 
     # pylint: disable=too-many-branches
     def _update_followup(self, params: ProjectArgs) -> None:
         """Update the follow-up attributes of this project."""
-        if "tasks" in params:
-            if new_tasks := params["tasks"]:
-                self.set_tasks(
-                    utils.merge_update_list(
-                        self.tasks,
-                        new_tasks,
-                        list(map(lambda d: d["name"], new_tasks)),
-                        lambda ta: ta.name,
-                        lambda ta, dic: ta.update(**dic),
-                        lambda dic: fw.construct_followup_work(
-                            lambda ta: fw.Task(**ta), dic
-                        ),
-                    )
-                )
-            else:
-                self.set_tasks([])
-
-        if "data_source" in params:
-            if params["data_source"] is None:
-                self.data_source = None
-                self.set_subscriptions([])
-                self.dashboard = None
-                self.save_data = False
-            else:
-                if self.data_source is not None:
-                    self.data_source.update(**params["data_source"])
-                else:
-                    self.set_data_source(
-                        self.build_data_source(params["data_source"])
-                    )
-
-        if self.data_source is not None:
-            if "subscriptions" in params:
-                if new_subs := params["subscriptions"]:
-                    self.set_subscriptions(
-                        utils.merge_update_list(
-                            self.subscriptions,
-                            new_subs,
-                            list(
-                                map(
-                                    lambda dic: dic["subscriber"]["name"],
-                                    new_subs,
-                                )
-                            ),
-                            lambda sub: sub.subscriber.name,
-                            lambda sub, dic: sub.update(**dic),
-                            lambda dic: fw.construct_followup_work(
-                                lambda sub: fw.Subscription(**sub), dic
-                            ),
-                        )
-                    )
-                else:
-                    self.set_subscriptions([])
-            if "dashboard" in params:
-                self.set_dashboard(params["dashboard"])
-            if "save_data" in params:
-                self.set_save_data(params["save_data"])
+        # construct_fw = model.followup_work.construct_followup_work
+        #
+        # if "tasks" in params:
+        #     if new_tasks := params["tasks"]:
+        #         self.set_tasks(
+        #             model.utils.merge_update_list(
+        #                 self.tasks,
+        #                 new_tasks,
+        #                 list(map(lambda d: d["name"], new_tasks)),
+        #                 lambda ta: ta.name,
+        #                 lambda ta, dic: ta.update(**dic),
+        #                 lambda dic: construct_fw(
+        #                     lambda ta: model.followup_work.Task(**ta), dic
+        #                 ),
+        #             )
+        #         )
+        #     else:
+        #         self.set_tasks([])
+        #
+        # if "data_source" in params:
+        #     if params["data_source"] is None:
+        #         self.data_source = None
+        #         self.set_subscriptions([])
+        #         self.dashboard = None
+        #         self.save_data = False
+        #     else:
+        #         if self.data_source is not None:
+        #             self.data_source.update(**params["data_source"])
+        #         else:
+        #             self.set_data_source(
+        #                 self.build_data_source(params["data_source"])
+        #             )
+        #
+        # if self.data_source is not None:
+        #     if "subscriptions" in params:
+        #         if new_subs := params["subscriptions"]:
+        #             self.set_subscriptions(
+        #                 model.utils.merge_update_list(
+        #                     self.subscriptions,
+        #                     new_subs,
+        #                     list(
+        #                         map(
+        #                             lambda dic: dic["subscriber"]["name"],
+        #                             new_subs,
+        #                         )
+        #                     ),
+        #                     lambda sub: sub.subscriber.name,
+        #                     lambda sub, dic: sub.update(**dic),
+        #                     lambda dic: construct_fw(
+        #                         lambda sub: model.followup_work.Subscription(
+        #                             **sub
+        #                         ),
+        #                         dic,
+        #                     ),
+        #                 )
+        #             )
+        #         else:
+        #             self.set_subscriptions([])
+        #     if "dashboard" in params:
+        #         self.set_dashboard(params["dashboard"])
+        #     if "save_data" in params:
+        #         self.set_save_data(params["save_data"])
 
     # pylint: enable=too-many-branches
 
-    def subscribe(self, sub: fw.Subscription) -> None:
+    def subscribe(self, sub: model.followup_work.Subscription) -> None:
         """Add the provided subscription to the project's subscriptions."""
         if not self.is_legal_subscription(sub):
             raise ValueError("Provided subscription is not valid")
@@ -1059,7 +1094,7 @@ class Project(db.Model):
 
         self.subscriptions.append(sub)
 
-    def unsubscribe(self, sub: fw.Subscription) -> None:
+    def unsubscribe(self, sub: model.followup_work.Subscription) -> None:
         """Remove the given subscription from the project's subscriptions."""
         if not self.is_legal_subscription(sub):
             raise ValueError("Provided subscription is invalid")
@@ -1067,7 +1102,7 @@ class Project(db.Model):
         if sub in self.subscriptions:
             self.subscriptions.remove(sub)
 
-    def add_task(self, task: fw.Task) -> None:
+    def add_task(self, task: model.followup_work.Task) -> None:
         """Add the provided task to the project's tasks."""
         if not self.is_legal_task(task):
             raise ValueError("Provided task is not valid")
@@ -1079,7 +1114,7 @@ class Project(db.Model):
 
         self.tasks.append(task)
 
-    def remove_task(self, task: fw.Task) -> None:
+    def remove_task(self, task: model.followup_work.Task) -> None:
         """Remove the provided task from the project's tasks."""
         if not self.is_legal_task(task):
             raise ValueError("Provided task is invalid")
@@ -1087,9 +1122,11 @@ class Project(db.Model):
         if task in self.tasks:
             self.tasks.remove(task)
 
-    def build_data_source(self, data: dict[str, Any]) -> pc.DataSource:
+    def build_data_source(
+        self, data: dict[str, Any]
+    ) -> model.project_components.DataSource:
         """Build a correct folder source for this instance."""
-        return pc.DataSource(**data)
+        return model.project_components.DataSource(**data)
 
     @abstractmethod
     def update(self, params: ProjectArgs) -> Project:
@@ -1099,13 +1136,13 @@ class Project(db.Model):
         """
         # TODO: Reorder function, first checks, then apply changes
 
-        self._update_params_check(params)
-
-        self._update_general(params)
-
-        self._update_followup(params)
-
-        return self
+        # self._update_params_check(params)
+        #
+        # self._update_general(params)
+        #
+        # self._update_followup(params)
+        #
+        # return self
 
     def get_credentials(self) -> dict[str, Any]:
         """Get the folder source credentials.
@@ -1253,15 +1290,19 @@ class EnergyProject(Project):
         super().load_from_file(data)
 
         for comp, params in data["components"].items():
-            if comp == pc.Battery.LABEL:
-                params["battery_type"] = pc.Battery.BatteryType.from_str(
+            if comp == model.project_components.Battery.LABEL:
+                params[
+                    "battery_type"
+                ] = model.project_components.Battery.BatteryType.from_str(
                     params["battery_type"]
                 )
-                self._add_component(pc.Battery(**params))
-            elif comp == pc.Grid.LABEL:
-                self._add_component(pc.Grid(**params))
-            elif comp == pc.Generator.LABEL:
-                self._add_component(pc.Generator(**params))
+                self._add_component(model.project_components.Battery(**params))
+            elif comp == model.project_components.Grid.LABEL:
+                self._add_component(model.project_components.Grid(**params))
+            elif comp == model.project_components.Generator.LABEL:
+                self._add_component(
+                    model.project_components.Generator(**params)
+                )
 
     def __repr__(self) -> str:
         """Provide a string representation for this instance."""
@@ -1282,11 +1323,67 @@ class ProjectFactory:
     """Factory class used for constructing energy projects."""
 
     @staticmethod
-    def get_project() -> Project:
+    def get_project(
+        category: ProjectCategory, params: dict[str, Any]
+    ) -> Project:
         """Construct project with the provided parameters."""
-        # TODO: Write factory function
+        project_class = category.class_name
+        return project_class(**params)
 
     @staticmethod
-    def get_project_component() -> pc.ProjectComponent:
+    def get_project_component() -> model.project_components.ProjectComponent:
         """Construct the project component with the provided parameters."""
         # TODO: Write factory function
+
+
+# --------------------------
+# --- Project Categories ---
+# --------------------------
+# Placed in the same file to directly link to classes without circular imports
+# Placed at the end so that classes are already known
+# (they are not type hints anymore)
+
+
+class ProjectCategory(Enum):
+    """Definition of recognized project categories.
+
+    Humasol project are executed within the scope of a project category, which
+    describes the main objectives of the project or used resources
+    (e.g., energy).
+
+    Definitions contain:
+    ENUM_VALUE = (category name, matching project class)
+    """
+
+    ENERGY = ("energy", EnergyProject)
+
+    @staticmethod
+    def categories() -> tuple[ProjectCategory, ...]:
+        """Provide a list of all project categories."""
+        return tuple(ProjectCategory.__members__.values())
+
+    # Pylint doesn't detect the members of enum subclasses (as of 2.12.2022)
+    # pylint: disable=no-member
+    @property
+    def category_name(self) -> str:
+        """Provide lower case name of the category."""
+        return self._value_[0]
+
+    @property
+    def class_name(self) -> Type[Project]:
+        """Provide class corresponding to the project category."""
+        return self._value_[1]
+
+    # pylint: enable=no-member
+
+    @staticmethod
+    def from_string(category: str) -> ProjectCategory:
+        """Provide enum value representing the given string."""
+        if category not in ProjectCategory.__members__:
+            raise ValueError("Unexpected category.")
+
+        return ProjectCategory.__members__[category]
+
+
+if __name__ == "__main__":
+    print("Hello World!")

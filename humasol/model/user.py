@@ -19,7 +19,7 @@ from enum import Enum
 from flask_security import RoleMixin, UserMixin
 
 # Local modules
-from ..repository import db
+from humasol.repository import db
 
 users_role = db.Table(
     "users_role",

@@ -18,15 +18,16 @@ from flask_security import utils as sec_util
 from flask_security.forms import form_errors_munge
 
 # Local modules
-from humasol.model import model_authorization as ma
+from werkzeug.datastructures import MultiDict
 
-from . import utils
-from .forms import ProjectForm
+from humasol.model import model_authorization as ma
+from humasol.ui import utils
+from humasol.ui.forms import ProjectForm
 
 if TYPE_CHECKING:
     # This is necessary for type checking and to avoid cyclic
     # imports at runtime
-    from .app import HumasolApp
+    from humasol.ui.app import HumasolApp
 
 
 # Type alias for clarity
@@ -123,14 +124,26 @@ class GUI(Blueprint):
     def add_project(self) -> Response:
         """Add a new project to the system.
 
-        Parse the completed project form to contruct a project and save it
+        Parse the completed project form to construct a project and save it
         to the database.
 
         Parameters
         __________
         form    -- Completed project form
         """
-        return redirect(url_for("gui.view_projects"))
+        form = ProjectForm(request.form)
+
+        if form.validate_on_submit():
+            print("Received form, success")
+            self.app.create_project(form.get_data())
+
+            return redirect(url_for("gui.view_projects"))
+
+        print("Form validation failed:")
+        print(form.errors)
+        self.app.get_session()["project_form"] = request.form
+
+        return redirect(url_for("gui.view_add_project"))
 
     @roles_accepted(*ROLES_ARCHIVE_PROJECT)
     def archive_project(self, project_id: int) -> None:
@@ -335,7 +348,11 @@ class GUI(Blueprint):
         _______
         Return a HTML project form page.
         """
-        form = ProjectForm()
+        if form_data := self.app.get_session().get("project_form", None):
+            self.app.get_session().pop("project_form")
+            form = ProjectForm(MultiDict(form_data))
+        else:
+            form = ProjectForm()
 
         return render_template(
             "project/form_add_project.html", form=form, show_followup=False

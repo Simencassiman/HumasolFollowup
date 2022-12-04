@@ -7,20 +7,19 @@ keeps Humasol and partners informed about the projects' status and operations.
 
 # Python Libraries
 from functools import reduce
-
-# Local modules
 from typing import Optional
 
-from ..model.project_categories import ProjectCategory
+# Local modules
+from humasol import model
 
 # TODO: convert managers lists to automated class detections
 
 
-API_MANAGERS = {ProjectCategory.ENERGY: {"VictronAPI"}}
+API_MANAGERS = {model.ProjectCategory.ENERGY: {"VictronAPI"}}
 
 
 def api_manager_exists(
-    manager: str, category: Optional[ProjectCategory] = None
+    manager: str, category: Optional[model.ProjectCategory] = None
 ) -> bool:
     """Check whether the provided API manager exists.
 
@@ -40,7 +39,7 @@ def api_manager_exists(
 
 
 DATA_MANAGERS = {
-    ProjectCategory.ENERGY: {
+    model.ProjectCategory.ENERGY: {
         "GridDataManager",
         "BatteryDataManager",
         "GeneratorDataManager",
@@ -52,7 +51,7 @@ DATA_MANAGERS = {
 
 
 def data_manager_exists(
-    manager: str, category: Optional[ProjectCategory] = None
+    manager: str, category: Optional[model.ProjectCategory] = None
 ) -> bool:
     """Check whether the provided folder manager exists.
 
@@ -71,11 +70,11 @@ def data_manager_exists(
     return manager in data_managers
 
 
-REPORT_MANAGERS = {ProjectCategory.ENERGY: {"EnergyReportManager"}}
+REPORT_MANAGERS = {model.ProjectCategory.ENERGY: {"EnergyReportManager"}}
 
 
 def report_manager_exists(
-    manager: str, category: Optional[ProjectCategory] = None
+    manager: str, category: Optional[model.ProjectCategory] = None
 ) -> bool:
     """Check whether the provided report manager exists.
 

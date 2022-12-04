@@ -8,9 +8,11 @@ import json
 import os
 
 # Local modules
-from .. import config as cf
-from .. import model
-from ..repository import db
+from typing import Any
+
+from humasol import model
+from humasol.config import config as cf
+from humasol.repository import db
 
 # TODO: remove pylint disable
 # pylint: disable=unused-argument
@@ -36,7 +38,7 @@ def create_db_tables() -> None:
 
 # Pylint doesn't seem to detect inner class
 # pylint: disable=no-member
-def create_project(parameters: model.Project.ProjectArgs) -> model.Project:
+def create_project(parameters: dict[str, Any]) -> model.Project:
     """Create a project from the provided project parameters.
 
     Parameters
@@ -48,6 +50,73 @@ def create_project(parameters: model.Project.ProjectArgs) -> model.Project:
     _______
     Project object created with the provided parameters and without ID.
     """
+    try:
+        # Create sub-objects
+        parameters["location"] = model.Location(
+            model.Address(**parameters["location"]["address"]),
+            model.Coordinates(**parameters["location"]["coordinates"]),
+        )
+        category = model.ProjectCategory.from_string(parameters["category"])
+
+        # Create people objects
+        parameters["students"] = [
+            model.person.construct_person(model.Student, params)
+            for params in parameters["students"]
+        ]
+
+        parameters["supervisors"] = [
+            model.person.construct_person(model.Supervisor, params)
+            for params in parameters["supervisors"]
+        ]
+
+        parameters["partners"] = [
+            model.person.construct_person(model.Partner, params)
+            for params in parameters["partners"]
+        ]
+
+        parameters["contact_person"] = model.person.construct_person(
+            model.person.get_constructor_from_type(
+                parameters["contact_person"].pop("type")
+            ),
+            parameters["contact_person"],
+        )
+
+        parameters["sdgs"] = [
+            model.SDG.from_str(sdg) for sdg in parameters["sdgs"]
+        ]
+
+        # Create follow-up objects
+        if "data_source" in parameters:
+            parameters["data_source"] = model.DataSource(
+                **parameters["data_source"]
+            )
+
+        if "tasks" in parameters and parameters["tasks"] is not None:
+            parameters["tasks"] = [
+                model.followup_work.construct_followup_work(model.Task, params)
+                for params in parameters["tasks"]
+            ]
+
+        if (
+            "subscriptions" in parameters
+            and parameters["subscriptions"] is not None
+        ):
+            parameters["subscriptions"] = [
+                model.followup_work.construct_followup_work(
+                    model.Subscription, params
+                )
+                for params in parameters["subscriptions"]
+            ]
+
+        # Create project object
+        project = model.ProjectFactory.get_project(category, parameters)
+    except KeyError as exc:
+        # TODO: create proper exceptions structure
+        raise exc from exc
+
+    # Save new project to the database
+
+    return project
 
 
 # pylint: enable=no-member

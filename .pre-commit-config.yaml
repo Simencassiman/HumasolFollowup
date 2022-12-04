@@ -34,6 +34,7 @@ repos:
     rev: 5.10.1
     hooks:
     -   id: isort
+        exclude: .*__init__.py$
         args:
           - --line-length=79
           - --profile=black

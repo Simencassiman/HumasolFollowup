@@ -15,9 +15,10 @@ from .person import (  # noqa
     Student,
     Supervisor,
 )
-from .project import EnergyProject, Project  # noqa
-from .project_categories import ProjectCategory  # noqa
 from .project_components import (  # noqa
+    Address,
+    Coordinates,
+    SDG,
     Battery,
     DataSource,
     EnergyProjectComponent,
@@ -26,4 +27,13 @@ from .project_components import (  # noqa
     Location,
     ProjectComponent,
 )
-from .user import Role, User  # noqa
+from .user import Role, User, UserRole  # noqa
+
+
+# Must be last import to avoid problems with cyclic imports
+from .project import (  # noqa
+    EnergyProject,
+    Project,
+    ProjectCategory,
+    ProjectFactory,
+)

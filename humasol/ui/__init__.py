@@ -1,5 +1,7 @@
 """Package responsible for the UI."""
-from ..repository import db
+
+from humasol.repository import db
+
 from .app import HumasolApp
 
 

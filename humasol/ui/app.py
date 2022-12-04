@@ -19,14 +19,14 @@ from flask_security import utils as sec_util
 from flask_sqlalchemy.session import Session
 from werkzeug.local import LocalProxy
 
+from humasol import model
+
 # Local modules
-from ..config import config as cf
-from ..model import model_authorization as ma
-from ..model import model_ops
-from ..model.project import Project
-from ..model.user import User, UserRole
-from ..repository import db
-from .view import GUI
+from humasol.config import config as cf
+from humasol.model import model_authorization as ma
+from humasol.model import model_ops
+from humasol.repository import db
+from humasol.ui.view import GUI
 
 
 class HumasolApp(Flask):
@@ -49,7 +49,7 @@ class HumasolApp(Flask):
 
         # TODO: create objects it depends on
         self._migrate = None
-        self._current_user = LocalProxy[User](lambda: current_user)
+        self._current_user = LocalProxy[model.User](lambda: current_user)
         self._session: LocalProxy[SessionMixin] = LocalProxy(lambda: session)
 
         self._setup()
@@ -116,7 +116,9 @@ class HumasolApp(Flask):
 
     def _setup_security(self) -> None:
         """Set up required security for this app."""
-        user_datastore = SQLAlchemyUserDatastore(db, User, UserRole)
+        user_datastore = SQLAlchemyUserDatastore(
+            db, model.User, model.UserRole
+        )
         self.security = Security(
             self, user_datastore, register_blueprint=False
         )
@@ -149,6 +151,11 @@ class HumasolApp(Flask):
         _______
         Return the newly assigned project identifier.
         """
+        print(parameters)
+        # project = model_ops.create_project(parameters)
+        # print(project)
+
+        return -1
 
     def edit_project(self, parameters: dict[str, Any]) -> None:
         """Edit an existing project in the system.
@@ -180,7 +187,7 @@ class HumasolApp(Flask):
         Return the retrieved token as a string.
         """
 
-    def get_dashboard(self, user: User) -> dict[str, Any]:
+    def get_dashboard(self, user: model.User) -> dict[str, Any]:
         """Retrieve dashboard information for the specified user.
 
         Parameters
@@ -192,7 +199,7 @@ class HumasolApp(Flask):
         Return dictionary containing all relevant information.
         """
 
-    def get_project(self, project_id: int) -> Project:
+    def get_project(self, project_id: int) -> model.Project:
         """Retrieve the project matching the project identifier.
 
         Retrieve the complete project object from storage.
@@ -207,7 +214,7 @@ class HumasolApp(Flask):
         """
         return model_ops.get_project(project_id)
 
-    def get_projects(self) -> list[Project]:
+    def get_projects(self) -> list[model.Project]:
         """Retrieve a list of all projects in the system.
 
         Returns
@@ -221,7 +228,7 @@ class HumasolApp(Flask):
         """Return this apps current session."""
         return self._session
 
-    def get_user(self) -> User:
+    def get_user(self) -> model.User:
         """Return currently logged in user."""
         return self._current_user
 
@@ -271,7 +278,7 @@ class HumasolApp(Flask):
         role        -- UserRole of the user w.r.t. the system and Humasol
         """
 
-    def search(self, value: str) -> list[Project]:
+    def search(self, value: str) -> list[model.Project]:
         """Search the projects database for attributes matching the value.
 
         Parameters

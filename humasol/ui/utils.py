@@ -4,7 +4,7 @@ from functools import reduce
 from typing import TypeVar
 
 # Local modules
-from ..model import Project
+from humasol.model import Project
 
 T = TypeVar("T")
 
@@ -38,6 +38,6 @@ def categorize_projects(projects: list[Project]) -> dict[str, list[Project]]:
 
     return reduce(
         lambda dic, kv: add_to_dict(dic, *kv),
-        map(lambda pr: (pr.category.content, pr), projects),
+        map(lambda pr: (pr.category.category_name, pr), projects),
         {},
     )

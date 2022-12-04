@@ -19,17 +19,16 @@ import datetime
 import re
 from datetime import date
 from enum import Enum, unique
-from typing import Any, Callable, Dict, List, Optional, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 from dateutil.relativedelta import relativedelta
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declared_attr
 
-from ..repository import db
-
 # Local modules
-from . import person, utils
+from humasol.model import person, utils
+from humasol.repository import db
 
 
 class FollowupWork(db.Model):
@@ -838,13 +837,9 @@ def filter_dict(params: dict[str, Any], keys: list[str]) -> dict[str, Any]:
 
 
 T = TypeVar("T", bound=FollowupWork)
-# TODO: Add typed dicts to classes and use those for typing Constructor
-Constructor = Callable[[dict[str, Any]], T]
 
 
-def construct_followup_work(
-    constructor: Constructor[T], params: Dict[str, Any]
-) -> T:
+def construct_followup_work(constructor: Type[T], params: Dict[str, Any]) -> T:
     """Construct the appropriate follow-up work.
 
     Construct the correct class of followup work based on a factory method
@@ -859,38 +854,11 @@ def construct_followup_work(
     _______
     An object subclassing FollowupWork.
     """
-    sub_type = params.pop("sub_type")
-
-    if sub_type == person.Student.LABEL:
-        params["subscriber"] = person.construct_person(
-            lambda d: person.Student(**d),
-            filter_dict(
-                params,
-                ["name", "email", "university", "field_of_study", "phone"],
-            ),
-        )
-    elif sub_type == person.Supervisor.LABEL:
-        params["subscriber"] = person.construct_person(
-            lambda d: person.Supervisor(**d),
-            filter_dict(params, ["person_name", "email", "function", "phone"]),
-        )
-    elif sub_type == person.Partner.LABEL:
-        params["subscriber"] = person.construct_person(
-            lambda d: person.Partner(**d),
-            filter_dict(
-                params,
-                ["person_name", "email", "function", "organization", "phone"],
-            ),
-            is_partner=True,
-        )
-    else:
-        raise RuntimeError(
-            f"Unexpected task subscriber type. "
-            f"Expected one of {person.Student.LABEL}, "
-            f"{person.Supervisor.LABEL} or {person.Partner.LABEL}, "
-            f'got: {params["sub_type"]}'
-        )
+    params["subscriber"] = person.construct_person(
+        person.get_constructor_from_type(params["subscriber"].pop("type")),
+        params["subscriber"],
+    )
 
     params["periods"] = list(map(lambda p: Period(**p), params["periods"]))
 
-    return constructor(params)
+    return constructor(**params)

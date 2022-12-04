@@ -1,11 +1,9 @@
 """This package contains all the code for the Humasol webapp."""
 
-# Python Libraries
-from dotenv import load_dotenv
-
 # Local Modules
-from .ui.app import HumasolApp
+from . import model  # noqa
+from . import repository  # noqa
+from . import script  # noqa
+from . import ui
 
-load_dotenv()
-
-app = HumasolApp()
+app = ui.app.HumasolApp()

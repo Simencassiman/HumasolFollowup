@@ -34,8 +34,8 @@ from enum import Enum, unique
 from typing import Any, Optional, Union
 
 # Local modules
-from ..repository import db
-from ..script import same_category_managers
+import humasol
+from humasol.repository import db
 
 
 # TODO: implement RSA
@@ -419,6 +419,14 @@ class SDG(Enum):
     GOAL_16 = "Goal 16"
     GOAL_17 = "Goal 17"
 
+    @staticmethod
+    def from_str(name: str) -> SDG:
+        """Provide SDG by name."""
+        if name not in SDG.__members__:
+            raise ValueError("Unexpected SDG name.")
+
+        return SDG.__members__[name]
+
     # pylint doesn't recognize enum subclasses (yet)
     # pylint: disable=no-member
     @property
@@ -585,7 +593,7 @@ class DataSource(db.Model):
         api_manager: str, data_manager: str, report_manager: str
     ) -> bool:
         """Check if the provided managers and their combination are legal."""
-        return same_category_managers(
+        return humasol.script.same_category_managers(
             api_manager, data_manager, report_manager
         )
 
@@ -672,7 +680,7 @@ class DataSource(db.Model):
             if report_manager is not None
             else self.report_manager
         )
-        if not same_category_managers(api, data, report):
+        if not humasol.script.same_category_managers(api, data, report):
             raise ValueError(
                 "Arguments 'api_manager', 'data_manager' "
                 "and 'report_manager' "

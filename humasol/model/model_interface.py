@@ -3,15 +3,12 @@
 # Python Libraries
 
 # Local modules
-from . import followup_work as fw
-from . import person, project
-from . import project_components as pc
-from .project_categories import ProjectCategory as cat
+from humasol import model
 
 
 def get_battery_label() -> str:
     """Provide label of the Battery class."""
-    return pc.Battery.LABEL
+    return model.Battery.LABEL
 
 
 def get_battery_type_values() -> tuple[tuple[str, str], ...]:
@@ -23,28 +20,28 @@ def get_battery_type_values() -> tuple[tuple[str, str], ...]:
     name of the battery type and the second is the value.
     """
     return tuple(
-        (k, str(v)) for k, v in pc.Battery.BatteryType.__members__.items()
+        (k, str(v)) for k, v in model.Battery.BatteryType.__members__.items()
     )
 
 
 def get_belgian_partner_label() -> str:
     """Provide label of the BelgianPartner class."""
-    return person.BelgianPartner.LABEL
+    return model.BelgianPartner.LABEL
 
 
 def get_generator_label() -> str:
     """Provide label of the Generator class."""
-    return pc.Generator.LABEL
+    return model.Generator.LABEL
 
 
 def get_grid_label() -> str:
     """Provide label of the Grid class."""
-    return pc.Grid.LABEL
+    return model.Grid.LABEL
 
 
 def get_partner_label() -> str:
     """Provide label of the Partner class."""
-    return person.Partner.LABEL
+    return model.Partner.LABEL
 
 
 def get_project_categories() -> tuple[tuple[str, str], ...]:
@@ -55,12 +52,15 @@ def get_project_categories() -> tuple[tuple[str, str], ...]:
     Tuple of tuples containing two strings. The first one indicates the name
     of the project category and the second is the value.
     """
-    return tuple((p_cat.name, p_cat.content) for p_cat in cat.categories())
+    return tuple(
+        (p_cat.name, p_cat.category_name)
+        for p_cat in model.ProjectCategory.categories()
+    )
 
 
 def get_project_max_students() -> int:
     """Provide the maximum number of students per project."""
-    return project.Project.MAX_STUDENTS
+    return model.Project.MAX_STUDENTS
 
 
 def get_sdgs() -> tuple[tuple[str, str], ...]:
@@ -71,22 +71,22 @@ def get_sdgs() -> tuple[tuple[str, str], ...]:
     Tuple of tuples containing two strings. The first string indicates the
     name of the SDG and the second is its value.
     """
-    return tuple((k, v.goal_name) for k, v in pc.SDG.__members__.items())
+    return tuple((k, v.goal_name) for k, v in model.SDG.__members__.items())
 
 
 def get_southern_partner_label() -> str:
     """Provide label of the SouthernPartner class."""
-    return person.SouthernPartner.LABEL
+    return model.SouthernPartner.LABEL
 
 
 def get_student_label() -> str:
     """Provide label of the Student class."""
-    return person.Student.LABEL
+    return model.Student.LABEL
 
 
 def get_supervisor_label() -> str:
     """Provide label of the Supervisor class."""
-    return person.Supervisor.LABEL
+    return model.Supervisor.LABEL
 
 
 def get_time_unit_items() -> tuple[tuple[str, str], ...]:
@@ -98,7 +98,7 @@ def get_time_unit_items() -> tuple[tuple[str, str], ...]:
     time unit and the second one is its value.
     """
     return tuple(
-        (k, str(v)) for k, v in fw.Period.TimeUnit.__members__.items()
+        (k, str(v)) for k, v in model.Period.TimeUnit.__members__.items()
     )
 
 

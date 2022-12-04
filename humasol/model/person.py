@@ -29,14 +29,14 @@ SouthernPartner -- Class representing an organisation from a project country
 from __future__ import annotations
 
 import re
-from typing import Any, Callable, Dict, Optional, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declared_attr
 
 # Local modules
-from ..repository import db
+from humasol.repository import db
 
 # TODO: add python setters to check new assignments
 
@@ -897,11 +897,7 @@ class SouthernPartner(Organization):
 T = TypeVar("T", bound=Person)
 
 
-def construct_person(
-    constructor: Callable[[Dict], T],
-    params: Dict[str, Any],
-    is_partner: bool = False,
-) -> T:
+def construct_person(constructor: Type[T], params: dict[str, Any]) -> T:
     """Construct a person object.
 
     Constructs an object subclassing Person with the provided parameters. Do
@@ -917,38 +913,25 @@ def construct_person(
     _______
     Return object subclassing Person.
     """
-    # TODO: check if it's a partner based on the constructor
-    if is_partner:
-        params["organization"]["logo"] = "logo.png"
+    if issubclass(constructor, Partner):
+        match (partner_type := params["organization"].pop("type")):
+            case BelgianPartner.LABEL:
+                params["organization"] = BelgianPartner(
+                    **params["organization"]
+                )
+            case SouthernPartner.LABEL:
+                SouthernPartner(**params["organization"])
+            case _:
+                raise RuntimeError(
+                    f"Unexpected partner type. Expected one of "
+                    f"{BelgianPartner.LABEL} or "
+                    f"{SouthernPartner.LABEL}. Got: {partner_type}."
+                )
 
-        partner_type = params.pop("partner_type")
-        if partner_type == BelgianPartner.LABEL:
-            organization = BelgianPartner(
-                name=params["organization"]["name"],
-                logo=params["organization"]["logo"],
-            )
-        elif partner_type == SouthernPartner.LABEL:
-            organization = SouthernPartner(
-                name=params["organization"]["name"],
-                logo=params["organization"]["logo"],
-                country=params["organization"]["country"],
-            )
-        else:
-            raise RuntimeError(
-                f"Unexpected partner type. Expected one of "
-                f"{BelgianPartner.LABEL} or "
-                f"{SouthernPartner.LABEL}. Got: {partner_type}."
-            )
-
-        params["organization"] = organization
-
-    if "partner_type" in params:
-        del params["partner_type"]
-
-    return constructor(params)
+    return constructor(**params)
 
 
-def get_constructor_from_type(person_type: str) -> Callable[[Dict], Person]:
+def get_constructor_from_type(person_type: str) -> Type[Person]:
     """Return class constructor associated with the given person_type label.
 
     Provides the constructor callable for a subclass of person.
@@ -962,15 +945,12 @@ def get_constructor_from_type(person_type: str) -> Callable[[Dict], Person]:
     _______
     Return constructor for a subclass of person.
     """
-    # TODO: convert to dict access
-    # Lambda is necessary for the correct return person_type
-    # pylint: disable=unnecessary-lambda
-    if person_type == Student.LABEL:
-        return lambda p: Student(**p)
-    if person_type == Supervisor.LABEL:
-        return lambda p: Supervisor(**p)
-    if person_type == Partner.LABEL:
-        return lambda p: Partner(**p)
-    # pylint: enable=unnecessary-lambda
+    match person_type:
+        case Student.LABEL:
+            return Student
+        case Supervisor.LABEL:
+            return Supervisor
+        case Partner.LABEL:
+            return Partner
 
     raise ValueError(f"Unexpected person person_type. Got: {person_type}")

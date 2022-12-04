@@ -296,9 +296,11 @@
                 }
             }
 
+            console.log(selected)
+
             var content;
             switch(selected) {
-                case "energy":
+                case "ENERGY":
                     content = {{ blanks.wrap(project_specifics.energy(form.specifics)) }};
                     break;
                 default:

@@ -56,8 +56,8 @@ def get_object_by_id(obj_class: Type[T], obj_id: int) -> T:
     """
     obj = obj_class.query.get(obj_id)
 
-    if hasattr(obj, "load_from_file"):
-        obj.load_from_file(_get_data_from_file(obj.data_file))
+    # if hasattr(obj, "load_from_file"):
+    #     obj.load_from_file(_get_data_from_file(obj.data_file))
 
     return obj
 
@@ -74,4 +74,5 @@ def save_project(project: model.Project) -> None:
     # pylint: enable=no-member
 
     # Save to file
-    _save_project_data_to_file(project.to_save_to_file(), project.data_file)
+    # TODO: figure out how to do it on heroku
+    # _save_project_data_to_file(project.to_save_to_file(), project.data_file)

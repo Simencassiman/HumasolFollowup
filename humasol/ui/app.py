@@ -151,11 +151,22 @@ class HumasolApp(Flask):
         _______
         Return the newly assigned project identifier.
         """
-        print(parameters)
-        # project = model_ops.create_project(parameters)
-        # print(project)
+        if (
+            parameters["location"]["coordinates"]["latitude"] is None
+            or parameters["location"]["coordinates"]["longitude"] is None
+        ):
+            parameters["location"]["coordinates"] = {
+                "latitude": 0.0,
+                "longitude": 0.0,
+            }
 
-        return -1
+        parameters["creator"] = self.get_user()
+        parameters["creation_date"] = datetime.date.today()
+
+        project = model_ops.create_project(parameters)
+        model_ops.save_project(project)
+
+        return project.id
 
     def edit_project(self, parameters: dict[str, Any]) -> None:
         """Edit an existing project in the system.

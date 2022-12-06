@@ -139,7 +139,7 @@ def is_legal_followup_last_notification(
     __________
     notification    -- Date of last notification of the job's subscriber
     """
-    return fw.FollowupWork.is_legal_last_notification(notification)
+    return fw.FollowupJob.is_legal_last_notification(notification)
 
 
 def is_legal_generator_cooldown_time(time: Optional[float]) -> bool:

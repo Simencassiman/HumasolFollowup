@@ -5,7 +5,7 @@ Package containing all code regarding models used to store and pass
 information.
 """
 
-from .followup_work import FollowupWork, Period, Subscription, Task  # noqa
+from .followup_work import FollowupJob, Period, Subscription, Task  # noqa
 from .person import (  # noqa
     BelgianPartner,
     Organization,

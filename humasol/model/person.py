@@ -34,14 +34,17 @@ from typing import Any, Optional, Type, TypeVar
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.orm import DeclarativeMeta
 
 # Local modules
 from humasol.repository import db
 
 # TODO: add python setters to check new assignments
 
+BaseModel: DeclarativeMeta = db.Model
 
-class Person(db.Model):
+
+class Person(BaseModel):
     """Abstract base class for a person working for/with Humasol.
 
     Attributes
@@ -72,7 +75,9 @@ class Person(db.Model):
     @declared_attr
     def organization_name(self) -> SQLAlchemy.Colum:
         """Return organization name database column."""
-        return db.Column(db.String, db.ForeignKey("organization.name"))
+        return db.Column(
+            db.String, db.ForeignKey("organization.name", ondelete="SET NULL")
+        )
 
     @declared_attr
     def organization(self) -> orm.RelationshipProperty:
@@ -256,7 +261,9 @@ class Student(Person):
 
     # Definitions for the database tables #
     __tablename__ = "student"
-    id = db.Column(None, db.ForeignKey("person.id"), primary_key=True)
+    id = db.Column(
+        None, db.ForeignKey("person.id", ondelete="CASCADE"), primary_key=True
+    )
 
     __mapper_args__ = {
         "polymorphic_identity": "student",
@@ -392,7 +399,9 @@ class Supervisor(Person):
 
     # Definitions for the database tables #
     __tablename__ = "supervisor"
-    id = db.Column(None, db.ForeignKey("person.id"), primary_key=True)
+    id = db.Column(
+        None, db.ForeignKey("person.id", ondelete="CASCADE"), primary_key=True
+    )
 
     __mapper_args__ = {
         "polymorphic_identity": "supervisor",
@@ -497,7 +506,9 @@ class Partner(Person):
 
     # Definitions for the database tables #
     __tablename__ = "partner"
-    id = db.Column(None, db.ForeignKey("person.id"), primary_key=True)
+    id = db.Column(
+        None, db.ForeignKey("person.id", ondelete="CASCADE"), primary_key=True
+    )
 
     __mapper_args__ = {
         "polymorphic_identity": "partner",
@@ -510,11 +521,6 @@ class Partner(Person):
         return Person.__table__.c.get(
             "function", db.Column(db.String, nullable=False)
         )
-
-    @declared_attr
-    def organization(self) -> orm.RelationshipProperty:
-        """Return database relationship object to Organization."""
-        return db.relationship("Organization", lazy="subquery")
 
     # End of database definitions #
 
@@ -633,7 +639,7 @@ class Partner(Person):
         return "Partner(" + super().__repr__() + f", function={self.function})"
 
 
-class Organization(db.Model):
+class Organization(BaseModel):
     """Abstract base class representation of an organisation.
 
     People related to a project are also related to an organisation. This class
@@ -920,7 +926,9 @@ def construct_person(constructor: Type[T], params: dict[str, Any]) -> T:
                     **params["organization"]
                 )
             case SouthernPartner.LABEL:
-                SouthernPartner(**params["organization"])
+                params["organization"] = SouthernPartner(
+                    **params["organization"]
+                )
             case _:
                 raise RuntimeError(
                     f"Unexpected partner type. Expected one of "

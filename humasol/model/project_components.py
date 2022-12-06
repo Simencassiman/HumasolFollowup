@@ -33,9 +33,13 @@ from dataclasses import dataclass
 from enum import Enum, unique
 from typing import Any, Optional, Union
 
+from sqlalchemy.orm import DeclarativeMeta
+
 # Local modules
 import humasol
 from humasol.repository import db
+
+BaseModel: DeclarativeMeta = db.Model
 
 
 # TODO: implement RSA
@@ -53,7 +57,7 @@ def decrypt(value: str) -> str:
     return value[-1] + value[:-1]
 
 
-class Address(db.Model):
+class Address(BaseModel):
     """Class representing an address of a physical place.
 
     Attributes
@@ -66,7 +70,9 @@ class Address(db.Model):
 
     # Definitions for database tables #
     location_id = db.Column(
-        db.Integer, db.ForeignKey("location.project_id"), primary_key=True
+        db.Integer,
+        db.ForeignKey("location.project_id", ondelete="CASCADE"),
+        primary_key=True,
     )
     street = db.Column(db.String)
     number = db.Column(db.Integer)
@@ -230,7 +236,7 @@ class Address(db.Model):
         return self
 
 
-class Coordinates(db.Model):
+class Coordinates(BaseModel):
     """Class representing geographical coordinates of a physical place.
 
     Attributes
@@ -241,7 +247,9 @@ class Coordinates(db.Model):
 
     # Definitions for database tables #
     location_id = db.Column(
-        db.Integer, db.ForeignKey("location.project_id"), primary_key=True
+        db.Integer,
+        db.ForeignKey("location.project_id", ondelete="CASCADE"),
+        primary_key=True,
     )
     longitude = db.Column(db.Float, nullable=False)
     latitude = db.Column(db.Float, nullable=False)
@@ -314,18 +322,20 @@ class Coordinates(db.Model):
         return self
 
 
-class Location(db.Model):
+class Location(BaseModel):
     """Class representing a physical location in the world."""
 
     # Definitions for the database tables #
     project_id = db.Column(
-        db.Integer, db.ForeignKey("project.id"), primary_key=True
+        db.Integer,
+        db.ForeignKey("project.id", ondelete="CASCADE"),
+        primary_key=True,
     )
     address = db.relationship(
-        Address, lazy=True, cascade="all, delete-orphan", uselist=False
+        Address, lazy=True, cascade="all, delete", uselist=False
     )
     coordinates = db.relationship(
-        Coordinates, lazy=True, cascade="all, delete-orphan", uselist=False
+        Coordinates, lazy=True, cascade="all, delete", uselist=False
     )
 
     # End database definitions #
@@ -388,12 +398,12 @@ class Location(db.Model):
         """Provide a string representation of this instance."""
         return (
             f"Location("
-            f"street={self.street}, "
-            f"number={self.number}, "
-            f"place={self.place}, "
-            f"country={self.country}, "
-            f"latitude={self.latitude}, "
-            f"longitude={self.longitude}"
+            f"street={self.address.street}, "
+            f"number={self.address.number}, "
+            f"place={self.address.place}, "
+            f"country={self.address.country}, "
+            f"latitude={self.coordinates.latitude}, "
+            f"longitude={self.coordinates.longitude}"
             f")"
         )
 
@@ -463,7 +473,7 @@ class SDG(Enum):
 
 # Disable pylint complaint. Wrapper class is needed for the database.
 # pylint: disable=too-few-public-methods
-class SdgDB(db.Model):
+class SdgDB(BaseModel):
     """Wrapper class for the SDG enum.
 
     The wrapper class is used to store the custom enum values in the database
@@ -489,7 +499,7 @@ class SdgDB(db.Model):
 # pylint: enable=too-few-public-methods
 
 
-class DataSource(db.Model):
+class DataSource(BaseModel):
     """Class representing a project data source.
 
     Projects can log data about their operations. These get collected in some

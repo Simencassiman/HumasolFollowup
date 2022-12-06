@@ -38,6 +38,6 @@ def categorize_projects(projects: list[Project]) -> dict[str, list[Project]]:
 
     return reduce(
         lambda dic, kv: add_to_dict(dic, *kv),
-        map(lambda pr: (pr.category.category_name, pr), projects),
+        map(lambda pr: (pr.category, pr), projects),
         {},
     )

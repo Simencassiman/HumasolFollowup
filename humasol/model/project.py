@@ -25,35 +25,60 @@ from functools import reduce
 from typing import Any, Optional, Type, TypedDict, TypeVar, Union
 
 from sqlalchemy import orm
+from sqlalchemy.orm import DeclarativeMeta
 
-# Local modules
 from humasol import model
 from humasol.repository import db
+
+# Local modules
+
+
+BaseModel: DeclarativeMeta = db.Model
 
 # Relationship tables between database entities
 project_students = db.Table(
     "project_student",
-    db.Column("project_id", db.Integer, db.ForeignKey("project.id")),
+    db.Column(
+        "project_id",
+        db.Integer,
+        db.ForeignKey("project.id", ondelete="CASCADE"),
+    ),
     db.Column("student_id", db.Integer, db.ForeignKey("person.id")),
 )
 project_supers = db.Table(
     "project_super",
-    db.Column("project_id", db.Integer, db.ForeignKey("project.id")),
+    db.Column(
+        "project_id",
+        db.Integer,
+        db.ForeignKey("project.id", ondelete="CASCADE"),
+    ),
     db.Column("supervisor_id", db.Integer, db.ForeignKey("person.id")),
 )
 project_partners = db.Table(
     "project_partners",
-    db.Column("project_id", db.Integer, db.ForeignKey("project.id")),
+    db.Column(
+        "project_id",
+        db.Integer,
+        db.ForeignKey("project.id", ondelete="CASCADE"),
+    ),
     db.Column("partner_id", db.Integer, db.ForeignKey("person.id")),
 )
 project_contact = db.Table(
     "project_contact",
-    db.Column("project_id", db.Integer, db.ForeignKey("project.id")),
+    db.Column(
+        "project_id",
+        db.Integer,
+        db.ForeignKey("project.id", ondelete="CASCADE"),
+    ),
     db.Column("contact_id", db.Integer, db.ForeignKey("person.id")),
 )
 project_sdg_table = db.Table(
     "project_sdg",
-    db.Column("project_id", db.Integer, db.ForeignKey("project.id")),
+    db.Column(
+        "project_id",
+        db.Integer,
+        db.ForeignKey("project.id", ondelete="CASCADE"),
+    ),
     db.Column(
         "sdg",
         db.Enum(model.project_components.SDG),
@@ -72,7 +97,7 @@ project_sdg_table = db.Table(
 # TODO: check if can remove pylint deactivation when used setters
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-instance-attributes
-class Project(db.Model):
+class Project(BaseModel):
     """Abstract base class for all Humasol project.
 
     Projects executed by Humasol teams can be represented by subclasses of
@@ -132,7 +157,7 @@ class Project(db.Model):
     code = db.Column(db.String, index=True, unique=True, nullable=False)
     creation_date = db.Column(db.DateTime, index=True, nullable=False)
     implementation_date = db.Column(db.DateTime, index=True, nullable=False)
-    # description saved to file
+    description = db.Column(db.Text, nullable=False)
     category = db.Column(db.String, index=True, nullable=False)
     type = db.Column(db.String(50))  # Used for internal mapping by SQLAlchemy
     location = db.relationship(
@@ -381,7 +406,7 @@ class Project(db.Model):
         self.creation_date = creation_date
         self.implementation_date = implementation_date
         self.description = description
-        self.category = category
+        self.category = category.name
         self.location = location
         self.work_folder = work_folder
         self.dashboard = dashboard
@@ -455,7 +480,7 @@ class Project(db.Model):
         """Check whether the provided SDG list is legal."""
         return (
             isinstance(sdgs, (list, tuple))
-            and len(sdgs) > Project.MIN_SDGS
+            and len(sdgs) >= Project.MIN_SDGS
             and all(map(Project.is_legal_sdg, sdgs))
         )
 
@@ -1221,7 +1246,7 @@ class EnergyProject(Project):
     # Definitions for the database tables #
     power = db.Column(db.Float)
 
-    __mapper_args__ = {"polymorphic_identity": "energy_project"}
+    __mapper_args__ = {"polymorphic_identity": "ENERGY"}
 
     # End database definitions #
 
@@ -1288,6 +1313,9 @@ class EnergyProject(Project):
     def load_from_file(self, data: dict[str, Any]) -> None:
         """Populate this instance with information loaded from file."""
         super().load_from_file(data)
+
+        if "components" not in data:
+            return
 
         for comp, params in data["components"].items():
             if comp == model.project_components.Battery.LABEL:

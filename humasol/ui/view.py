@@ -135,12 +135,18 @@ class GUI(Blueprint):
 
         if form.validate_on_submit():
             print("Received form, success")
-            self.app.create_project(form.get_data())
 
-            return redirect(url_for("gui.view_projects"))
+            project_id = self.app.create_project(form.get_data())
+
+            self.app.get_session()["project_id"] = project_id
+
+            return redirect(url_for("gui.view_project"))
 
         print("Form validation failed:")
+
+        # TODO: use flash messages
         print(form.errors)
+
         self.app.get_session()["project_form"] = request.form
 
         return redirect(url_for("gui.view_add_project"))

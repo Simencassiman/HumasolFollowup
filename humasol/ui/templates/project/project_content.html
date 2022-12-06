@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">{{ project.name }}</h1>
-    <a class="nav button button-secondary" href="{{url_for('edit_project', id=project.id)}}">Edit</a>
+    <!--<a class="nav button button-secondary" href="">Edit</a>-->
 </div>
 
 <div class="project-content">
@@ -9,12 +9,12 @@
         <div class="project-row space">
             <div class="project-col">
                 <p>Project category: {{ project.category|capitalize }}</p>
-                <p>Date of completion: {{ project.date.strftime('%d-%m-%Y') }}</p>
+                <p>Date of completion: {{ project.implementation_date.strftime('%d-%m-%Y') }}</p>
             </div>
             <div class="project-col location">
                 <p>Project location</p>
-                <p>{{ project.location.street }}, {{ project.location.number }}</p>
-                <p>{{ project.location.place }}, {{ project.location.country }}</p>
+                <p>{{ project.location.address.street }}, {{ project.location.address.number }}</p>
+                <p>{{ project.location.address.place }}, {{ project.location.address.country }}</p>
             </div>
         </div>
         <div class="description">
@@ -30,7 +30,7 @@
                     <!-- <img src="{{ sdg.icon }}"> -->
                     <div class="sdg-card">
                         <img src="{{  url_for('static', filename=sdg.icon) }}" class="circle">
-                        <p class="sdg-name">{{ sdg.name }}</p>
+                        <p class="sdg-name">{{ sdg.goal_name }}</p>
                     </div>
                 </a>
             {% endfor %}
@@ -161,8 +161,8 @@
 
                         {% for period in task.periods %}
                         <p>
-                            Every {{ period.period }}
-                            {% if period.period > 1 %}
+                            Every {{ period.interval }}
+                            {% if period.interval > 1 %}
                             {{ period.get_unit() }}s,
                             {% else %}
                             {{ period.get_unit() }},
@@ -225,8 +225,8 @@
                     </p>
                     {% for period in sub.periods %}
                     <p>
-                        Every {{ period.period }}
-                        {% if period.period > 1 %}
+                        Every {{ period.interval }}
+                        {% if period.interval > 1 %}
                         {{ period.get_unit() }}s,
                         {% else %}
                         {{ period.get_unit() }},

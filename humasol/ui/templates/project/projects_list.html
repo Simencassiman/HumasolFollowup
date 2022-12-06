@@ -9,15 +9,15 @@
 
             {% for project in ps %}
                 <div class="project">
-                    <a href="{{ url_for('project', id=project.id) }}">
+                    <a href="{{ url_for('gui.view_project') }}?id={{ project.id }}">
                         <div class="project-card">
                             <div class="col">
                                 <div class="row">
                                     <h3>{{ project.name }}</h3>
-                                    <p>{{ project.date.strftime('%d-%m-%Y') }}</p>
+                                    <p>{{ project.implementation_date.strftime('%d-%m-%Y') }}</p>
                                 </div>
                                 <div class="row">
-                                    <p>{{ project.location.country }}</p>
+                                    <p>{{ project.location.address.country }}</p>
                                 </div>
                             </div>
                         </div>

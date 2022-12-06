@@ -25,13 +25,16 @@ from dateutil.relativedelta import relativedelta
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.orm import DeclarativeMeta
 
 # Local modules
 from humasol.model import person, utils
 from humasol.repository import db
 
+BaseModel: DeclarativeMeta = db.Model
 
-class FollowupWork(db.Model):
+
+class FollowupJob(BaseModel):
     """Abstract base class for work related to project follow-up.
 
     Humasol is interested in carrying out various tasks to follow a finished
@@ -105,24 +108,24 @@ class FollowupWork(db.Model):
         """
         # Disable pylint. Need type to ignore subclasses
         # pylint: disable=unidiomatic-typecheck
-        if type(self) == FollowupWork:
+        if type(self) == FollowupJob:
             raise TypeError(
                 "FollowupWork is an abstract class and cannot be instantiated"
             )
         # pylint: enable=unidiomatic-typecheck
 
-        if not FollowupWork.is_legal_subscriber(subscriber):
+        if not FollowupJob.is_legal_subscriber(subscriber):
             raise TypeError(
                 "Parameter 'subscriber' should not be None and of a "
                 "subclass of Person"
             )
 
-        if not FollowupWork.are_legal_periods(periods):
+        if not FollowupJob.are_legal_periods(periods):
             raise ValueError(
                 "Parameter 'periods' must be a list and contain unique Periods"
             )
 
-        if not FollowupWork.is_legal_last_notification(last_notification):
+        if not FollowupJob.is_legal_last_notification(last_notification):
             raise ValueError(
                 "Parameter 'last_notification' should be a date "
                 "(of type datetime.date) in the future, or None"
@@ -266,7 +269,7 @@ class FollowupWork(db.Model):
             )
         )
 
-    def update(self, **params: Any) -> FollowupWork:
+    def update(self, **params: Any) -> FollowupJob:
         """Update this instance with the provided new parameters.
 
         Valid parameters are those passed to the __init__ method.
@@ -319,7 +322,7 @@ class FollowupWork(db.Model):
         )
 
 
-class Subscription(FollowupWork):
+class Subscription(FollowupJob):
     """Class representing a subscription to a project.
 
     A project can log data about its operations. People related to Humasol can
@@ -350,7 +353,7 @@ class Subscription(FollowupWork):
         return "Subscription(" + super().__repr__() + ")"
 
 
-class Task(FollowupWork):
+class Task(FollowupJob):
     """Class representing a project task.
 
     To follow up a project certain tasks might need to be executed (e.g.,
@@ -451,7 +454,7 @@ class Task(FollowupWork):
 
         self.function = function
 
-    def update(self, **params: Any) -> FollowupWork:
+    def update(self, **params: Any) -> FollowupJob:
         """Update this instance with the provided new parameters.
 
         Valid parameters are those passed to the __init__ method.
@@ -490,7 +493,7 @@ class Task(FollowupWork):
         )
 
 
-class Period(db.Model):
+class Period(BaseModel):
     """Class representing a period over which a job is active.
 
     Jobs can be active for different intervals during different extents of
@@ -836,7 +839,7 @@ def filter_dict(params: dict[str, Any], keys: list[str]) -> dict[str, Any]:
     return {key: params["subscriber"][key] for key in keys}
 
 
-T = TypeVar("T", bound=FollowupWork)
+T = TypeVar("T", bound=FollowupJob)
 
 
 def construct_followup_work(constructor: Type[T], params: Dict[str, Any]) -> T:
@@ -854,6 +857,7 @@ def construct_followup_work(constructor: Type[T], params: Dict[str, Any]) -> T:
     _______
     An object subclassing FollowupWork.
     """
+    print(params["subscriber"])
     params["subscriber"] = person.construct_person(
         person.get_constructor_from_type(params["subscriber"].pop("type")),
         params["subscriber"],

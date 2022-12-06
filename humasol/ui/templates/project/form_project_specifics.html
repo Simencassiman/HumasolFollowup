@@ -1,5 +1,5 @@
 {% macro get(form) -%}
-    {% if form.category.data == 'energy' %}
+    {% if form.category.data == 'ENERGY' %}
         {{ energy(form.specifics) }}
     {% endif %}
 {%- endmacro %}

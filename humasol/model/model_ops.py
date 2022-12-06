@@ -4,14 +4,11 @@ All functions must be called from within an application context.
 """
 
 # Python Libraries
-import json
-import os
-
-# Local modules
 from typing import Any
 
+# Local modules
 from humasol import model
-from humasol.config import config as cf
+from humasol import repository as repo
 from humasol.repository import db
 
 # TODO: remove pylint disable
@@ -56,7 +53,9 @@ def create_project(parameters: dict[str, Any]) -> model.Project:
             model.Address(**parameters["location"]["address"]),
             model.Coordinates(**parameters["location"]["coordinates"]),
         )
-        category = model.ProjectCategory.from_string(parameters["category"])
+        category = model.ProjectCategory.from_string(
+            parameters.pop("category")
+        )
 
         # Create people objects
         parameters["students"] = [
@@ -69,17 +68,21 @@ def create_project(parameters: dict[str, Any]) -> model.Project:
             for params in parameters["supervisors"]
         ]
 
+        for params in parameters["partners"]:
+            params["organization"]["logo"] = "logo.png"
+
         parameters["partners"] = [
             model.person.construct_person(model.Partner, params)
             for params in parameters["partners"]
         ]
 
-        parameters["contact_person"] = model.person.construct_person(
-            model.person.get_constructor_from_type(
-                parameters["contact_person"].pop("type")
-            ),
-            parameters["contact_person"],
-        )
+        # parameters["contact_person"] = model.person.construct_person(
+        #     model.person.get_constructor_from_type(
+        #         parameters["contact_person"].pop("type")
+        #     ),
+        #     parameters["contact_person"],
+        # )
+        parameters["contact_person"] = parameters["students"][0]
 
         parameters["sdgs"] = [
             model.SDG.from_str(sdg) for sdg in parameters["sdgs"]
@@ -92,6 +95,12 @@ def create_project(parameters: dict[str, Any]) -> model.Project:
             )
 
         if "tasks" in parameters and parameters["tasks"] is not None:
+            for params in parameters["tasks"]:
+                for period in params["periods"]:
+                    period["unit"] = model.Period.TimeUnit.get_unit(
+                        period["unit"]
+                    )
+
             parameters["tasks"] = [
                 model.followup_work.construct_followup_work(model.Task, params)
                 for params in parameters["tasks"]
@@ -113,8 +122,6 @@ def create_project(parameters: dict[str, Any]) -> model.Project:
     except KeyError as exc:
         # TODO: create proper exceptions structure
         raise exc from exc
-
-    # Save new project to the database
 
     return project
 
@@ -151,12 +158,7 @@ def get_project(project_id: int) -> model.Project:
     __________
     project_id  -- Project identifier in the database
     """
-    project = model.Project.query.get(project_id)
-
-    with open(
-        os.path.join(cf.PROJECT_FILES, project.data_file), encoding="utf-8"
-    ) as data:
-        project.load_from_file(json.load(data))
+    project = repo.get_object_by_id(model.Project, project_id)  # type: ignore
 
     return project
 
@@ -194,6 +196,9 @@ def save_project(project: model.Project) -> None:
     Therefore, it is important that the provided project has either no ID (the
     preferred method), or one that is known not to be in the database.
     """
+    # TODO: add checks for uniqueness
+    # TODO: unify existing objects with new ones
+    repo.save_project(project)
 
 
 def search(value: str) -> list[model.Project]:

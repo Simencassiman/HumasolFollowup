@@ -3,6 +3,7 @@
 # Python Libraries
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
 
 import wtforms
@@ -32,7 +33,45 @@ if TYPE_CHECKING:
     from humasol import model
 
 
-class PersonForm(NoCsrfForm):
+# pylint: disable=too-few-public-methods
+
+
+class IHumasolForm(ABC):
+    """Humasol form interface."""
+
+    @abstractmethod
+    def get_data(self) -> dict[str, Any]:
+        """Return the data in the form fields.
+
+        Returns
+        _______
+        Dictionary mapping attributes from the corresponding models to the data
+        in the form fields.
+        """
+
+
+class MetaBaseForm(type(FlaskForm), type(ABC)):  # type: ignore
+    """Combine superclasses with distinct meta classes into one meta class."""
+
+
+class MetaNoCsrfForm(type(NoCsrfForm), type(ABC)):  # type: ignore
+    """Combine superclasses with distinct meta classes into one meta class."""
+
+
+class HumasolBaseForm(FlaskForm, IHumasolForm, ABC, metaclass=MetaBaseForm):
+    """Base form to use for any Humasol form."""
+
+
+class HumasolNoCsrfForm(
+    NoCsrfForm, IHumasolForm, ABC, metaclass=MetaNoCsrfForm
+):
+    """Superclass to use with any subform."""
+
+
+# pylint: enable=too-few-public-methods
+
+
+class PersonForm(HumasolNoCsrfForm):
     """Class for a generic person form."""
 
     person_name = StringField("Name")
@@ -52,6 +91,20 @@ class PersonForm(NoCsrfForm):
             "person_name": pers.name,
             "email": pers.email,
             "phone": pers.phone,  # if pers.phone is not None else ''
+        }
+
+    def get_data(self) -> dict[str, Any]:
+        """Return the data in the form fields.
+
+        Returns
+        _______
+        Dictionary mapping attributes from the corresponding models to the data
+        in the form fields.
+        """
+        return {
+            "name": self.person_name.data,
+            "email": self.email.data,
+            "phone": self.phone.data,
         }
 
     def validate_person_name(self, name: wtforms.StringField) -> None:
@@ -111,6 +164,20 @@ class StudentForm(PersonForm):
 
         return data
 
+    def get_data(self) -> dict[str, Any]:
+        """Return the data in the form fields.
+
+        Returns
+        _______
+        Dictionary mapping attributes from the corresponding models to the data
+        in the form fields.
+        """
+        return {
+            "university": self.university.data,
+            "field_of_study": self.field_of_study.data,
+            **super().get_data(),
+        }
+
     def validate_university(self, uni) -> None:
         """Validate form input for university."""
         if uni.data is not None:
@@ -148,6 +215,16 @@ class SupervisorForm(PersonForm):
 
         return data
 
+    def get_data(self) -> dict[str, Any]:
+        """Return the data in the form fields.
+
+        Returns
+        _______
+        Dictionary mapping attributes from the corresponding models to the data
+        in the form fields.
+        """
+        return {"function": self.function.data, **super().get_data()}
+
     def validate_function(self, function) -> None:
         """Validate form input for supervisor function."""
         if function.data is not None:
@@ -163,7 +240,7 @@ class PartnerForm(PersonForm):
     belgian_partner_type = model_interface.get_belgian_partner_label()
     southern_partner_type = model_interface.get_southern_partner_label()
 
-    class OrganizationForm(NoCsrfForm):
+    class OrganizationForm(HumasolNoCsrfForm):
         """Class for an external organization form."""
 
         organization_name = StringField("Name")
@@ -202,6 +279,25 @@ class PartnerForm(PersonForm):
             }
 
             return partner_type, data
+
+        def get_data(self) -> dict[str, Any]:
+            """Return the data in the form fields.
+
+            Returns
+            _______
+            Dictionary mapping attributes from the corresponding models to the
+            data in the form fields.
+            """
+            data = {
+                "name": self.organization_name.data,
+                "logo": self.logo.data,
+                "type": self._partner_type,
+            }
+
+            if self._partner_type == PartnerForm.southern_partner_type:
+                data["country"] = self.country.data
+
+            return data
 
         def set_validate(self, validate: bool) -> None:
             """Setter for validate flag.
@@ -277,6 +373,20 @@ class PartnerForm(PersonForm):
 
         return data
 
+    def get_data(self) -> dict[str, Any]:
+        """Return the data in the form fields.
+
+        Returns
+        _______
+        Dictionary mapping attributes from the corresponding models to the data
+        in the form fields.
+        """
+        return {
+            "function": self.function.data,
+            "organization": self.organization.get_data(),
+            **super().get_data(),
+        }
+
     def validate_function(self, function) -> None:
         """Validate form input for partner function."""
         if function.data is not None:
@@ -294,7 +404,9 @@ class PartnerForm(PersonForm):
         self.organization.set_partner_type(p_type.data)
 
 
-class SubscriberForm(StudentForm, SupervisorForm, PartnerForm):
+# TODO: solve as composition
+# pylint: disable=too-many-ancestors
+class SubscriberForm(HumasolNoCsrfForm):
     """Class for a subscriber form.
 
     A subscriber can be any type of person.
@@ -306,10 +418,34 @@ class SubscriberForm(StudentForm, SupervisorForm, PartnerForm):
     supervisor_type = model_interface.get_supervisor_label()
     partner_type = model_interface.get_partner_label()
 
+    student = FormField(StudentForm)
+    supervisor = FormField(SupervisorForm)
+    partner = FormField(PartnerForm)
+
     def __init__(self, **kwargs) -> None:
         """Instantiate the subscriber form."""
         super().__init__(**kwargs)
         self._sub_type: Optional[str] = None
+
+    def get_data(self) -> dict[str, Any]:
+        """Return the data in the form fields.
+
+        Returns
+        _______
+        Dictionary mapping attributes from the corresponding models to the data
+        in the form fields.
+        """
+        data = {"type": self._sub_type}
+
+        match self._sub_type:
+            case self.student_type:
+                return data | self.student.get_data()
+            case self.supervisor_type:
+                return data | self.supervisor.get_data()
+            case self.partner_type:
+                return data | self.partner.get_data(self)
+            case _:
+                return {}
 
     def set_sub_type(self, sub: str) -> None:
         """Set the type of subscriber.
@@ -325,41 +461,25 @@ class SubscriberForm(StudentForm, SupervisorForm, PartnerForm):
         Call super method to continue normal validation flow.
         """
         if self._sub_type == self.partner_type:
-            self.organization.set_validate(True)
+            self.partner.organization.set_validate(True)
         else:
-            self.organization.set_validate(False)
+            self.partner.organization.set_validate(False)
 
-        return super().validate(extra_validators)
-
-    def validate_university(self, uni) -> None:
-        """Validate form input for university.
-
-        Only validate this input when the subscriber is a student.
-        """
-        if self._sub_type == self.student_type:
-            super().validate_university(uni)
-
-    def validate_field_of_study(self, field) -> None:
-        """Validate form input for field of study.
-
-        Only validate this input when the subscriber is a student.
-        """
-        if self._sub_type == self.student_type:
-            super().validate_field_of_study(field)
-
-    def validate_function(self, function) -> None:
-        """Validate form input for function.
-
-        Only validate this input if the subscriber is a supervisor or a
-        partner, and select the appropriate one.
-        """
-        if self._sub_type == self.supervisor_type:
-            SupervisorForm.validate_function(self, function)
-        elif self._sub_type == self.partner_type:
-            PartnerForm.validate_function(self, function)
+        match self._sub_type:
+            case self.student_type:
+                return self.student.validate(extra_validators)
+            case self.supervisor_type:
+                return self.supervisor.validate(extra_validators)
+            case self.partner_type:
+                return self.partner.validate(extra_validators)
+            case _:
+                return False
 
 
-class LocationFrom(NoCsrfForm):
+# pylint: enable=too-many-ancestors
+
+
+class LocationFrom(HumasolNoCsrfForm):
     """Class for a project location form."""
 
     street = StringField("Street")
@@ -386,6 +506,27 @@ class LocationFrom(NoCsrfForm):
             "country": location.address.country,
             "latitude": location.coordinates.latitude,
             "longitude": location.coordinates.longitude,
+        }
+
+    def get_data(self) -> dict[str, Any]:
+        """Return the data in the form fields.
+
+        Returns
+        _______
+        Dictionary mapping attributes from the corresponding models to the data
+        in the form fields.
+        """
+        return {
+            "address": {
+                "street": self.street.data,
+                "number": self.number.data,
+                "place": self.place.data,
+                "country": self.country.data,
+            },
+            "coordinates": {
+                "latitude": self.latitude.data,
+                "longitude": self.longitude.data,
+            },
         }
 
     def validate_street(self, street) -> None:
@@ -437,7 +578,7 @@ class LocationFrom(NoCsrfForm):
             raise ValidationError("Invalid longitude")
 
 
-class DataSourceForm(NoCsrfForm):
+class DataSourceForm(HumasolNoCsrfForm):
     """Class for a project data source form."""
 
     # A data source is optional for a project,
@@ -478,13 +619,36 @@ class DataSourceForm(NoCsrfForm):
             "api_manager": data_source.api_manager,
         }
 
+    def get_data(self) -> dict[str, Any]:
+        """Return the data in the form fields.
+
+        Returns
+        _______
+        Dictionary mapping attributes from the corresponding models to the data
+        in the form fields.
+        """
+        return {
+            "source": self.source.data,
+            "username": self.username.data,
+            "password": self.password.data,
+            "token": self.token.data,
+            "api_manager": self.api_manager.data,
+        }
+
+    @property
+    def has_data(self) -> bool:
+        """Indicate whether there is data in this form."""
+        return (
+            self.source.data is not None and len(self.source.data.strip()) > 0
+        )
+
     def set_category(self, category: str) -> None:
         """Set the selected project category."""
         self._category = category
 
     def validate(self, extra_validators=None) -> bool:
         """Validate form inputs if a data source is provided."""
-        if self.source.data is None or len(self.source.data.strip()) == 0:
+        if not self.has_data:
             return True
 
         return super().validate(extra_validators)
@@ -521,7 +685,7 @@ class DataSourceForm(NoCsrfForm):
             raise ValidationError("Invalid API manager for selected category")
 
 
-class PeriodForm(NoCsrfForm):
+class PeriodForm(HumasolNoCsrfForm):
     """Class for a project follow-up task period form."""
 
     interval = IntegerField("Interval length")
@@ -546,6 +710,21 @@ class PeriodForm(NoCsrfForm):
             "unit": period.unit.name,
             "start": period.start,
             "end": period.end,
+        }
+
+    def get_data(self) -> dict[str, Any]:
+        """Return the data in the form fields.
+
+        Returns
+        _______
+        Dictionary mapping attributes from the corresponding models to the data
+        in the form fields.
+        """
+        return {
+            "interval": self.interval.data,
+            "unit": self.unit.data,
+            "start": self.start.data,
+            "end": self.end.data,
         }
 
     def validate_interval(self, interval) -> None:
@@ -573,7 +752,7 @@ class PeriodForm(NoCsrfForm):
             )
 
 
-class FollowupWorkForm(NoCsrfForm):
+class FollowupWorkForm(HumasolNoCsrfForm):
     """Class for a project follow-up work form."""
 
     student_type = SubscriberForm.student_type
@@ -594,7 +773,7 @@ class FollowupWorkForm(NoCsrfForm):
 
     @staticmethod
     def followup_work_to_dict(
-        work: model.FollowupWork,
+        work: model.FollowupJob,
     ) -> dict[str, Any | dict[str, Any] | list[dict[str, Any]]]:
         """Create a dictionary with the data from the given work object.
 
@@ -625,6 +804,19 @@ class FollowupWorkForm(NoCsrfForm):
             )
 
         return data
+
+    def get_data(self) -> dict[str, Any]:
+        """Return the data in the form fields.
+
+        Returns
+        _______
+        Dictionary mapping attributes from the corresponding models to the data
+        in the form fields.
+        """
+        return {
+            "periods": [p.get_data() for p in self.periods],
+            "subscriber": self.subscriber.get_data(),
+        }
 
     def validate(self, extra_validators=None) -> bool:
         """Validate form input.
@@ -674,6 +866,20 @@ class TaskForm(FollowupWorkForm):
 
         return data
 
+    def get_data(self) -> dict[str, Any]:
+        """Return the data in the form fields.
+
+        Returns
+        _______
+        Dictionary mapping attributes from the corresponding models to the data
+        in the form fields.
+        """
+        return {
+            "name": self.task_name.data,
+            "function": self.function.data,
+            **super().get_data(),
+        }
+
     def validate_task_name(self, name) -> None:
         """Validate form input for the task name."""
         if name.data is not None:
@@ -691,7 +897,7 @@ class TaskForm(FollowupWorkForm):
             raise ValidationError("Invalid task function")
 
 
-class EnergyProjectForm(NoCsrfForm):
+class EnergyProjectForm(HumasolNoCsrfForm):
     """Class for en energy project's specific section form.
 
     The form contains all the inputs for details specific to an energy form.
@@ -732,6 +938,16 @@ class EnergyProjectForm(NoCsrfForm):
     generator_overheats = BooleanField("The generator overheats")
     # TODO: Deactivate cool-down time if overheating is not selected
     generator_cooldown_time = FloatField("Generator cool-down time", default=0)
+
+    def get_data(self) -> dict[str, Any]:
+        """Return the data in the form fields.
+
+        Returns
+        _______
+        Dictionary mapping attributes from the corresponding models to the data
+        in the form fields.
+        """
+        return {"power": self.power.data}
 
     def validate_power(self, power) -> None:
         """Validate form input for this project's power."""
@@ -862,7 +1078,7 @@ class ProjectSpecificForm(EnergyProjectForm):
     #  at validation select correct subform to validate
 
 
-class ProjectForm(FlaskForm):
+class ProjectForm(HumasolBaseForm):
     """Form for creating a project."""
 
     # TODO: Add asterisk for required fields
@@ -941,6 +1157,51 @@ class ProjectForm(FlaskForm):
             # 'extra_data'
             "subscriptions": [],
         }
+
+    def get_data(self) -> dict[str, Any]:
+        """Return the data in the form fields.
+
+        Returns
+        _______
+        Dictionary mapping attributes from the corresponding models to the data
+        in the form fields.
+        """
+        data = {
+            "name": self.name.data,
+            "implementation_date": self.date.data,
+            "description": self.description.data,
+            "category": self.category.data,
+            "location": self.location.get_data(),
+            "work_folder": self.work_folder.data,
+            "students": [s.get_data() for s in self.students],
+            "supervisors": [s.get_data() for s in self.supervisors],
+            "partners": [p.get_data() for p in self.partners],
+            "sdgs": self.sdgs.data,
+            **self.specifics.get_data(),
+        }
+
+        data["contact_person"] = data["students"][0].copy()
+        data["contact_person"]["type"] = SubscriberForm.student_type
+
+        if len(self.tasks) > 0:
+            data["tasks"] = [t.get_data() for t in self.tasks]
+
+        if self.data_source.has_data:
+            data["data_source"] = self.data_source.get_data()
+            data["save_data"] = self.save_data.data
+
+            if (
+                self.dashboard.data is not None
+                and len(self.dashboard.data) > 0
+            ):
+                data["dashboard"] = self.dashboard.data
+
+            if len(self.subscriptions) > 0:
+                data["subscriptions"] = [
+                    s.get_data() for s in self.subscriptions
+                ]
+
+        return data
 
     def validate(self, extra_validators=None) -> bool:
         """Validate the form inputs."""

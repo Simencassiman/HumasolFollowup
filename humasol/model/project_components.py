@@ -1405,7 +1405,7 @@ class Battery(StorageComponent):
     is_primary  -- Whether this is a primary component, opposed to
                     backup or auxiliary
     capacity    -- Electrical storage capacity (kWh)
-    battery_type        -- Type of electrical battery (e.g., Lithium Ion)
+    battery_type  -- Type of electrical battery (e.g., Lithium Ion)
     base_soc    -- Base state of charge
     min_soc     -- Minimally allowed state of charge
     max_soc     -- Maximally allowed state of charge

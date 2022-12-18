@@ -29,6 +29,16 @@ def get_belgian_partner_label() -> str:
     return model.BelgianPartner.LABEL
 
 
+def get_category_energy() -> str:
+    """Provide energy category label as a string."""
+    return model.ProjectCategory.ENERGY.name
+
+
+def get_consumption_component_label() -> str:
+    """Provide energy consumption component label."""
+    return model.ConsumptionComponent.LABEL
+
+
 def get_generator_label() -> str:
     """Provide label of the Generator class."""
     return model.Generator.LABEL
@@ -61,6 +71,11 @@ def get_project_categories() -> tuple[tuple[str, str], ...]:
 def get_project_max_students() -> int:
     """Provide the maximum number of students per project."""
     return model.Project.MAX_STUDENTS
+
+
+def get_pv_label() -> str:
+    """Provide string label of the PV project component class."""
+    return model.project_components.PV.LABEL
 
 
 def get_sdgs() -> tuple[tuple[str, str], ...]:

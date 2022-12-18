@@ -139,7 +139,7 @@
                 <div id="specifics-content">
                     <!-- Specific forms for subclasses of project will be inserted here -->
                     {% if form.category.data %}
-                        {{ project_specifics.get(form) }}
+                        {{ project_specifics.get(form.specifics) }}
                     {% else %}
                         <p class="form-item">Please select a project category...</p>
                     {% endif %}
@@ -284,31 +284,8 @@
 
 {% block scripts %}
     <script type="text/javascript" src="{{ url_for('static', filename='scripts/add_project.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='scripts/utils.js') }}"></script>
     <script type="text/javascript">
-        function projectSpecifics(category) {
-            var elements = $(category).find("input")
-
-            var selected
-            for(var i in elements) {
-                if(elements[i].checked) {
-                    selected = elements[i].value
-                    break;
-                }
-            }
-
-            console.log(selected)
-
-            var content;
-            switch(selected) {
-                case "ENERGY":
-                    content = {{ blanks.wrap(project_specifics.energy(form.specifics)) }};
-                    break;
-                default:
-                    content = '';
-            }
-
-            setProjectSpecifics(content);
-        }
 
         function addStudent() {
             addElementToList('#students', {{ blanks.wrap(blanks.student()) }} );
@@ -366,6 +343,39 @@
 
         function addPeriod(elem, prefix) {
             addPeriodToList(elem, {{ blanks.wrap(blanks.period(prefix)) }}, prefix);
+        }
+    </script>
+    <script>
+        function projectSpecifics(category) {
+            let elements = $(category).find("input")
+
+            let selected
+            for(let i in elements) {
+                if(elements[i].checked) {
+                    selected = elements[i].value
+                    break;
+                }
+            }
+
+            console.log(selected)
+
+            let content;
+            let scriptId;
+            let scriptSrc;
+            switch(selected) {
+                case "ENERGY":
+                    content = {{ blanks.wrap(project_specifics.energy(form.specifics)) }};
+                    scriptId = 'energy-script'
+                    scriptSrc = '{{ url_for('static', filename='scripts/energy.js') }}';
+                    break;
+                default:
+                    content = '';
+                    scriptId = '#';
+                    script = '#';
+            }
+
+            setProjectSpecifics(content);
+            addScript(scriptId, scriptSrc)
         }
     </script>
 {% endblock %}

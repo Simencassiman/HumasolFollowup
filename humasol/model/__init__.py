@@ -18,6 +18,7 @@ from .person import (  # noqa
 from .project_components import (  # noqa
     Address,
     Coordinates,
+    ConsumptionComponent,
     SDG,
     Battery,
     DataSource,

@@ -4,6 +4,12 @@
     {% endif %}
 {%- endmacro %}
 
+{% macro default() -%}
+    <div class="form-row">
+        <p>Nothing to do here.</p>
+    </div>
+{%- endmacro %}
+
 {% macro energy(form) -%}
     <div class="form-row">
         <div>
@@ -14,7 +20,9 @@
         </div>
         {% for s in form.sources %}
         <div class="form-col form-item">
-            {{ s.component.power.label(class="form-input-label") }}
+            {{ s.component_type.label(class="form-input-label") }}
+            {{ s.component_type(class="form-input") }}
+            {{ s.component.power(class="form-input") }}
         </div>
         {% endfor %}
     </div>

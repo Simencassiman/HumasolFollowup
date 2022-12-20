@@ -1,10 +1,38 @@
 const MAX_STUDENTS = 4;
 const MAX_ENTRIES = 10;
 
+const SCRIPT_SUFFIX = '-script'
+
 
 /******************
  Project specifics
 *******************/
+
+function projectSpecifics(category) {
+    let elements = $(category).find("input")
+
+    let selected
+    for(let i in elements) {
+        if(elements[i].checked) {
+            selected = elements[i].value
+            break;
+        }
+    }
+
+    if (selected in templates_specifics) {
+        setProjectSpecifics(templates_specifics[selected]['base']);
+
+        if ('js' in templates_specifics[selected]) {
+            addScript(
+                selected.toLowerCase() + SCRIPT_SUFFIX,
+                templates_specifics[selected]['js']
+            )
+        }
+
+    } else {
+        setProjectSpecifics(templates_specifics['default']['base']);
+    }
+}
 
 function setProjectSpecifics(content) {
 
@@ -17,6 +45,73 @@ function setProjectSpecifics(content) {
     ps.html(content)
 }
 
+
+/******************
+ Add list elements
+*******************/
+function addStudent() {
+    addElementToList('#students', templates['student']);
+}
+
+function addSupervisor() {
+    addElementToList('#supervisors', templates['supervisor']);
+}
+
+function addPartner() {
+    addElementToList('#partners', templates['partner']);
+}
+
+function addTask() {
+    addElementToList('#tasks', templates['task']);
+}
+
+function addSubscription() {
+    addElementToList('#subscriptions', templates['subscription']);
+}
+
+function taskSubscriberType(selector, origin) {
+    switch(selector.value) {
+        case "stu":
+            replaceSubscriber(selector, templates['task-student']);
+            break;
+        case "sup":
+            replaceSubscriber(selector, templates['task-supervisor']);
+            break;
+        case "par":
+            replaceSubscriber(
+                selector,
+                templates['task-partner'],
+                true
+            );
+            break;
+        default:
+            break;
+    }
+}
+
+function subscriptionSubscriberType(selector, origin) {
+    switch(selector.value) {
+        case "stu":
+            replaceSubscriber(selector, templates['subscription-student']);
+            break;
+        case "sup":
+            replaceSubscriber(selector, templates['subscription-supervisor']);
+            break;
+        case "par":
+            replaceSubscriber(
+                selector,
+                templates['subscriber-partner'],
+                true
+            );
+            break;
+        default:
+            break;
+    }
+}
+
+function addPeriod(elem, prefix) {
+    addPeriodToList(elem, templates['period'], prefix);
+}
 
 /******************
  Field Lists
@@ -72,7 +167,7 @@ function renumberElements(listId, elementIdentifier) {
         insertIndex(index, inputs, labels, elementIdentifier)
 
         // If it's follow-up work then also the periods need to be renamed appropriately
-        if (liletstId == '#tasks' || listId == '#subscriptions') {
+        if (listId == '#tasks' || listId == '#subscriptions') {
             console.log('Renumbering periods');
             renumberPeriods(item.find('.form-grid'), elementIdentifier)
         }

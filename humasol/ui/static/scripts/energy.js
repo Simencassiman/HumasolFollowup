@@ -1,6 +1,7 @@
-
+const LABEL = 'ENERGY'
 function addEnergySource(element) {
     console.log("Add source")
+    console.log(templates[LABEL]['source'])
 }
 
 function addEnergyStorage(element) {

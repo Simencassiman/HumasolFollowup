@@ -284,98 +284,63 @@
 
 {% block scripts %}
     <script type="text/javascript" src="{{ url_for('static', filename='scripts/add_project.js') }}"></script>
-<script type="text/javascript" src="{{ url_for('static', filename='scripts/utils.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/utils.js') }}"></script>
     <script type="text/javascript">
 
-        function addStudent() {
-            addElementToList('#students', {{ blanks.wrap(blanks.student()) }} );
+        /*
+        Render all templates that should be injected dynamically at some point
+        using javascript.
+        Store them in a globally accessible dictionary. This can be accessed
+        from any JS script, and doing so allows to separate the actual logic
+        into a .js file.
+
+        The templates dictionary contains general components used in each
+        project form.
+
+        The templates_specifics dictionary contains templates used for specific
+        project classes. It is structured with nested dictionaries, indexed by
+        as string matching the ProjectCategory enum member name.
+        To add a new category member, simply assign a nested dictionary to the
+        category key.
+        Each nested dictionary must contain at least one entry:
+            - 'base': with the template for the rendered subform
+        Optionally it can also contain:
+            - 'js': the url to the matching static .js file which should be
+                    loaded when this category is selected
+            - self-defined keys mapping to the required rendered templates
+        */
+
+        const templates = {
+            'student': {{ blanks.wrap(blanks.student()) }},
+            'supervisor': {{ blanks.wrap(blanks.supervisor()) }},
+            'partner': {{ blanks.wrap(blanks.partner()) }},
+            'task': {{ blanks.wrap(blanks.task()) }},
+            'task-student': {{ blanks.wrap(blanks.student(False, "tasks-x-subscriber")) }},
+            'task-supervisor': {{ blanks.wrap(blanks.supervisor(False, "tasks-x-subscriber")) }},
+            'task-partner': {{ blanks.wrap(blanks.partner(False, "tasks-x-subscriber")) }},
+            'subscription': {{ blanks.wrap(blanks.subscription()) }},
+            'subscription-student': {{ blanks.wrap(blanks.student(False, "subscriptions-x-subscriber")) }},
+            'subscription-supervisor': {{ blanks.wrap(blanks.supervisor(False, "subscriptions-x-subscriber")) }},
+            'subscription-partner': {{ blanks.wrap(blanks.partner(False, "subscriptions-x-subscriber")) }},
+            'period': {{ blanks.wrap(blanks.period()) }}
         }
 
-        function addSupervisor() {
-            addElementToList('#supervisors', {{ blanks.wrap(blanks.supervisor()) }} );
+        const templates_specifics = {};
+
+        templates_specifics['default'] = {
+            'base': {{ blanks.wrap(project_specifics.default()) }}
         }
 
-        function addPartner() {
-            addElementToList('#partners', {{ blanks.wrap(blanks.partner()) }} );
+        templates_specifics['ENERGY'] = {
+            'js': '{{ url_for("static", filename="scripts/energy.js") }}',
+            'base': {{ blanks.wrap(project_specifics.energy(form.specifics.energy)) }},
+            'source': '',
+            'grid': '',
+            'generator': '',
+            'pv': '',
+            'battery': '',
+            'consumption': ''
         }
 
-        function addTask() {
-            addElementToList('#tasks', {{ blanks.wrap(blanks.task()) }} );
-        }
-
-        function addSubscription() {
-            addElementToList('#subscriptions', {{ blanks.wrap(blanks.subscription()) }} );
-        }
-
-        function taskSubscriberType(selector, origin) {
-            {% set origin = origin %}
-            switch(selector.value) {
-                case "stu":
-                    replaceSubscriber(selector, {{ blanks.wrap(blanks.student(False, "tasks-x-subscriber")) }});
-                    break;
-                case "sup":
-                    replaceSubscriber(selector, {{ blanks.wrap(blanks.supervisor(False, "tasks-x-subscriber")) }});
-                    break;
-                case "par":
-                    replaceSubscriber(selector, {{ blanks.wrap(blanks.partner(False, "tasks-x-subscriber")) }}, true);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        function subscriptionSubscriberType(selector, origin) {
-            {% set origin = origin %}
-            switch(selector.value) {
-                case "stu":
-                    replaceSubscriber(selector, {{ blanks.wrap(blanks.student(False, "subscriptions-x-subscriber")) }});
-                    break;
-                case "sup":
-                    replaceSubscriber(selector, {{ blanks.wrap(blanks.supervisor(False, "subscriptions-x-subscriber")) }});
-                    break;
-                case "par":
-                    replaceSubscriber(selector, {{ blanks.wrap(blanks.partner(False, "subscriptions-x-subscriber")) }}, true);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        function addPeriod(elem, prefix) {
-            addPeriodToList(elem, {{ blanks.wrap(blanks.period(prefix)) }}, prefix);
-        }
-    </script>
-    <script>
-        function projectSpecifics(category) {
-            let elements = $(category).find("input")
-
-            let selected
-            for(let i in elements) {
-                if(elements[i].checked) {
-                    selected = elements[i].value
-                    break;
-                }
-            }
-
-            console.log(selected)
-
-            let content;
-            let scriptId;
-            let scriptSrc;
-            switch(selected) {
-                case "ENERGY":
-                    content = {{ blanks.wrap(project_specifics.energy(form.specifics)) }};
-                    scriptId = 'energy-script'
-                    scriptSrc = '{{ url_for('static', filename='scripts/energy.js') }}';
-                    break;
-                default:
-                    content = '';
-                    scriptId = '#';
-                    script = '#';
-            }
-
-            setProjectSpecifics(content);
-            addScript(scriptId, scriptSrc)
-        }
     </script>
 {% endblock %}

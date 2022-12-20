@@ -10,14 +10,17 @@ function addElementToList(listId, element) {
     renumberElements(listId, (n) => { return n == 'x' });
 }
 
-function addScript(id, src) {
+function addScript(id, src, callback=null) {
     if ($( "#" + id ).length ) return
 
     let newScript = document.createElement("script");
     newScript.setAttribute("id", id);
     newScript.setAttribute("src", src);
     document.body.appendChild(newScript);
-    //newScript.addEventListener("load", scriptLoaded, false);
+
+    if (callback) {
+        newScript.addEventListener("load", callback, false);
+    }
 }
 
 function scriptLoaded() {

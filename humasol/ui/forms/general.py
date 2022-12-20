@@ -1103,4 +1103,4 @@ class ProjectForm(forms.HumasolBaseForm):
 
 
 if __name__ == "__main__":
-    p = ProjectSpecificForm()
+    pass

@@ -288,19 +288,22 @@ class EnergyProjectForm(forms.HumasolSubform):
     sources = FieldList(
         FormField(
             base.ProjectComponentWrapper[SourceComponentForm](
-                [GridForm, PVForm, GeneratorForm]  # type: ignore
+                SourceComponentForm
             )
-        )
+        ),
+        min_entries=2,
     )
     storage = FieldList(
         FormField(
-            base.ProjectComponentWrapper[StorageComponentForm]([BatteryForm])
+            base.ProjectComponentWrapper[StorageComponentForm](
+                StorageComponentForm
+            )
         )
     )
     loads = FieldList(
         FormField(
             base.ProjectComponentWrapper[ConsumptionComponentForm](
-                [ConsumptionComponentForm]
+                ConsumptionComponentForm
             )
         )
     )
@@ -323,5 +326,3 @@ class EnergyProjectForm(forms.HumasolSubform):
 
 if __name__ == "__main__":
     e = EnergyProjectForm()
-
-    print(e.get_data())

@@ -10,7 +10,7 @@ from wtforms import Form as NoCsrfForm
 from wtforms import SelectField, ValidationError
 from wtforms.form import FormMeta
 
-from humasol.ui.forms import utils
+from humasol.ui import forms
 
 
 class IHumasolForm(ABC):
@@ -93,7 +93,7 @@ class ProjectComponentWrapper(Generic[T]):
             self.kwargs = kwargs
 
             self._components = {
-                str(c.LABEL): c for c in utils.get_subclasses(superclass)
+                str(c.LABEL): c for c in forms.utils.get_subclasses(superclass)
             }
 
             self.component_type.choices = classes = [
@@ -114,6 +114,11 @@ class ProjectComponentWrapper(Generic[T]):
         def component_class(self) -> type[S]:
             """Return the currently active component class."""
             return self._components[self.component_type.data]
+
+        @property
+        def classes(self) -> tuple[type[S], ...]:
+            """Return the wrapped classes."""
+            return tuple(self._components.values())
 
         def get_data(self) -> dict[str, Any]:
             """Return the data in the form fields.
@@ -224,7 +229,7 @@ class ProjectComponentWrapper(Generic[T]):
         for more details.
         """
         self.wrapper = lambda **kwg: ProjectComponentWrapper.Wrapper[T](
-            *args, **{**kwargs, **kwg}
+            *args, **{**kwargs, **kwg}  # Joining kwargs avoids mypy error
         )
 
     def __call__(self, **kwargs) -> ProjectComponentWrapper.Wrapper[T]:

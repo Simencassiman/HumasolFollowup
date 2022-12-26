@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
-{% import 'project/form_blank_items.html' as blanks %}
-{% import 'project/form_project_specifics.html' as project_specifics %}
+{% import 'project/form_items/form_blank_items.html' as blanks %}
+{% import 'project/form_items/form_project_specifics.html' as project_specifics %}
+{% import 'project/form_items/energy.html' as energy %}
 
 {% block title %}
   Add Project
@@ -47,7 +48,14 @@
             </div>
 
             <div class="form-row">
-                {% include 'project/location.html' %}
+                {% include 'project/form_items/location.html' %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-col grow-one form-item">
+                    {{ form.sdgs.label(class="form-input-label") }}
+                    {{ form.sdgs(class="form-input-large", multiple=True) }}
+                </div>
             </div>
 
             <div class="form-row">
@@ -67,7 +75,7 @@
 
                             {% set deletable = True %}
                             {% for student in form.students %}
-                                {% include 'project/student.html' %}
+                                {% include 'project/form_items/student.html' %}
                             {% endfor %}
 
                         </div>
@@ -89,7 +97,7 @@
                         <div id="supervisors" class="form-col grow-one">
                             {% set deletable = True %}
                             {% for supervisor in form.supervisors %}
-                                {% include 'project/supervisor.html' %}
+                                {% include 'project/form_items/supervisor.html' %}
                             {% endfor %}
                         </div>
                     </div>
@@ -110,7 +118,7 @@
                         <div id="partners" class="form-col grow-one">
                             {% set deletable = True %}
                             {% for partner in form.partners %}
-                                {% include 'project/partner.html' %}
+                                {% include 'project/form_items/partner.html' %}
                             {% endfor %}
                         </div>
                     </div>
@@ -119,14 +127,6 @@
                             Add Partner
                         </button>
                     </div>
-                </div>
-            </div>
-
-
-            <div class="form-row">
-                <div class="form-col grow-one form-item">
-                    {{ form.sdgs.label(class="form-input-label") }}
-                    {{ form.sdgs(class="form-input-large", multiple=True) }}
                 </div>
             </div>
 
@@ -159,7 +159,7 @@
                     <div class="form-row">
                         <div id="tasks" class="form-col grow-one">
                             {% for task in form.tasks %}
-                                {% include 'project/task.html' %}
+                                {% include 'project/form_items/task.html' %}
                             {% endfor %}
                         </div>
                     </div>
@@ -250,7 +250,7 @@
                     <div class="form-row">
                         <div id="subscriptions" class="form-col grow-one">
                             {% for subscription in form.subscriptions %}
-                                {% include 'project/subscription.html' %}
+                                {% include 'project/form_items/subscription.html' %}
                             {% endfor %}
                         </div>
                     </div>
@@ -285,6 +285,10 @@
 {% block scripts %}
     <script type="text/javascript" src="{{ url_for('static', filename='scripts/add_project.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='scripts/utils.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/select_multiple.js') }}"></script>
+    <script type="text/javascript">
+        new MultiSelectTag('sdgs')  // id
+    </script>
     <script type="text/javascript">
 
         /*
@@ -334,13 +338,13 @@
         templates_specifics['ENERGY'] = {
             'js': '{{ url_for("static", filename="scripts/energy.js") }}',
             'base': {{ blanks.wrap(project_specifics.energy(form.specifics.energy)) }},
-            'source': '',
-            'grid': '',
-            'generator': '',
-            'pv': '',
-            'battery': '',
-            'consumption': ''
+            'source': {{ blanks.wrap(energy.source(unwrap(form.specifics.energy.sources))) }},
+            'generator': {{ blanks.wrap(energy.generator(_forms['energy']['generator'])) }},
+            'grid': {{ blanks.wrap(energy.grid(_forms['energy']['grid'])) }},
+            'pv': {{ blanks.wrap(energy.pv(_forms['energy']['pv'])) }},
+            'storage': {{ blanks.wrap(energy.storage(unwrap(form.specifics.energy.storage))) }},
+            'battery': {{ blanks.wrap(energy.battery(_forms['energy']['battery'])) }},
+            'consumption': {{ blanks.wrap(energy.consumption(unwrap(form.specifics.energy.loads)))}}
         }
-
     </script>
 {% endblock %}

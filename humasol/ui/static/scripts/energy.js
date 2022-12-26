@@ -1,64 +1,70 @@
 const LABEL = 'ENERGY'
-function addEnergySource(element) {
+const PREFIX = 'specifics-energy'
+
+function addEnergySource() {
     console.log("Add source")
-    console.log(templates[LABEL]['source'])
+    addElementToList(
+        '#energy-sources',
+        insertPrefix(templates_specifics[LABEL]['source'], PREFIX + '-sources-x')
+    );
 }
 
-function addEnergyStorage(element) {
+function addEnergyStorage() {
     console.log("Add storage")
+    addElementToList(
+        '#energy-storages',
+        insertPrefix(templates_specifics[LABEL]['storage'], PREFIX + '-storage-x')
+    );
 }
 
-function addEnergyLoad(element) {
+function addEnergyLoad() {
     console.log("Add load")
+    addElementToList(
+        '#energy-consumptions',
+        insertPrefix(templates_specifics[LABEL]['consumption'], PREFIX + '-consumptions-x')
+    );
 }
 
-function toggleEnergyComponent(checkbox) {
-    let row = $(checkbox).parent().parent().parent().parent().children()
+function toggleOverheats(element) {
+    const fields = ['overheating_time', 'cooldown_time']
 
-
-    row.each((idx, item) => {
-        if (idx > 0) {
-            item = $(item)
-
-            if (checkbox.checked && item.hasClass("hidden")){
-                item.removeClass("hidden")
-            } else if (!checkbox.checkbox && !item.hasClass("hidden")) {
-                item.addClass("hidden")
-            }
-        }
-    });
-
-    checkMultipleEnergySources();
+    $(element).siblings()
+        .filter(
+            (_, e) =>
+                fields.some(f => ($(e).attr('id') || $(e).attr('for')).includes(f))
+        ).each((_, elem) => $(elem).toggle(element.checked))
 }
 
-function checkMultipleEnergySources() {
-    let sources = 0
-    let components = $(".energy-component")
+function selectComponentType(selector, type) {
+    // Create a reference to the fields of that same partner
+    let card = $(selector).parent().parent()
+    let component = card.find('#component')
 
-    components.each((idx, item) => {
-        let checkbox = $($(item).children()[0]).find("input")[0]
-        console.log(checkbox);
+    let selected = component.find('#' + type)
 
-        if(checkbox.checked) {
-            sources++
+    console.log(selected.length)
+
+
+    if (selected.length > 0){
+        if (selected.hasClass("hidden")) {
+            selected.toggleClass("hidden");
         }
-    })
+    } else {
+        component.append(
+            insertPrefix(
+                templates_specifics[LABEL][type],
+                PREFIX + '-sources-x'
+            )
+        )
+        // Renumber the element in the list so the form parser will work
+        renumberElements('#' + card.parent().attr('id'), (n) => { return n == 'x' });
+    }
 
-    components.each((idx, item) => {
-        let checkbox = $($(item).children()[0]).find("input")[0]
+    component.children().each((idx, elem) => {
+        let child = $(elem)
 
-        let row = $($(item).children()[1])
-
-        if (checkbox.checked){
-            if (sources > 1 && row.hasClass("hidden")) {
-                row.removeClass("hidden")
-            } else if (sources <= 1 && !row.hasClass("hidden")) {
-                row.addClass("hidden")
-            }
-        } else {
-            if (!row.hasClass("hidden")) {
-                row.addClass("hidden")
-            }
+        if (child.attr('id') != type && !child.hasClass('hidden')) {
+            child.toggleClass("hidden")
         }
     })
 }

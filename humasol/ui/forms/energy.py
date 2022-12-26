@@ -122,8 +122,11 @@ class GeneratorForm(SourceComponentForm):
 
     LABEL = model_interface.get_generator_label()
 
+    EFFICIENCY_MAX = 100
+    EFFICIENCY_MIN = 0
+
     # TODO: add label with exact value of the slider
-    efficiency = DecimalRangeField("Efficiency (%)", default=0.5)
+    efficiency = DecimalRangeField("Efficiency (%)", default=50)
     fuel_cost = FloatField("Fuel cost [€/L]", default=0)
     overheats = BooleanField("The generator overheats")
     # TODO: Deactivate cool-down time if overheating is not selected
@@ -204,13 +207,22 @@ class BatteryForm(StorageComponentForm):
 
     LABEL = model_interface.get_battery_label()
 
+    SOC_MAX = 100
+    SOC_MIN = 0
+
     battery_type = SelectField(
         "Type", choices=model_interface.get_battery_type_values()
     )
     # TODO: set slider markers and/or show value
-    battery_base_soc = DecimalRangeField("Base State of Charge (%)")
-    battery_min_soc = DecimalRangeField("Minimum State of Charge (%)")
-    battery_max_soc = DecimalRangeField("Maximum State of Charge (%)")
+    battery_base_soc = DecimalRangeField(
+        "Base State of Charge (%): 50", default=50
+    )
+    battery_min_soc = DecimalRangeField(
+        "Minimum State of Charge (%): 20", default=20
+    )
+    battery_max_soc = DecimalRangeField(
+        "Maximum State of Charge (%): 80", default=80
+    )
 
     def get_data(self) -> dict[str, Any]:
         """Return the data in the form fields.
@@ -291,7 +303,6 @@ class EnergyProjectForm(forms.HumasolSubform):
                 SourceComponentForm
             )
         ),
-        min_entries=2,
     )
     storage = FieldList(
         FormField(
@@ -326,3 +337,15 @@ class EnergyProjectForm(forms.HumasolSubform):
 
 if __name__ == "__main__":
     e = EnergyProjectForm()
+
+    subforms = forms.get_subforms()
+
+    print(
+        {
+            n: {
+                (f.LABEL if hasattr(f, "LABEL") else f.__name__): f()
+                for f in fs
+            }
+            for n, fs in forms.get_subforms().items()
+        }
+    )

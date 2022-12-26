@@ -910,7 +910,7 @@ class SourceComponent(EnergyProjectComponent, ABC):
     __________
     power       -- Power rating of the component
     is_primary  -- Whether this is a primary component, opposed to
-                    backup or auxiliary
+                    back-up or auxiliary
     price   -- Price of electricity from this source (€/kWh)
     """
 
@@ -1106,7 +1106,7 @@ class PV(SourceComponent):
     price       -- Price of electricity from this source (€/kWh)
     """
 
-    LABEL = "PV"
+    LABEL = "pv"
 
 
 class Generator(SourceComponent):

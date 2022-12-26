@@ -21,8 +21,7 @@ from flask_security.forms import form_errors_munge
 from werkzeug.datastructures import MultiDict
 
 from humasol.model import model_authorization as ma
-from humasol.ui import utils
-from humasol.ui.forms import ProjectForm
+from humasol.ui import forms, utils
 
 if TYPE_CHECKING:
     # This is necessary for type checking and to avoid cyclic
@@ -42,6 +41,7 @@ class GUI(Blueprint):
     # TODO: add error handler
     # TODO: add logging
 
+    # Roles access permissions
     ROLES_ADD_PROJECT = {ma.get_role_admin(), *ma.get_roles_humasol()}
     ROLES_ARCHIVE_PROJECT = {ma.get_role_admin(), *ma.get_roles_humasol()}
     ROLES_REGISTER_USER = {ma.get_role_admin(), ma.get_role_humasol_followup()}
@@ -59,6 +59,13 @@ class GUI(Blueprint):
         super().__init__("gui", __name__, **kwargs)
 
         self.app = app
+        self._forms = {
+            n: {
+                (f.LABEL if hasattr(f, "LABEL") else f.__name__): f()
+                for f in fs
+            }
+            for n, fs in forms.get_subforms().items()
+        }
 
         self.context_processor(self._set_context)
 
@@ -131,7 +138,7 @@ class GUI(Blueprint):
         __________
         form    -- Completed project form
         """
-        form = ProjectForm(request.form)
+        form = forms.ProjectForm(request.form)
 
         if form.validate_on_submit():
             print("Received form, success")
@@ -164,7 +171,7 @@ class GUI(Blueprint):
         """
 
     @roles_accepted(*ROLES_ADD_PROJECT)
-    def edit_project(self, project_id: int, form: ProjectForm) -> None:
+    def edit_project(self, project_id: int, form: forms.ProjectForm) -> None:
         """Update the referenced project with the provided input.
 
         Parameters
@@ -356,12 +363,16 @@ class GUI(Blueprint):
         """
         if form_data := self.app.get_session().get("project_form", None):
             self.app.get_session().pop("project_form")
-            form = ProjectForm(MultiDict(form_data))
+            form = forms.ProjectForm(MultiDict(form_data))
         else:
-            form = ProjectForm()
+            form = forms.ProjectForm()
 
         return render_template(
-            "project/form_add_project.html", form=form, show_followup=False
+            "project/form_add_project.html",
+            form=form,
+            show_followup=False,
+            _forms=self._forms,
+            unwrap=forms.utils.unwrap,
         )
 
     @roles_accepted(*ROLES_VIEW_DASHBOARD)

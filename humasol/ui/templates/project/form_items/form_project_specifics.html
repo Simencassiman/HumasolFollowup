@@ -1,0 +1,55 @@
+{% import 'project/form_items/energy.html' as energy %}
+
+{% macro get(form) -%}
+    {% if form.category == 'ENERGY' %}
+        {{ energy(form.subform) }}
+    {% endif %}
+{%- endmacro %}
+
+{% macro default() -%}
+    <div class="form-row">
+        <p>Nothing to do here.</p>
+    </div>
+{%- endmacro %}
+
+{% macro energy(form) -%}
+    <div class="form-row">
+        <div>
+            <h3 class="form_row__title">Sources</h3>
+            <button id="sources-button" type="button" onclick="addEnergySource()" class="button button-secondary">
+                Add
+            </button>
+        </div>
+        <div id="energy-sources">
+            {% for s in form.sources %}
+                {{ source(s) }}
+            {% endfor %}
+        </div>
+    </div>
+    <div class="form-row">
+        <div>
+            <h3 class="form_row__title">Storage</h3>
+            <button id="storage-button" type="button" onclick="addEnergyStorage()" class="button button-secondary">
+                Add
+            </button>
+        </div>
+        <div id="energy-storages">
+            {% for s in form.storage %}
+                {{ storage(s) }}
+            {% endfor %}
+        </div>
+    </div>
+    <div class="form-row">
+        <div>
+            <h3 class="form_row__title">Loads</h3>
+            <button id="loads-button" type="button" onclick="addEnergyLoad()" class="button button-secondary">
+                Add
+            </button>
+        </div>
+        <div id="energy-consumptions">
+            {% for l in form.loads %}
+                {{ consumption(l) }}
+            {% endfor %}
+        </div>
+    </div>
+{%- endmacro %}

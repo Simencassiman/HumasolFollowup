@@ -1,10 +1,12 @@
 """Package providing all forms."""
 
+import re
+
 # pylint: disable=wrong-import-order
 # pylint: disable=cyclic-import
 
-from . import utils  # noqa
 from . import base  # noqa
+from . import utils  # noqa
 
 from .base import (  # noqa
     IHumasolForm,
@@ -20,3 +22,18 @@ from .general import ProjectForm  # noqa
 
 # pylint: enable=cyclic-import
 # pylint: enable=wrong-import-order
+
+
+def get_subforms() -> dict[str, list[type[HumasolSubform]]]:
+    """Return all defined concrete form classes extending HumasolSubform."""
+    modules = [general, energy]
+
+    forms = {
+        match.groups()[0]: utils.get_subclasses(
+            HumasolSubform, module  # type: ignore
+        )
+        for module in modules
+        if (match := re.match(r".*\.forms\.([a-z_]*)", module.__name__))
+    }
+
+    return forms

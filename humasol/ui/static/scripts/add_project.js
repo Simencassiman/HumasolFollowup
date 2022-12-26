@@ -61,6 +61,29 @@ function addPartner() {
     addElementToList('#partners', templates['partner']);
 }
 
+function selectPartnerType(selector, type) {
+    // Create a reference to the fields of that same partner
+    let id = $(selector).attr('id').split('-')
+
+    // Correct the id to partners-x-organization-country (x being the index)
+    id[id.length - 1] = 'organization';
+    id.push('country');
+    id = id.join('-');
+
+    // Retrieve label and input fields
+    let label = $('label[for="' + id + '"]')
+    let input = $('#' + id)
+
+    // Toggle visibility of both the country label and input
+    if (type == 'bp' && !input.hasClass("hidden")) {
+        label.addClass("hidden");
+        input.addClass("hidden");
+    } else if (type == 'sp' && input.hasClass("hidden")) {
+        label.removeClass("hidden");
+        input.removeClass("hidden");
+    }
+}
+
 function addTask() {
     addElementToList('#tasks', templates['task']);
 }
@@ -147,33 +170,6 @@ function renumberPeriods(grid, elementIdentifier) {
     });
 }
 
-function renumberElements(listId, elementIdentifier) {
-    // Get all cards in the provided list
-    let items = $(listId).children();
-
-    items.each((index, item) => {
-        // Convert item from DOM element to jquery object
-        item = $(item)
-
-        // Get all the input fields in the card
-        let labels = item.find('label')
-        let inputs = item.find('input, select, textarea')
-
-        // Remove extra labels
-        // (e.g. for Partner, the organization label has no corresponding input)
-        labels = popLabels(listId, labels)
-
-        // Update the index contained in the name attribute
-        insertIndex(index, inputs, labels, elementIdentifier)
-
-        // If it's follow-up work then also the periods need to be renamed appropriately
-        if (listId == '#tasks' || listId == '#subscriptions') {
-            console.log('Renumbering periods');
-            renumberPeriods(item.find('.form-grid'), elementIdentifier)
-        }
-    })
-}
-
 function toggleButton(listId) {
     // Create ID reference to the button in question
     // Buttons corresponding to a list with ID lid are named lid-button
@@ -228,30 +224,6 @@ function showFollowup() {
     // Hide button for followup (so it can't be pressed again, useless anyway)
     $("#btn-followup").addClass("hidden");
 }
-
-function selectPartnerType(selector, type) {
-    // Create a reference to the fields of that same partner
-    let id = $(selector).attr('id').split('-')
-
-    // Correct the id to partners-x-organization-country (x being the index)
-    id[id.length - 1] = 'organization';
-    id.push('country');
-    id = id.join('-');
-
-    // Retrieve label and input fields
-    let label = $('label[for="' + id + '"]')
-    let input = $('#' + id)
-
-    // Toggle visibility of both the country label and input
-    if (type == 'bp' && !input.hasClass("hidden")) {
-        label.addClass("hidden");
-        input.addClass("hidden");
-    } else if (type == 'sp' && input.hasClass("hidden")) {
-        label.removeClass("hidden");
-        input.removeClass("hidden");
-    }
-}
-
 
 /**************
   Follow-up

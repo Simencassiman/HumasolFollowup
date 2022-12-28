@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from flask import (
     Blueprint,
     Response,
+    flash,
     redirect,
     render_template,
     request,
@@ -20,6 +21,7 @@ from flask_security.forms import form_errors_munge
 # Local modules
 from werkzeug.datastructures import MultiDict
 
+from humasol import exceptions
 from humasol.model import model_authorization as ma
 from humasol.ui import forms, utils
 
@@ -140,19 +142,20 @@ class GUI(Blueprint):
         """
         form = forms.ProjectForm(request.form)
 
+        # TODO: improve flash messages
         if form.validate_on_submit():
-            print("Received form, success")
+            try:
 
-            project_id = self.app.create_project(form.get_data())
+                project_id = self.app.create_project(form.get_data())
 
-            self.app.get_session()["project_id"] = project_id
+                self.app.get_session()["project_id"] = project_id
 
-            return redirect(url_for("gui.view_project"))
-
-        print("Form validation failed:")
-
-        # TODO: use flash messages
-        print(form.errors)
+                return redirect(url_for("gui.view_project"))
+            except exceptions.FormError as exc:
+                flash(str(exc))
+        else:
+            for key, err in form.errors.items():
+                flash(f"{key}: {err}")
 
         self.app.get_session()["project_form"] = request.form
 

@@ -166,11 +166,13 @@ class HumasolApp(Flask):
         try:
             model_ops.create_project(parameters)
             # model_ops.save_project(project)
+
         except (
             exceptions.IllegalArgumentException,
             exceptions.MissingArgumentException,
         ) as exc:
             raise exceptions.FormError(str(exc)) from exc
+
         except exceptions.ModelException as exc:
             raise exceptions.Error500(str(exc)) from exc
 

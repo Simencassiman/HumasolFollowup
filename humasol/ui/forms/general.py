@@ -26,6 +26,7 @@ from wtforms.fields import DateField
 from wtforms.validators import ValidationError
 
 # Local Modules
+from humasol import exceptions
 from humasol.model import model_interface
 from humasol.model import model_validation as model_val
 from humasol.ui import forms
@@ -887,7 +888,7 @@ class ProjectSpecificForm(forms.HumasolSubform):
             case self.energy_category:
                 return self.energy.form
             case _:
-                raise RuntimeError(
+                raise exceptions.FormError(
                     "Unknown project category for specifics section"
                 )
 
@@ -907,7 +908,10 @@ class ProjectSpecificForm(forms.HumasolSubform):
 
     def validate(self, extra_validators=None) -> bool:
         """Validate the form input."""
-        return self.subform.validate(extra_validators)
+        try:
+            return self.subform.validate(extra_validators)
+        except exceptions.FormError:
+            return False
 
 
 class ProjectForm(forms.HumasolBaseForm):

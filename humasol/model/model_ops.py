@@ -132,7 +132,7 @@ def create_project(parameters: dict[str, Any]) -> model.Project:
         ) from exc
 
     except TypeError as exc:
-        raise exceptions.IllegalArgumentException(str(exc)) from exc
+        raise exceptions.ModelException(str(exc)) from exc
 
     return project
 

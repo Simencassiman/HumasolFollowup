@@ -27,7 +27,7 @@ from typing import Any, Optional, Type, TypedDict, TypeVar, Union
 from sqlalchemy import orm
 from sqlalchemy.orm import DeclarativeMeta
 
-from humasol import model
+from humasol import exceptions, model
 from humasol.repository import db
 
 # Local modules
@@ -290,104 +290,108 @@ class Project(BaseModel):
         # Argument checks
         # TODO: Use single check per argument
         if not Project.is_legal_name(name):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'name' should be a non-empty string with "
                 "only letters"
             )
 
         if not Project.is_legal_creator(creator):
-            raise ValueError("Parameter 'creator' should be of type User")
+            raise exceptions.IllegalArgumentException(
+                "Parameter 'creator' should be of type User"
+            )
 
         if not Project.is_legal_creation_date(creation_date):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'creation_date' should be of type datetime.date "
                 "and can only be as recent as the current day"
             )
 
         if not Project.is_legal_implementation_date(implementation_date):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'implementation_date' has an illegal value. "
                 "Only projects up to this year can be implemented"
             )
 
         if not Project.is_legal_description(description):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'description' has an illegal value. "
                 "Should contain at least 1 letter"
             )
 
         if not Project.is_legal_location(location):
-            raise TypeError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'location' should not be None and of type Location"
             )
 
         if not Project.is_legal_work_folder(work_folder):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'work_folder' should be a non-empty string"
             )
 
         if not Project.are_legal_students(students):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'students' should be a list containing 3 or 4 "
                 "unique students"
             )
 
         if not Project.are_legal_supervisors(supervisors):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'supervisors' should be a list containing unique "
                 "supervisors"
             )
 
         if not Project.is_legal_contact_person(contact_person):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'contact_person' should not be None and of "
                 "type Person"
             )
 
         if not Project.are_legal_partners(partners):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'partners' should be a list containing unique "
                 "partners"
             )
 
         if not Project.are_legal_sdgs(sdgs):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'sdgs' should be a non-empty list containing "
                 "unique SDGs"
             )
 
         if not Project.are_legal_tasks(tasks):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'tasks' should be a list containing unique tasks"
             )
 
         if not Project.is_legal_data_source(data_source):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'data_source' should be None or of "
                 "type DataSource"
             )
 
         if not Project.is_legal_dashboard(dashboard):
-            raise TypeError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'dashboard' should be of type str or None"
             )
 
         if not Project.is_legal_save_data_flag(save_data):
-            raise ValueError("Parameter 'save_data' should be of type bool")
+            raise exceptions.IllegalArgumentException(
+                "Parameter 'save_data' should be of type bool"
+            )
 
         if not Project.is_legal_data_folder(project_data):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'project_data' should be of type str or None"
             )
 
         if not Project.are_legal_subscriptions(subscriptions):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'subscriptions' should be None or a list "
                 "containing unique Subscriptions"
             )
 
         if not Project.are_legal_extra_data(extra_data):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'extra_data' should be a dictionary mapping "
                 "strings to strings"
             )
@@ -1271,7 +1275,7 @@ class EnergyProject(Project):
         """
         # Check arguments
         if not EnergyProject.is_legal_power(power):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'power' should be a non-negative float or integer"
             )
 
@@ -1350,6 +1354,20 @@ class EnergyProject(Project):
 class ProjectFactory:
     """Factory class used for constructing energy projects."""
 
+    project_components = {
+        model.project_components.Generator.LABEL: (
+            model.project_components.Generator
+        ),
+        model.project_components.Grid.LABEL: model.project_components.Grid,
+        model.project_components.PV.LABEL: model.project_components.PV,
+        model.project_components.Battery.LABEL: (
+            model.project_components.Battery
+        ),
+        model.project_components.ConsumptionComponent.LABEL: (
+            model.project_components.ConsumptionComponent
+        ),
+    }
+
     @staticmethod
     def get_project(
         category: ProjectCategory, params: dict[str, Any]
@@ -1359,9 +1377,24 @@ class ProjectFactory:
         return project_class(**params)
 
     @staticmethod
-    def get_project_component() -> model.project_components.ProjectComponent:
+    def get_project_component(
+        params: dict[str, Any]
+    ) -> model.project_components.ProjectComponent:
         """Construct the project component with the provided parameters."""
         # TODO: Write factory function
+        if "type" not in params:
+            raise exceptions.MissingArgumentException(
+                "Component parameters must contain an entry for 'type'"
+            )
+
+        try:
+            return ProjectFactory.project_components[params.pop("type")](
+                **params
+            )
+        except KeyError as exc:
+            raise exceptions.IllegalArgumentException(
+                f"Unknown project component: {str(exc)}"
+            ) from exc
 
 
 # --------------------------
@@ -1408,7 +1441,9 @@ class ProjectCategory(Enum):
     def from_string(category: str) -> ProjectCategory:
         """Provide enum value representing the given string."""
         if category not in ProjectCategory.__members__:
-            raise ValueError("Unexpected category.")
+            raise exceptions.IllegalArgumentException(
+                f"Unexpected category: {category}"
+            )
 
         return ProjectCategory.__members__[category]
 

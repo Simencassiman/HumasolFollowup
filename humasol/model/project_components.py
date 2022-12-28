@@ -37,6 +37,7 @@ from sqlalchemy.orm import DeclarativeMeta
 
 # Local modules
 import humasol
+from humasol import exceptions
 from humasol.repository import db
 
 BaseModel: DeclarativeMeta = db.Model
@@ -100,29 +101,31 @@ class Address(BaseModel):
         country -- Country in which the spot can be found
         """
         if not Address.is_legal_street(street):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'street' should be of type str or None."
                 " It should contain only letters (at least one), spaces, "
                 "hyphens, commas and periods"
             )
 
         if street is None and number is not None:
-            raise ValueError("Cannot have a street number without a street")
+            raise exceptions.IllegalArgumentException(
+                "Cannot have a street number without a street"
+            )
 
         if not Address.is_legal_number(number):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'number' should be a positive integer or None"
             )
 
         if not Address.is_legal_place(place):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'place' should not be none and of type str. It "
                 "should only contain letters (at least one), spaces, hyphens,"
                 "commas and periods"
             )
 
         if not Address.is_legal_country(country):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'country' should not be None and of type str. It "
                 "should only contain letters (at least one), space, hyphens,"
                 "commas and periods"
@@ -265,13 +268,13 @@ class Coordinates(BaseModel):
         longitude   -- Geographical coordinate between -180º and 180
         """
         if not Coordinates.is_legal_latitude(latitude):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'latitude' should not be None and of type "
                 "float. It should be in the range from -90º to 90º"
             )
 
         if not Coordinates.is_legal_longitude(longitude):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'longitude' should not be none and of type "
                 "float. It should be in the range from -180º to 180"
             )
@@ -349,10 +352,12 @@ class Location(BaseModel):
         coordinates -- Geographical coordinates of the location
         """
         if not Location.is_legal_address(address):
-            raise ValueError("Parameter 'address' should be of type Address")
+            raise exceptions.IllegalArgumentException(
+                "Parameter 'address' should be of type Address"
+            )
 
         if not Location.are_legal_coordinates(coordinates):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'coordinates' should be of type Coordinates"
             )
 
@@ -433,7 +438,7 @@ class SDG(Enum):
     def from_str(name: str) -> SDG:
         """Provide SDG by name."""
         if name not in SDG.__members__:
-            raise ValueError("Unexpected SDG name.")
+            raise exceptions.IllegalArgumentException("Unexpected SDG name.")
 
         return SDG.__members__[name]
 
@@ -564,25 +569,29 @@ class DataSource(BaseModel):
                             username + password authentication
         """
         if not DataSource.is_legal_source(source):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'source' should be a non-empty string."
             )
 
         if not DataSource.is_legal_user(user):
-            raise ValueError("Parameter 'user' should be of type str or None")
+            raise exceptions.IllegalArgumentException(
+                "Parameter 'user' should be of type str or None"
+            )
 
         if not DataSource.is_legal_password(password):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'password' should be of type str or None"
             )
 
         if not DataSource.is_legal_token(token):
-            raise ValueError("Parameter 'token' should be of type str or None")
+            raise exceptions.IllegalArgumentException(
+                "Parameter 'token' should be of type str or None"
+            )
 
         if not DataSource.are_legal_managers(
             api_manager, data_manager, report_manager
         ):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameters 'api_manager', 'data_manager' and "
                 "'report_manager' should be of type string and "
                 "reference existing classes of the same project category"
@@ -842,12 +851,14 @@ class EnergyProjectComponent(ProjectComponent, ABC):
                         backup or auxiliary. Default: primary
         """
         if not EnergyProjectComponent.is_legal_power(power):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'power' should be a non-negative float"
             )
 
         if not EnergyProjectComponent.is_legal_primary_flag(is_primary):
-            raise ValueError("Parameter 'is_primary' should be of type bool")
+            raise exceptions.IllegalArgumentException(
+                "Parameter 'is_primary' should be of type bool"
+            )
 
         super().__init__()
 
@@ -923,7 +934,7 @@ class SourceComponent(EnergyProjectComponent, ABC):
         kwargs  -- Additional parameters for the superclasses
         """
         if not SourceComponent.is_legal_price(price):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'price' should be a non-negative float."
             )
 
@@ -999,13 +1010,13 @@ class Grid(SourceComponent):
                             electricity back into the grid (if available)
         """
         if not Grid.is_legal_blackout_threshold(blackout_threshold):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'blackout_threshold' should be a non-negative "
                 "float or None"
             )
 
         if not Grid.is_lega_injection_price(injection_price):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'injection_price' should be of type float or None"
             )
 
@@ -1158,38 +1169,40 @@ class Generator(SourceComponent):
         kwargs           -- Parameters for superclasses
         """
         if not Generator.is_legal_efficiency(efficiency):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'efficiency' should be a positive float"
             )
 
         if not Generator.is_legal_fuel_cost(fuel_cost):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'fuel_cost' should be a non-negative float"
             )
 
         if not Generator.is_legal_overheats_flag(overheats):
-            raise TypeError("Parameter 'overheats' should be of type bool")
+            raise exceptions.IllegalArgumentException(
+                "Parameter 'overheats' should be of type bool"
+            )
 
         if not Generator.is_legal_overheating_time(overheating_time):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'overheating_time' should be a non-negative float "
                 "or None"
             )
 
         if not Generator.is_legal_cooldown_time(cooldown_time):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'cooldown_time' should be a non-negative float "
                 "or None"
             )
 
         if overheats and (overheating_time is None or cooldown_time is None):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "A generator that overheats must have an operation and "
                 "cooldown time"
             )
 
         if not overheats and (overheating_time or cooldown_time):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "A generator that does not overheat cannot have an "
                 "'overheating_time' nor a 'cooldown_time'"
             )
@@ -1353,7 +1366,7 @@ class StorageComponent(EnergyProjectComponent, ABC):
         kwargs      --  Parameters for the superclasses
         """
         if not StorageComponent.is_legal_capacity(capacity):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'capacity' should be a non-negative float"
             )
 
@@ -1433,31 +1446,33 @@ class Battery(StorageComponent):
         kwargs      -- Parameters for the superclasses
         """
         if not Battery.is_legal_type(battery_type):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'battery_type' should not be None and of "
                 "type BatteryType"
             )
 
         if not Battery.is_legal_base_soc(base_soc):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'base_soc' should be a float in the range [0,100]"
             )
 
         if not Battery.is_legal_min_soc(min_soc):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'min_soc' should be a float in the range [0,100]"
             )
 
         if not Battery.is_legal_max_soc(max_soc):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'max_soc' should be a float in the range [0,100]"
             )
 
         if max_soc < min_soc:
-            raise ValueError("Parameter 'max_soc' cannot be below 'min_soc'")
+            raise exceptions.IllegalArgumentException(
+                "Parameter 'max_soc' cannot be below 'min_soc'"
+            )
 
         if not min_soc <= base_soc <= max_soc:
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'base_soc' should be in the range "
                 "[min_soc, max_soc]"
             )
@@ -1639,7 +1654,9 @@ class Battery(StorageComponent):
             if label in ("Lead acid", "LEAD_ACID", "BatteryType.LEAD_ACID"):
                 return Battery.BatteryType.LEAD_ACID
 
-            raise NotImplementedError
+            raise exceptions.IllegalArgumentException(
+                f"Unknown battery type: {label}"
+            )
 
         # pylint doesn't recognise subclass of enum, disable the error
         # pylint: disable=no-member
@@ -1682,7 +1699,9 @@ class ConsumptionComponent(EnergyProjectComponent):
                         prioritized
         """
         if not ConsumptionComponent.is_legal_critical_flag(is_critical):
-            raise ValueError("Parameter 'is_critical' should be of type bool")
+            raise exceptions.IllegalArgumentException(
+                "Parameter 'is_critical' should be of type bool"
+            )
 
         super().__init__(**kwargs)
 

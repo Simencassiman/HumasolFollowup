@@ -22,7 +22,7 @@
         </div>
         <div id="energy-sources">
             {% for s in form.sources %}
-                {{ source(s) }}
+                {{ energy.source(s) }}
             {% endfor %}
         </div>
     </div>
@@ -35,7 +35,7 @@
         </div>
         <div id="energy-storages">
             {% for s in form.storage %}
-                {{ storage(s) }}
+                {{ energy.storage(s) }}
             {% endfor %}
         </div>
     </div>
@@ -48,7 +48,7 @@
         </div>
         <div id="energy-consumptions">
             {% for l in form.loads %}
-                {{ consumption(l) }}
+                {{ energy.consumption(l) }}
             {% endfor %}
         </div>
     </div>

@@ -17,8 +17,18 @@
 
 {% block scripts %}
 <script>
-    $.get("{{ url_for('gui.get_projects') }}", function( data ) {
-      $( "#projects-content" ).html( data );
+    function defer(fn) {
+        if (window.jQuery) {
+            fn();
+        } else {
+            setTimeout(() => defer(fn) , 50);
+        }
+    }
+
+    defer(() => {
+        $.get("{{ url_for('gui.get_projects') }}", function (data) {
+            $("#projects-content").html(data);
+        })
     })
 </script>
 {% endblock %}

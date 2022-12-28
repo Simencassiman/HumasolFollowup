@@ -7,7 +7,7 @@ All functions must be called from within an application context.
 from typing import Any
 
 # Local modules
-from humasol import model
+from humasol import exceptions, model
 from humasol import repository as repo
 from humasol.repository import db
 
@@ -117,11 +117,22 @@ def create_project(parameters: dict[str, Any]) -> model.Project:
                 for params in parameters["subscriptions"]
             ]
 
+        if "components" in parameters:
+            parameters["components"] = [
+                model.ProjectFactory.get_project_component(comp)
+                for comp in parameters["components"]
+            ]
         # Create project object
         project = model.ProjectFactory.get_project(category, parameters)
+
     except KeyError as exc:
         # TODO: create proper exceptions structure
-        raise exc from exc
+        raise exceptions.MissingArgumentException(
+            f"Missing parameter: {str(exc)}"
+        ) from exc
+
+    except TypeError as exc:
+        raise exceptions.IllegalArgumentException(str(exc)) from exc
 
     return project
 
@@ -158,7 +169,12 @@ def get_project(project_id: int) -> model.Project:
     __________
     project_id  -- Project identifier in the database
     """
-    project = repo.get_object_by_id(model.Project, project_id)  # type: ignore
+    try:
+        project = repo.get_object_by_id(
+            model.Project, project_id  # type: ignore
+        )
+    except exceptions.ProjectNotFoundException as exc:
+        raise exceptions.ModelException(str(exc)) from exc
 
     return project
 

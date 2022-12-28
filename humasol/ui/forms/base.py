@@ -89,12 +89,13 @@ class ProjectComponentWrapper(Generic[T]):
             __________
             superclass  -- Form superclass from which all components inherit
             """
-            super().__init__(*args, **kwargs)
             self.kwargs = kwargs
 
             self._components = {
                 str(c.LABEL): c for c in forms.utils.get_subclasses(superclass)
             }
+
+            super().__init__(*args, **kwargs)
 
             self.component_type.choices = classes = [
                 (c, c.lower()) for c in self._components.keys()
@@ -168,10 +169,10 @@ class ProjectComponentWrapper(Generic[T]):
                         Only used if ``formdata`` is not passed.
             """
             super().process(
-                formdata=None,
-                obj=None,
-                data=None,
-                extra_filters=None,
+                formdata=formdata,
+                obj=obj,
+                data=data,
+                extra_filters=extra_filters,
                 **kwargs,
             )
 

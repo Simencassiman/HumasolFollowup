@@ -19,9 +19,8 @@ from flask_security import utils as sec_util
 from flask_sqlalchemy.session import Session
 from werkzeug.local import LocalProxy
 
-from humasol import model
-
 # Local modules
+from humasol import exceptions, model
 from humasol.config import config as cf
 from humasol.model import model_authorization as ma
 from humasol.model import model_ops
@@ -155,6 +154,7 @@ class HumasolApp(Flask):
             parameters["location"]["coordinates"]["latitude"] is None
             or parameters["location"]["coordinates"]["longitude"] is None
         ):
+            # TODO: get actual coordinates
             parameters["location"]["coordinates"] = {
                 "latitude": 0.0,
                 "longitude": 0.0,
@@ -163,10 +163,18 @@ class HumasolApp(Flask):
         parameters["creator"] = self.get_user()
         parameters["creation_date"] = datetime.date.today()
 
-        project = model_ops.create_project(parameters)
-        model_ops.save_project(project)
+        try:
+            model_ops.create_project(parameters)
+            # model_ops.save_project(project)
+        except (
+            exceptions.IllegalArgumentException,
+            exceptions.MissingArgumentException,
+        ) as exc:
+            raise exceptions.FormError(str(exc)) from exc
+        except exceptions.ModelException as exc:
+            raise exceptions.Error500(str(exc)) from exc
 
-        return project.id
+        return -1  # project.id
 
     def edit_project(self, parameters: dict[str, Any]) -> None:
         """Edit an existing project in the system.
@@ -301,8 +309,3 @@ class HumasolApp(Flask):
         Return list of project objects matching the value. If no such project
         were found, return an empty list.
         """
-
-
-# Run #
-if __name__ == "__main__":
-    print("Running app")

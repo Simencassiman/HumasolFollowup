@@ -37,6 +37,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import DeclarativeMeta
 
 # Local modules
+from humasol import exceptions
 from humasol.repository import db
 
 # TODO: add python setters to check new assignments
@@ -111,26 +112,26 @@ class Person(BaseModel):
         # pylint: enable=unidiomatic-typecheck
 
         if not Person.is_legal_name(name):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'name' should be of type str and "
                 "made up of letters and white spaces"
             )
 
         if not Person.is_legal_email(email):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'email' should not be None and of type str."
                 "Valid structure example myname@subdomain.email.com"
             )
 
         if not Person.is_legal_phone(phone):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'phone' should be of type str or None. "
                 "Example of a valid structure (+ or 00)32123456789 "
                 "or 123456789"
             )
 
         if not Person.is_legal_organization(organization):
-            raise TypeError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'organization' should not be None and a subclass "
                 "of Organization"
             )
@@ -301,14 +302,14 @@ class Student(Person):
         phone   -- Phone number of the student. Including country code
         """
         if not Student.is_legal_university(university):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'university' should not be None and of "
                 "type str. The string should not be empty and should "
                 "not contain special characters"
             )
 
         if not Student.is_legal_field_of_study(field_of_study):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'field_of_study' should not be None and of "
                 "type str. The string should not be empty and "
                 "should not contain special characters"
@@ -437,7 +438,7 @@ class Supervisor(Person):
         phone    -- Phone number of the supervisor. Including country code
         """
         if not Supervisor.is_valid_function(function):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'function' should not be None and of type "
                 "str. There should be at least two letters."
             )
@@ -544,7 +545,7 @@ class Partner(Person):
         phone    -- Phone number of the student. Including country code
         """
         if not Partner.is_legal_function(function):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'function' should not be None and of type "
                 "str. There should be at least two letters."
             )
@@ -680,13 +681,13 @@ class Organization(BaseModel):
         # pylint: enable=unidiomatic-typecheck
 
         if not Organization.is_legal_name(name):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'name' should not be None and of type str. "
                 "Names should contain at least one letter"
             )
 
         if not Organization.is_legal_logo(logo):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'logo' should not be None and of type str. "
                 "It should be a valid path"
             )
@@ -837,7 +838,7 @@ class SouthernPartner(Organization):
                     HQ
         """
         if not SouthernPartner.is_legal_country(country):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'country' has invalid content. A country should be "
                 "made up of letters"
                 "(spaces, periods and commas are also accepted)"
@@ -930,7 +931,7 @@ def construct_person(constructor: Type[T], params: dict[str, Any]) -> T:
                     **params["organization"]
                 )
             case _:
-                raise RuntimeError(
+                raise exceptions.IllegalArgumentException(
                     f"Unexpected partner type. Expected one of "
                     f"{BelgianPartner.LABEL} or "
                     f"{SouthernPartner.LABEL}. Got: {partner_type}."
@@ -961,4 +962,6 @@ def get_constructor_from_type(person_type: str) -> Type[Person]:
         case Partner.LABEL:
             return Partner
 
-    raise ValueError(f"Unexpected person person_type. Got: {person_type}")
+    raise exceptions.IllegalArgumentException(
+        f"Unexpected person person_type. Got: {person_type}"
+    )

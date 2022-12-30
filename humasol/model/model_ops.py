@@ -15,6 +15,27 @@ from humasol.repository import db
 # pylint: disable=unused-argument
 
 
+def _get_unique_attributes(
+    obj: model.Model | list[model.Model],
+) -> dict[str, Any] | list[dict[str, Any]]:
+    """Retrieve all attributes of the object with a uniqueness constraint."""
+    if isinstance(obj, list):
+        return [
+            {
+                attr: getattr(ob, attr)
+                for attr, val in type(ob).__dict__.items()
+                if hasattr(val, "unique") and getattr(val, "unique")
+            }
+            for ob in obj
+        ]
+
+    return {
+        attr: getattr(obj, attr)
+        for attr, val in type(obj).__dict__.items()
+        if hasattr(val, "unique") and getattr(val, "unique")
+    }
+
+
 def admin_exists() -> bool:
     """Check whether there is a user with admin rights registered."""
 
@@ -173,7 +194,7 @@ def get_project(project_id: int) -> model.Project:
         project = repo.get_object_by_id(
             model.Project, project_id  # type: ignore
         )
-    except exceptions.ProjectNotFoundException as exc:
+    except exceptions.ObjectNotFoundException as exc:
         raise exceptions.ModelException(str(exc)) from exc
 
     return project
@@ -205,7 +226,7 @@ def register_user(email: str, password: str, role: model.Role) -> model.User:
     """
 
 
-def save_project(project: model.Project) -> None:
+def save_project(project: model.Project) -> bool:
     """Save a new project to the database.
 
     By saving the project to the database, a new ID will be given to it.
@@ -213,8 +234,27 @@ def save_project(project: model.Project) -> None:
     preferred method), or one that is known not to be in the database.
     """
     # TODO: add checks for uniqueness
+    # Get all attributes with a uniqueness constraint from the project
+    project_unique = _get_unique_attributes(project)
+    project_match = repo.get_object_by_attributes(
+        model.Project, project_unique  # type: ignore
+    )
+    print(project_match)
+    if len(project_match) > 0:
+        return False
+
+    # Go through lists (students, etc.)
+    _get_unique_attributes(project.contact_person)
+    _get_unique_attributes(project.students)
+    _get_unique_attributes(project.supervisors)
+    _get_unique_attributes(project.partners)
+    _get_unique_attributes(project.tasks)
+    _get_unique_attributes(project.subscriptions)
+
     # TODO: unify existing objects with new ones
     repo.save_project(project)
+
+    return True
 
 
 def search(value: str) -> list[model.Project]:
@@ -233,19 +273,11 @@ def search(value: str) -> list[model.Project]:
 
 def tables_exist() -> bool:
     """Check whether the database tables have been created."""
-    return db.engine.execute(
-        db.text(
-            """
-            SELECT EXISTS (
-                SELECT FROM
-                    pg_tables
-                WHERE
-                    schemaname = 'public' AND
-                    tablename  = 'user'
-            );
-            """
-        )
-    ).first()[0]
+    return repo.table_exists("user")
 
 
 # pylint: enable=unused-argument
+
+
+if __name__ == "__main__":
+    pass

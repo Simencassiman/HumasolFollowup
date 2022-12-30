@@ -6,6 +6,11 @@ db: SQLAlchemy = SQLAlchemy()
 
 # Local modules
 # pylint: disable=cyclic-import
-from .storage_repository import get_object_by_id, save_project  # noqa
+from .storage_repository import (  # noqa
+    get_object_by_attributes,
+    get_object_by_id,
+    save_project,
+    table_exists,
+)
 
 # pylint: disable=cyclic-import

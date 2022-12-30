@@ -34,18 +34,15 @@ from typing import Any, Optional, Type, TypeVar
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import DeclarativeMeta
 
 # Local modules
-from humasol import exceptions
+from humasol import exceptions, model
 from humasol.repository import db
 
 # TODO: add python setters to check new assignments
 
-BaseModel: DeclarativeMeta = db.Model
 
-
-class Person(BaseModel):
+class Person(model.BaseModel, model.ProjectElement):
     """Abstract base class for a person working for/with Humasol.
 
     Attributes
@@ -640,7 +637,7 @@ class Partner(Person):
         return "Partner(" + super().__repr__() + f", function={self.function})"
 
 
-class Organization(BaseModel):
+class Organization(model.BaseModel, model.ProjectElement):
     """Abstract base class representation of an organisation.
 
     People related to a project are also related to an organisation. This class

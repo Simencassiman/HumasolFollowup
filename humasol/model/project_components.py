@@ -33,14 +33,10 @@ from dataclasses import dataclass
 from enum import Enum, unique
 from typing import Any, Optional, Union
 
-from sqlalchemy.orm import DeclarativeMeta
-
 # Local modules
 import humasol
-from humasol import exceptions
+from humasol import exceptions, model
 from humasol.repository import db
-
-BaseModel: DeclarativeMeta = db.Model
 
 
 # TODO: implement RSA
@@ -58,7 +54,7 @@ def decrypt(value: str) -> str:
     return value[-1] + value[:-1]
 
 
-class Address(BaseModel):
+class Address(model.BaseModel, model.ProjectElement):
     """Class representing an address of a physical place.
 
     Attributes
@@ -239,7 +235,7 @@ class Address(BaseModel):
         return self
 
 
-class Coordinates(BaseModel):
+class Coordinates(model.BaseModel, model.ProjectElement):
     """Class representing geographical coordinates of a physical place.
 
     Attributes
@@ -325,7 +321,7 @@ class Coordinates(BaseModel):
         return self
 
 
-class Location(BaseModel):
+class Location(model.BaseModel, model.ProjectElement):
     """Class representing a physical location in the world."""
 
     # Definitions for the database tables #
@@ -478,7 +474,7 @@ class SDG(Enum):
 
 # Disable pylint complaint. Wrapper class is needed for the database.
 # pylint: disable=too-few-public-methods
-class SdgDB(BaseModel):
+class SdgDB(model.BaseModel):
     """Wrapper class for the SDG enum.
 
     The wrapper class is used to store the custom enum values in the database
@@ -504,7 +500,7 @@ class SdgDB(BaseModel):
 # pylint: enable=too-few-public-methods
 
 
-class DataSource(BaseModel):
+class DataSource(model.BaseModel, model.ProjectElement):
     """Class representing a project data source.
 
     Projects can log data about their operations. These get collected in some
@@ -794,7 +790,7 @@ class DataSource(BaseModel):
 
 
 @dataclass
-class ProjectComponent(ABC):
+class ProjectComponent(ABC, model.ProjectElement):
     """Interface for a project component.
 
     Project components are elements specific to a certain project domain

@@ -148,11 +148,17 @@ class GUI(Blueprint):
 
                 project_id = self.app.create_project(form.get_data())
 
-                self.app.get_session()["project_id"] = project_id
+                if project_id >= 0:  # Success
+                    self.app.get_session()["project_id"] = project_id
 
-                return redirect(url_for("gui.view_project"))
+                    return redirect(url_for("gui.view_project"))
+
+                # Saving failed
+                flash("Some of the fields violate the uniqueness constraint.")
+
             except exceptions.FormError as exc:
                 flash(str(exc))
+
         else:
             for key, err in form.errors.items():
                 flash(f"{key}: {err}")

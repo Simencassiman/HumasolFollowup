@@ -18,12 +18,11 @@ from enum import Enum
 
 from flask_security import RoleMixin, UserMixin
 
-# Local modules
-from sqlalchemy.orm import DeclarativeMeta
-
+from humasol import model
 from humasol.repository import db
 
-BaseModel: DeclarativeMeta = db.Model
+# Local modules
+
 
 users_role = db.Table(
     "users_role",
@@ -82,7 +81,7 @@ class Role(Enum):
     # pylint: enable=no-member
 
 
-class UserRole(RoleMixin, BaseModel):
+class UserRole(RoleMixin, model.BaseModel):
     """Webapp user's role with respect to Humasol.
 
     Users of the webapp can have one of a set of roles associated to them.
@@ -96,7 +95,7 @@ class UserRole(RoleMixin, BaseModel):
     name = db.Column(db.Enum(Role), nullable=False)
 
 
-class User(UserMixin, BaseModel):
+class User(UserMixin, model.BaseModel):
     """Webapp user dataclass used for authentication purposes."""
 
     id = db.Column(db.Integer, primary_key=True)

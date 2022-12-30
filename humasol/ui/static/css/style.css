@@ -129,6 +129,31 @@ a.nav {
     text-decoration: none;
 }
 
+.message-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+}
+
+.message-container:has(div.message) {
+    margin-top: 5px;
+}
+
+.message {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    align-items: center;
+    padding: 10px;
+    border-radius: 2px;
+    background-color: var(--humasol-meat);
+}
+
+.message > div:first-child {
+    flex-grow: 1;
+}
+
 
 /************************
   Project list formatting
@@ -650,6 +675,8 @@ a.nav {
 .no-wrap {
     flex-wrap: nowrap;
 }
+
+
 /*******************
   Button formatting
 ********************/

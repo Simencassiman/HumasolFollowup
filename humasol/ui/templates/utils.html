@@ -1,0 +1,15 @@
+{% macro wrap(str) -%}
+  `{{ str|trim }}`
+{%- endmacro %}
+
+{% macro message(msg) -%}
+
+    <div class="message">
+        <div>{{ msg }}</div>
+        <div>
+            <!-- delete button -->
+            <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del" onclick="deleteElement(this)">
+        </div>
+    </div>
+
+{%- endmacro %}

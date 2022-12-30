@@ -25,15 +25,10 @@ from functools import reduce
 from typing import Any, Optional, Type, TypedDict, TypeVar, Union
 
 from sqlalchemy import orm
-from sqlalchemy.orm import DeclarativeMeta
-
-from humasol import exceptions, model
-from humasol.repository import db
 
 # Local modules
-
-
-BaseModel: DeclarativeMeta = db.Model
+from humasol import exceptions, model
+from humasol.repository import db
 
 # Relationship tables between database entities
 project_students = db.Table(
@@ -97,7 +92,7 @@ project_sdg_table = db.Table(
 # TODO: check if can remove pylint deactivation when used setters
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-instance-attributes
-class Project(BaseModel):
+class Project(model.BaseModel):
     """Abstract base class for all Humasol project.
 
     Projects executed by Humasol teams can be represented by subclasses of
@@ -1206,14 +1201,14 @@ class Project(BaseModel):
         # self._load_from_file()
         self.sdgs = [s.sdg for s in self.sdgs_db]
         self.project_components = []
+        self.description = ""
+        self.extra_data = {}
 
     def load_from_file(self, data: dict[str, Any]) -> None:
         """Prepare instance with folder from file."""
         # TODO: add project components.
-        if "description" in data:
-            self.description = data["description"]
-        if "extra_data" in data:
-            self.extra_data = data["extra_data"]
+        self.description = data["description"] if "description" in data else ""
+        self.extra_data = data["extra_data"] if "extra_data" in data else {}
 
     # Magic methods #
     def __repr__(self) -> str:

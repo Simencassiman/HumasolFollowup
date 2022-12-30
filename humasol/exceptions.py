@@ -37,11 +37,36 @@ class FormatException(HumasolException):
     """Invalid format."""
 
 
-class FileNotFoundException(HumasolException):
+class RepositoryException(HumasolException):
+    """Raised when an error occurs in the repository."""
+
+
+class FileNotFoundException(RepositoryException):
     """Raised when the requested file cannot be found."""
 
 
-class ProjectNotFoundException(HumasolException):
+class NotDatamodelClassException(RepositoryException):
+    """Raised when a wrong class is used for database access.
+
+    Only ORM mapped classes have database capabilities. These are considered
+    datamodels. When a class without such capabilities is used for database
+    functionality it will raise this error.
+    """
+
+
+class InvalidRequestException(RepositoryException):
+    """Raised on an invalid database request."""
+
+
+class IntegrityException(RepositoryException):
+    """Raised when a database request compromises its integrity."""
+
+
+class IllegalFileContent(RepositoryException):
+    """Raised when a file loaded from disk has ill-formatted content."""
+
+
+class ObjectNotFoundException(RepositoryException):
     """Raised when there is no project with the requested ID."""
 
 

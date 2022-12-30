@@ -13,11 +13,11 @@
         <h1 class="page-title">Add Project</h1>
     </div>
 
-    {% for message in get_flashed_messages() %}
-        <div>
-            {{ message }}
-        </div>
-    {% endfor %}
+    <div class="message-container">
+        {% for msg in get_flashed_messages() %}
+            {{ utils.message(msg) }}
+        {% endfor %}
+    </div>
 
     <form action="save-project" method="POST" >
         {{ form.hidden_tag() }}

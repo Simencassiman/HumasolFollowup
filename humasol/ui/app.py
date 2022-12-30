@@ -148,7 +148,8 @@ class HumasolApp(Flask):
 
         Returns
         _______
-        Return the newly assigned project identifier.
+        Return the newly assigned project identifier. If the process fails,
+        returns -1.
         """
         if (
             parameters["location"]["coordinates"]["latitude"] is None
@@ -164,19 +165,28 @@ class HumasolApp(Flask):
         parameters["creation_date"] = datetime.date.today()
 
         try:
-            model_ops.create_project(parameters)
-            # model_ops.save_project(project)
+            project = model_ops.create_project(parameters)
+            success = model_ops.save_project(project)
 
         except (
             exceptions.IllegalArgumentException,
             exceptions.MissingArgumentException,
         ) as exc:
             raise exceptions.FormError(str(exc)) from exc
-
         except exceptions.ModelException as exc:
-            raise exceptions.Error500(str(exc)) from exc
+            raise exceptions.Error500(
+                "An internal error occurred while parsing the data"
+            ) from exc
+        except exceptions.IntegrityException as exc:
+            raise exceptions.FormError(
+                "Some provided elements violate database integrity."
+            ) from exc
+        except exceptions.RepositoryException as exc:
+            raise exceptions.Error500(
+                "An internal error occurred while saving the data."
+            ) from exc
 
-        return -1  # project.id
+        return project.id if success else -1
 
     def edit_project(self, parameters: dict[str, Any]) -> None:
         """Edit an existing project in the system.

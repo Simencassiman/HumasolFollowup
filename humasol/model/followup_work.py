@@ -25,18 +25,14 @@ from dateutil.relativedelta import relativedelta
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import DeclarativeMeta
-
-from humasol import exceptions
 
 # Local modules
+from humasol import exceptions, model
 from humasol.model import person, utils
 from humasol.repository import db
 
-BaseModel: DeclarativeMeta = db.Model
 
-
-class FollowupJob(BaseModel):
+class FollowupJob(model.BaseModel, model.ProjectElement):
     """Abstract base class for work related to project follow-up.
 
     Humasol is interested in carrying out various tasks to follow a finished
@@ -495,7 +491,7 @@ class Task(FollowupJob):
         )
 
 
-class Period(BaseModel):
+class Period(model.BaseModel, model.ProjectElement):
     """Class representing a period over which a job is active.
 
     Jobs can be active for different intervals during different extents of

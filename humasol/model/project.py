@@ -19,10 +19,10 @@ from __future__ import annotations
 
 import datetime
 import re
+import typing as ty
 from abc import abstractmethod
 from enum import Enum
 from functools import reduce
-from typing import Any, Optional, Type, TypedDict, TypeVar, Union
 
 from sqlalchemy import orm
 
@@ -76,7 +76,7 @@ project_sdg_table = db.Table(
     ),
     db.Column(
         "sdg",
-        db.Enum(model.project_components.SDG),
+        db.Enum(model.project_elements.SDG),
         db.ForeignKey("sdg_db.sdg"),
     ),
 )
@@ -139,8 +139,8 @@ class Project(model.BaseModel):
     MIN_STUDENTS = 3
     MAX_STUDENTS = 4
 
-    T = TypeVar("T")
-    V = TypeVar("V")
+    T = ty.TypeVar("T")
+    V = ty.TypeVar("V")
 
     # Definitions for the database tables #
     __tablename__ = "project"
@@ -162,7 +162,7 @@ class Project(model.BaseModel):
     dashboard = db.Column(db.String)
     save_data = db.Column(db.Boolean, nullable=False)
     project_data = db.Column(db.String)
-    # extra folder saved to file
+    extra_data_db = db.relationship("ExtraDatum", cascade="all, delete-orphan")
     sdgs_db = db.relationship(
         "SdgDB",
         secondary=project_sdg_table,
@@ -189,7 +189,7 @@ class Project(model.BaseModel):
     )
     tasks = db.relationship("Task", lazy=False, cascade="all, delete-orphan")
     data_file = db.Column(db.String, unique=True, nullable=False)
-    # project components saved to file
+    project_components: list[model.project_components.ProjectComponent]
 
     __mapper_args__ = {
         "polymorphic_on": type,
@@ -198,7 +198,7 @@ class Project(model.BaseModel):
 
     # End of database definitions #
 
-    class ProjectArgs(TypedDict, total=False):
+    class ProjectArgs(ty.TypedDict, total=False):
         """Class used for typing project arguments."""
 
         name: str
@@ -207,20 +207,20 @@ class Project(model.BaseModel):
         description: str
         location: dict[str, dict[str, str] | dict[str, int | float]]
         work_folder: str
-        students: list[dict[str, Any]]
-        supervisors: list[dict[str, Any]]
-        contact_person: dict[str, Any]
-        partners: list[dict[str, Any]]
-        code: Optional[str]
+        students: list[dict[str, ty.Any]]
+        supervisors: list[dict[str, ty.Any]]
+        contact_person: dict[str, ty.Any]
+        partners: list[dict[str, ty.Any]]
+        code: ty.Optional[str]
         sdgs: list[str]
-        tasks: Optional[list[dict[str, Any]]]
-        data_source: Optional[dict[str, str]]
-        dashboard: Optional[str]
+        tasks: ty.Optional[list[dict[str, ty.Any]]]
+        data_source: ty.Optional[dict[str, str]]
+        dashboard: ty.Optional[str]
         save_data: bool
-        project_data: Optional[str]
-        extra_data: Optional[dict[str, Any]]
-        subscriptions: Optional[list[dict[str, Any]]]
-        kwargs: dict[str, Any]
+        project_data: ty.Optional[str]
+        extra_data: ty.Optional[dict[str, ty.Any]]
+        subscriptions: ty.Optional[list[dict[str, ty.Any]]]
+        kwargs: dict[str, ty.Any]
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-locals
@@ -236,20 +236,22 @@ class Project(model.BaseModel):
         implementation_date: datetime.date,
         description: str,
         category: ProjectCategory,
-        location: model.project_components.Location,
+        location: model.project_elements.Location,
         work_folder: str,
         students: list[model.person.Student],
         supervisors: list[model.person.Supervisor],
         contact_person: model.person.Person,
         partners: list[model.person.Partner],
-        sdgs: list[model.project_components.SDG],
-        tasks: Optional[list[model.followup_work.Task]] = None,
-        data_source: Optional[model.project_components.DataSource] = None,
-        dashboard: Optional[str] = None,
+        sdgs: list[model.project_elements.SDG],
+        tasks: ty.Optional[list[model.followup_work.Task]] = None,
+        data_source: ty.Optional[model.project_elements.DataSource] = None,
+        dashboard: ty.Optional[str] = None,
         save_data: bool = False,
-        project_data: Optional[str] = None,
-        subscriptions: Optional[list[model.followup_work.Subscription]] = None,
-        extra_data: Optional[dict[str, Any]] = None,
+        project_data: ty.Optional[str] = None,
+        subscriptions: ty.Optional[
+            list[model.followup_work.Subscription]
+        ] = None,
+        extra_data: ty.Optional[dict[str, ty.Any]] = None,
         **kwargs,
     ):
         """Instantiate a project object.
@@ -412,10 +414,12 @@ class Project(model.BaseModel):
         self.save_data = save_data
         self.project_data = project_data
         self.extra_data = extra_data if extra_data is not None else {}
-        self.sdgs = sdgs if sdgs is not None else []
-        self.sdgs_db = [
-            model.project_components.SdgDB(sdg) for sdg in self.sdgs
+        self.extra_data_db = [  # Wrap for db storage
+            model.project_elements.ExtraDatum(key, value)
+            for key, value in self.extra_data.items()
         ]
+        self.sdgs = sdgs if sdgs is not None else []
+        self.sdgs_db = [model.project_elements.SdgDB(sdg) for sdg in self.sdgs]
         self.data_source = data_source
         self.students = students
         self.supervisors = supervisors
@@ -425,9 +429,9 @@ class Project(model.BaseModel):
         self.tasks = tasks if tasks is not None else []
 
         self._updated = False
-        self.project_components: list[
+        self.project_components = list[
             model.project_components.ProjectComponent
-        ] = []
+        ]()
 
         if self.code is None:
             self._create_code()
@@ -442,7 +446,7 @@ class Project(model.BaseModel):
 
     # Validators #
     @staticmethod
-    def are_legal_extra_data(data: Optional[dict[str, str]]) -> bool:
+    def are_legal_extra_data(data: ty.Optional[dict[str, str]]) -> bool:
         """Check whether the provided extra folder has a legal format."""
         return (
             data is None
@@ -475,7 +479,7 @@ class Project(model.BaseModel):
         )
 
     @staticmethod
-    def are_legal_sdgs(sdgs: list[model.project_components.SDG]) -> bool:
+    def are_legal_sdgs(sdgs: list[model.project_elements.SDG]) -> bool:
         """Check whether the provided SDG list is legal."""
         return (
             isinstance(sdgs, (list, tuple))
@@ -495,7 +499,7 @@ class Project(model.BaseModel):
 
     @staticmethod
     def are_legal_subscriptions(
-        subscriptions: Optional[list[model.followup_work.Subscription]],
+        subscriptions: ty.Optional[list[model.followup_work.Subscription]],
     ) -> bool:
         """Check whether the provided list is a legal subscriptions list."""
         return subscriptions is None or (
@@ -515,7 +519,7 @@ class Project(model.BaseModel):
 
     @staticmethod
     def are_legal_tasks(
-        tasks: Optional[list[model.followup_work.Task]],
+        tasks: ty.Optional[list[model.followup_work.Task]],
     ) -> bool:
         """Check whether the provided list is a legal tasks list."""
         return tasks is None or (
@@ -542,24 +546,24 @@ class Project(model.BaseModel):
         return isinstance(creator, model.User)
 
     @staticmethod
-    def is_legal_dashboard(dashboard: Optional[str]) -> bool:
+    def is_legal_dashboard(dashboard: ty.Optional[str]) -> bool:
         """Check whether the provided dashboard is legal."""
         return dashboard is None or (
             isinstance(dashboard, str) and len(dashboard) > 0
         )
 
     @staticmethod
-    def is_legal_data_folder(folder: Optional[str]) -> bool:
+    def is_legal_data_folder(folder: ty.Optional[str]) -> bool:
         """Check whether the provided data folder is a legal URL."""
         return folder is None or (isinstance(folder, str) and len(folder) > 0)
 
     @staticmethod
     def is_legal_data_source(
-        source: Optional[model.project_components.DataSource],
+        source: ty.Optional[model.project_elements.DataSource],
     ) -> bool:
         """Check whether the provided source is a legal project data source."""
         return source is None or isinstance(
-            source, model.project_components.DataSource
+            source, model.project_elements.DataSource
         )
 
     @staticmethod
@@ -580,9 +584,9 @@ class Project(model.BaseModel):
         )
 
     @staticmethod
-    def is_legal_location(location: model.project_components.Location) -> bool:
+    def is_legal_location(location: model.project_elements.Location) -> bool:
         """Check whether the provided location is a legal location."""
-        return isinstance(location, model.project_components.Location)
+        return isinstance(location, model.project_elements.Location)
 
     @staticmethod
     def is_legal_name(name: str) -> bool:
@@ -611,9 +615,9 @@ class Project(model.BaseModel):
         return isinstance(flag, bool)
 
     @staticmethod
-    def is_legal_sdg(sdg: model.project_components.SDG) -> bool:
+    def is_legal_sdg(sdg: model.project_elements.SDG) -> bool:
         """Check whether the provided SDG is legal."""
-        return isinstance(sdg, model.project_components.SDG)
+        return isinstance(sdg, model.project_elements.SDG)
 
     @staticmethod
     def is_legal_student(student: model.person.Student) -> bool:
@@ -631,7 +635,7 @@ class Project(model.BaseModel):
         return isinstance(supervisor, model.person.Supervisor)
 
     @staticmethod
-    def is_legal_task(task: Any) -> bool:
+    def is_legal_task(task: ty.Any) -> bool:
         """Check whether the provided task is legal."""
         return isinstance(task, model.followup_work.Task)
 
@@ -678,9 +682,7 @@ class Project(model.BaseModel):
         self.description = description
 
     # TODO: Convert to python setter
-    def set_location(
-        self, location: model.project_components.Location
-    ) -> None:
+    def set_location(self, location: model.project_elements.Location) -> None:
         """Set the location for this project."""
         if not self.is_legal_location(location):
             raise ValueError(
@@ -703,7 +705,7 @@ class Project(model.BaseModel):
     # TODO: Add python getter
     # TODO: Add addition and removal functions for SDG
     # TODO: Convert to python setter
-    def set_sdgs(self, sdgs: list[model.project_components.SDG]) -> None:
+    def set_sdgs(self, sdgs: list[model.project_elements.SDG]) -> None:
         """Set the list of SDGs for this project."""
         if not self.are_legal_sdgs(sdgs):
             raise ValueError(
@@ -712,9 +714,7 @@ class Project(model.BaseModel):
             )
 
         self.sdgs = sdgs if sdgs else []
-        self.sdgs_db = [
-            model.project_components.SdgDB(sdg) for sdg in self.sdgs
-        ]
+        self.sdgs_db = [model.project_elements.SdgDB(sdg) for sdg in self.sdgs]
 
     # TODO: Convert to python setter
     def set_contact_person(self, contact: model.person.Person) -> None:
@@ -768,7 +768,7 @@ class Project(model.BaseModel):
 
     # TODO: Convert to python setter
     def set_data_source(
-        self, source: Optional[model.project_components.DataSource]
+        self, source: ty.Optional[model.project_elements.DataSource]
     ) -> None:
         """Set the datasource for this project."""
         if not self.is_legal_data_source(source):
@@ -785,7 +785,7 @@ class Project(model.BaseModel):
         self.data_source = source
 
     # TODO: Convert to python setter
-    def set_dashboard(self, dashboard: Optional[str]) -> None:
+    def set_dashboard(self, dashboard: ty.Optional[str]) -> None:
         """Set the dashboard for this project."""
         if not self.is_legal_dashboard(dashboard):
             raise ValueError(
@@ -814,7 +814,7 @@ class Project(model.BaseModel):
         self.save_data = save
 
     # TODO: Convert to python setter
-    def set_project_data(self, folder: Optional[str]) -> None:
+    def set_project_data(self, folder: ty.Optional[str]) -> None:
         """Set URL to project folder folder."""
         if not self.is_legal_data_folder(folder):
             raise ValueError(
@@ -894,7 +894,9 @@ class Project(model.BaseModel):
             lambda x, y: x + y, map(lambda s: s[0], name_pieces)
         )
 
-    def _filter_project_components(self, component_type: Type[T]) -> list[T]:
+    def _filter_project_components(
+        self, component_type: ty.Type[T]
+    ) -> list[T]:
         """Retrieve Project components of the specified type."""
         return list(
             filter(
@@ -1147,10 +1149,10 @@ class Project(model.BaseModel):
             self.tasks.remove(task)
 
     def build_data_source(
-        self, data: dict[str, Any]
-    ) -> model.project_components.DataSource:
+        self, data: dict[str, ty.Any]
+    ) -> model.project_elements.DataSource:
         """Build a correct folder source for this instance."""
-        return model.project_components.DataSource(**data)
+        return model.project_elements.DataSource(**data)
 
     @abstractmethod
     def update(self, params: ProjectArgs) -> Project:
@@ -1168,7 +1170,7 @@ class Project(model.BaseModel):
         #
         # return self
 
-    def get_credentials(self) -> dict[str, Any]:
+    def get_credentials(self) -> dict[str, ty.Any]:
         """Get the folder source credentials.
 
         Return a dictionary as provided by DataSource.get_credential,
@@ -1176,7 +1178,7 @@ class Project(model.BaseModel):
         """
         return self.data_source.get_credentials() if self.data_source else {}
 
-    def to_save_to_file(self) -> dict[str, Any]:
+    def to_save_to_file(self) -> dict[str, ty.Any]:
         """Provide a dictionary containing all folder for file storage.
 
         Provide all the folder from this instance that should be stored in the
@@ -1204,7 +1206,7 @@ class Project(model.BaseModel):
         self.description = ""
         self.extra_data = {}
 
-    def load_from_file(self, data: dict[str, Any]) -> None:
+    def load_from_file(self, data: dict[str, ty.Any]) -> None:
         """Prepare instance with folder from file."""
         # TODO: add project components.
         self.description = data["description"] if "description" in data else ""
@@ -1245,6 +1247,10 @@ class EnergyProject(Project):
     # Definitions for the database tables #
     power = db.Column(db.Float)
 
+    project_components = db.relationship(
+        "EnergyProjectComponent", cascade="all, delete-orphan"
+    )
+
     __mapper_args__ = {"polymorphic_identity": "ENERGY"}
 
     # End database definitions #
@@ -1252,7 +1258,7 @@ class EnergyProject(Project):
     class EnergyProjectArgs(Project.ProjectArgs, total=False):
         """Class used for EnergyProject update parameters."""
 
-        power: Union[int, float]
+        power: int | float
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -1309,7 +1315,7 @@ class EnergyProject(Project):
 
         return self
 
-    def load_from_file(self, data: dict[str, Any]) -> None:
+    def load_from_file(self, data: dict[str, ty.Any]) -> None:
         """Populate this instance with information loaded from file."""
         super().load_from_file(data)
 
@@ -1349,14 +1355,14 @@ class EnergyProject(Project):
 class ProjectFactory:
     """Factory class used for constructing energy projects."""
 
-    project_components = {
+    project_components: dict[str, ty.Callable] = {
         model.project_components.Generator.LABEL: (
             model.project_components.Generator
         ),
         model.project_components.Grid.LABEL: model.project_components.Grid,
         model.project_components.PV.LABEL: model.project_components.PV,
         model.project_components.Battery.LABEL: (
-            model.project_components.Battery
+            model.project_components.Battery.from_form
         ),
         model.project_components.ConsumptionComponent.LABEL: (
             model.project_components.ConsumptionComponent
@@ -1365,7 +1371,7 @@ class ProjectFactory:
 
     @staticmethod
     def get_project(
-        category: ProjectCategory, params: dict[str, Any]
+        category: ProjectCategory, params: dict[str, ty.Any]
     ) -> Project:
         """Construct project with the provided parameters."""
         project_class = category.class_name
@@ -1373,7 +1379,7 @@ class ProjectFactory:
 
     @staticmethod
     def get_project_component(
-        params: dict[str, Any]
+        params: dict[str, ty.Any]
     ) -> model.project_components.ProjectComponent:
         """Construct the project component with the provided parameters."""
         # TODO: Write factory function
@@ -1426,7 +1432,7 @@ class ProjectCategory(Enum):
         return self._value_[0]
 
     @property
-    def class_name(self) -> Type[Project]:
+    def class_name(self) -> type[Project]:
         """Provide class corresponding to the project category."""
         return self._value_[1]
 

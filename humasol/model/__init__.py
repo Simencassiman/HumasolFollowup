@@ -17,18 +17,22 @@ from .person import (  # noqa
     Student,
     Supervisor,
 )
-from .project_components import (  # noqa
+from .project_elements import (  # noqa
     Address,
     Coordinates,
-    ConsumptionComponent,
     SDG,
-    Battery,
     DataSource,
+    Location,
+)
+
+from .project_components import (  # noqa
+    ConsumptionComponent,
+    Battery,
     EnergyProjectComponent,
     Generator,
     Grid,
-    Location,
     ProjectComponent,
+    PV,
 )
 
 # pylint: disable=cyclic-import

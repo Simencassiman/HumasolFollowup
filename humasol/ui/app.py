@@ -164,9 +164,12 @@ class HumasolApp(Flask):
         parameters["creator"] = self.get_user()
         parameters["creation_date"] = datetime.date.today()
 
+        del parameters["data_source"]
+
         try:
             project = model_ops.create_project(parameters)
-            success = model_ops.save_project(project)
+            success, _ = model_ops.save_project(project)
+            success = False
 
         except (
             exceptions.IllegalArgumentException,

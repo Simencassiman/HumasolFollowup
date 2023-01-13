@@ -16,8 +16,8 @@
             {{ subscription.subscriber.label(class="form-input-label") }}
 
             {% set deletable = False %}
-            {% set student = subscription.subscriber %}
-            {% include 'student.html' %}
+            {% set student = subscription.subscriber.student %}
+            {% include 'project/form_items/student.html' %}
         </div>
 
         <div class="form-item">
@@ -34,7 +34,7 @@
                 </div>
                 <div class="form-grid">
                     {% for period in subscription.periods %}
-                        {% include 'period.html' %}
+                        {% include 'project/form_items/period.html' %}
                     {% endfor %}
                 </div>
             </div>

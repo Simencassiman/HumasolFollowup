@@ -1,4 +1,4 @@
-{% import 'project/form_items/energy.html' as energy %}
+{% import 'project/form_items/energy.html' as energy_items %}
 
 {% macro get(form) -%}
     {% if form.category == 'ENERGY' %}
@@ -22,7 +22,7 @@
         </div>
         <div id="energy-sources">
             {% for s in form.sources %}
-                {{ energy.source(s) }}
+                {{ energy_items.source(s) }}
             {% endfor %}
         </div>
     </div>
@@ -35,7 +35,7 @@
         </div>
         <div id="energy-storages">
             {% for s in form.storage %}
-                {{ energy.storage(s) }}
+                {{ energy_items.storage(s) }}
             {% endfor %}
         </div>
     </div>
@@ -48,7 +48,7 @@
         </div>
         <div id="energy-consumptions">
             {% for l in form.loads %}
-                {{ energy.consumption(l) }}
+                {{ energy_items.consumption(l) }}
             {% endfor %}
         </div>
     </div>

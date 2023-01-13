@@ -376,6 +376,8 @@ class GUI(Blueprint):
         else:
             form = forms.ProjectForm()
 
+        # TODO: reload category JS if one is selected already
+
         return render_template(
             "project/form_add_project.html",
             form=form,

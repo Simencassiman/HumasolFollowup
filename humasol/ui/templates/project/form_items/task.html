@@ -24,7 +24,7 @@
 
             {% set deletable = False %}
             {% set student = task.subscriber.student %}
-            {% include 'project/student.html' %}
+            {% include 'project/form_items/student.html' %}
         </div>
 
         <div class="form-item">
@@ -41,7 +41,7 @@
                 </div>
                 <div class="form-grid">
                     {% for period in task.periods %}
-                        {% include 'project/period.html' %}
+                        {% include 'project/form_items/period.html' %}
                     {% endfor %}
                 </div>
             </div>

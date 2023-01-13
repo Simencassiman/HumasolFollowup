@@ -234,9 +234,9 @@ class BatteryForm(StorageComponentForm):
         """
         return {
             "battery_type": self.battery_type.data,
-            "base_soc": self.battery_base_soc.data,
-            "min_soc": self.battery_min_soc.data,
-            "max_soc": self.battery_max_soc.data,
+            "base_soc": float(self.battery_base_soc.data),
+            "min_soc": float(self.battery_min_soc.data),
+            "max_soc": float(self.battery_max_soc.data),
             **super().get_data(),
         }
 

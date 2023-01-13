@@ -2,9 +2,8 @@
 
 All functions must be called from within an application context.
 """
-
 # Python Libraries
-from typing import Any
+import typing as ty
 
 # Local modules
 from humasol import exceptions, model
@@ -15,9 +14,12 @@ from humasol.repository import db
 # pylint: disable=unused-argument
 
 
+T = ty.TypeVar("T", bound=model.ProjectElement)
+
+
 def _get_unique_attributes(
     obj: model.Model | list[model.Model],
-) -> dict[str, Any] | list[dict[str, Any]]:
+) -> dict[str, ty.Any] | list[dict[str, ty.Any]]:
     """Retrieve all attributes of the object with a uniqueness constraint."""
     if isinstance(obj, list):
         return [
@@ -34,6 +36,24 @@ def _get_unique_attributes(
         for attr, val in type(obj).__dict__.items()
         if hasattr(val, "unique") and getattr(val, "unique")
     }
+
+
+def _merge_on_uniqueness(new_objs: list[model.ProjectElement]) -> list[str]:
+    type(new_objs[0])
+
+    # objs = [
+    #     repo.get_object_by_attributes(cls, obj)
+    #     for obj in _get_unique_attributes(new_objs)
+    # ]
+
+    problem_elements = list[str]()
+    # for i, (new, old) in enumerate(zip(new_objs, objs)):
+    #     if len(old) == 1:
+    #         new.update(old[0])
+    #     elif len(new) > 1:
+    #         problem_elements.append(f"{type(new).__name__} {i + 1}")
+
+    return problem_elements
 
 
 def admin_exists() -> bool:
@@ -56,7 +76,7 @@ def create_db_tables() -> None:
 
 # Pylint doesn't seem to detect inner class
 # pylint: disable=no-member
-def create_project(parameters: dict[str, Any]) -> model.Project:
+def create_project(parameters: dict[str, ty.Any]) -> model.Project:
     """Create a project from the provided project parameters.
 
     Parameters
@@ -111,6 +131,9 @@ def create_project(parameters: dict[str, Any]) -> model.Project:
 
         # Create follow-up objects
         if "data_source" in parameters:
+            # TODO: Remove this when the input is added to the form
+            parameters["data_source"]["data_manager"] = "EnergyDataManager"
+            parameters["data_source"]["report_manager"] = "EnergyReportManager"
             parameters["data_source"] = model.DataSource(
                 **parameters["data_source"]
             )
@@ -226,7 +249,9 @@ def register_user(email: str, password: str, role: model.Role) -> model.User:
     """
 
 
-def save_project(project: model.Project) -> bool:
+def save_project(
+    project: model.Project,
+) -> tuple[ty.Literal[False], str] | tuple[ty.Literal[True], None]:
     """Save a new project to the database.
 
     By saving the project to the database, a new ID will be given to it.
@@ -235,26 +260,34 @@ def save_project(project: model.Project) -> bool:
     """
     # TODO: add checks for uniqueness
     # Get all attributes with a uniqueness constraint from the project
-    project_unique = _get_unique_attributes(project)
-    project_match = repo.get_object_by_attributes(
-        model.Project, project_unique  # type: ignore
-    )
-    print(project_match)
-    if len(project_match) > 0:
-        return False
-
-    # Go through lists (students, etc.)
-    _get_unique_attributes(project.contact_person)
-    _get_unique_attributes(project.students)
-    _get_unique_attributes(project.supervisors)
-    _get_unique_attributes(project.partners)
-    _get_unique_attributes(project.tasks)
-    _get_unique_attributes(project.subscriptions)
+    # project_unique = _get_unique_attributes(project)
+    # project_match = repo.get_object_by_attributes(
+    #     model.Project, project_unique  # type: ignore
+    # )
+    #
+    # if len(project_match) > 0:
+    #     return False, "Some project attributes violate uniqueness constraint"
+    #
+    # # Go through lists (students, etc.)
+    # problem_elements = (
+    #         _merge_on_uniqueness(project.students)
+    #         + _merge_on_uniqueness(project.supervisors)
+    #         + _merge_on_uniqueness(project.partners)
+    #         + _merge_on_uniqueness(project.tasks)
+    #         + _merge_on_uniqueness(project.subscriptions)
+    # )
+    # contact_person = repo.get_object_by_attributes(
+    #     model.Person, _get_unique_attributes(project.contact_person)
+    # )
+    #
+    # if len(problem_elements):
+    #     return False, f"Elements {problem_elements} have attributes that " \
+    #                   f"violate uniqueness constraints"
 
     # TODO: unify existing objects with new ones
     repo.save_project(project)
 
-    return True
+    return True, None
 
 
 def search(value: str) -> list[model.Project]:
@@ -280,4 +313,6 @@ def tables_exist() -> bool:
 
 
 if __name__ == "__main__":
-    pass
+    s = model.Student("a", "a@gmail.com", "KUL", "Elec")
+
+    _merge_on_uniqueness([s])

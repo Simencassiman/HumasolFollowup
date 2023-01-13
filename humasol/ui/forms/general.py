@@ -626,6 +626,9 @@ class DataSourceForm(forms.HumasolSubform):
 
     def validate_password(self, password) -> None:
         """Validate form input for datasource password."""
+        if len(password.data.strip()) == 0:
+            password.data = None
+
         if (
             self.token.data is None
             and not model_val.is_legal_datasource_password(password.data)

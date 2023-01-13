@@ -9,6 +9,7 @@ import humasol
 import humasol.model.followup_work as fw
 import humasol.model.person as pn
 import humasol.model.project_components as pc
+import humasol.model.project_elements as pe
 from humasol import model
 
 
@@ -16,7 +17,7 @@ def are_legal_datasource_managers(
     api_manager: str, data_manager: str, report_manager: str
 ) -> bool:
     """Check whether the provided managers are legal for a data source."""
-    return pc.DataSource.are_legal_managers(
+    return pe.DataSource.are_legal_managers(
         api_manager, data_manager, report_manager
     )
 
@@ -35,22 +36,22 @@ def are_legal_project_extra_data(data: dict[str, str]) -> bool:
 
 def is_legal_address_country(country: str) -> bool:
     """Check whether the provided country is legal for an address."""
-    return pc.Address.is_legal_country(country)
+    return pe.Address.is_legal_country(country)
 
 
 def is_legal_address_number(number: Optional[int]) -> bool:
     """Check whether the provided number is a legal address street number."""
-    return pc.Address.is_legal_number(number)
+    return pe.Address.is_legal_number(number)
 
 
 def is_legal_address_place(place: str) -> bool:
     """Check whether the provided place is legal for an address."""
-    return pc.Address.is_legal_place(place)
+    return pe.Address.is_legal_place(place)
 
 
 def is_legal_address_street(street: Optional[str]) -> bool:
     """Check whether the provided street is legal for an address."""
-    return pc.Address.is_legal_street(street)
+    return pe.Address.is_legal_street(street)
 
 
 def is_legal_api_manager(api_manager: str, category: str) -> bool:
@@ -87,32 +88,32 @@ def is_legal_consumption_component_critical_flag(flag: bool) -> bool:
 
 def is_legal_coordinates_latitude(latitude: float) -> bool:
     """Check whether the provided latitude is legal for coordinates."""
-    return pc.Coordinates.is_legal_latitude(latitude)
+    return pe.Coordinates.is_legal_latitude(latitude)
 
 
 def is_legal_coordinates_longitude(longitude: float) -> bool:
     """Check whether the provided longitude is legal for coordinates."""
-    return pc.Coordinates.is_legal_longitude(longitude)
+    return pe.Coordinates.is_legal_longitude(longitude)
 
 
 def is_legal_datasource_password(password: Optional[str]) -> bool:
     """Check whether the provided password is legal for a data source."""
-    return pc.DataSource.is_legal_password(password)
+    return pe.DataSource.is_legal_password(password)
 
 
 def is_legal_datasource_source(source: str) -> bool:
     """Check whether the provided source is legal for a project data source."""
-    return pc.DataSource.is_legal_source(source)
+    return pe.DataSource.is_legal_source(source)
 
 
 def is_legal_datasource_token(token: Optional[str]) -> bool:
     """Check whether the provided token is legal for a data source."""
-    return pc.DataSource.is_legal_token(token)
+    return pe.DataSource.is_legal_token(token)
 
 
 def is_legal_datasource_user(user: Optional[str]) -> bool:
     """Check whether the provided user is legal for a data source."""
-    return pc.DataSource.is_legal_user(user)
+    return pe.DataSource.is_legal_user(user)
 
 
 def is_legal_energy_project_component_power(power: float) -> bool:

@@ -75,7 +75,7 @@ def get_project_max_students() -> int:
 
 def get_pv_label() -> str:
     """Provide string label of the PV project component class."""
-    return model.project_components.PV.LABEL
+    return model.PV.LABEL
 
 
 def get_sdgs() -> tuple[tuple[str, str], ...]:

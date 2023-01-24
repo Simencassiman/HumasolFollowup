@@ -1,9 +1,9 @@
 """Module providing base classes for Humasol forms."""
 from __future__ import annotations
 
+import typing as ty
 from abc import ABC, ABCMeta, abstractmethod
 from collections.abc import Iterator
-from typing import Any, Generic, TypeVar
 
 from flask_wtf import FlaskForm
 from wtforms import Form as NoCsrfForm
@@ -17,7 +17,7 @@ class IHumasolForm(ABC):
     """Humasol form interface."""
 
     @abstractmethod
-    def get_data(self) -> dict[str, Any]:
+    def get_data(self) -> dict[str, ty.Any]:
         """Return the data in the form fields.
 
         Returns
@@ -43,7 +43,7 @@ class HumasolSubform(NoCsrfForm, IHumasolForm, ABC, metaclass=MetaNoCsrfForm):
     """Superclass to use with any subform."""
 
 
-class ProjectComponentForm(HumasolSubform):
+class ProjectElementForm(HumasolSubform):
     """Base form for all project component forms."""
 
     # LABEL will be a constant
@@ -56,12 +56,12 @@ class ProjectComponentForm(HumasolSubform):
     # pylint: enable=invalid-name
 
 
-T = TypeVar("T", bound=ProjectComponentForm)
-S = TypeVar("S", bound=ProjectComponentForm)
+T = ty.TypeVar("T", bound=ProjectElementForm)
+S = ty.TypeVar("S", bound=ProjectElementForm)
 
 
-class ProjectComponentWrapper(Generic[T]):
-    """Wraps the possible subclasses of an abstract component type T.
+class ProjectElementWrapper(ty.Generic[T]):
+    """Wraps the possible subclasses of an abstract element type T.
 
     Can be used to contain different subclasses of one supertype to allow
     dynamic selection in the created form. It provides access to the subform
@@ -70,58 +70,61 @@ class ProjectComponentWrapper(Generic[T]):
     route it to the actively selected subclass.
     """
 
-    class Wrapper(HumasolSubform, Generic[S]):
-        """Subform wrapping project component subclasses.
+    class Wrapper(HumasolSubform, ty.Generic[S]):
+        """Subform wrapping project element subclasses.
 
         Actual subform that provides the functionality to select the various
         subclasses of the specified form.
         """
 
-        # Should be overriden in subclass
-        component_type = SelectField("Select component")
+        element_type = SelectField("Select element")
 
         def __init__(
-            self, superclass: type[S], *args: Any, **kwargs: Any
+            self,
+            superclass: type[S],
+            *args: ty.Any,
+            default: str = None,
+            **kwargs: ty.Any,
         ) -> None:
             """Instantiate wrapper object.
 
             Parameters
             __________
-            superclass  -- Form superclass from which all components inherit
+            superclass  -- Form superclass from which all elements inherit
             """
             self.kwargs = kwargs
 
-            self._components = {
+            self._elements = {
                 str(c.LABEL): c for c in forms.utils.get_subclasses(superclass)
             }
 
             super().__init__(*args, **kwargs)
 
-            self.component_type.choices = classes = [
-                (c, c.lower()) for c in self._components.keys()
+            self.element_type.choices = classes = [
+                (c, c.lower().capitalize()) for c in self._elements.keys()
             ]
 
-            if not self.component_type.data:
-                self.component_type.data = classes[0][0]
+            if not self.element_type.data:
+                self.element_type.data = default or classes[0][0]
 
-            self.form = self.component_class(*args, **kwargs)
+            self.form = self.element_class(*args, **kwargs)
 
         @property
-        def component(self) -> S:
-            """Return the currently instantiated component."""
+        def element(self) -> S:
+            """Return the currently instantiated element."""
             return self.form
 
         @property
-        def component_class(self) -> type[S]:
-            """Return the currently active component class."""
-            return self._components[self.component_type.data]
+        def element_class(self) -> type[S]:
+            """Return the currently active element class."""
+            return self._elements[self.element_type.data]
 
         @property
         def classes(self) -> tuple[type[S], ...]:
             """Return the wrapped classes."""
-            return tuple(self._components.values())
+            return tuple(self._elements.values())
 
-        def get_data(self) -> dict[str, Any]:
+        def get_data(self) -> dict[str, ty.Any]:
             """Return the data in the form fields.
 
             Returns
@@ -130,8 +133,8 @@ class ProjectComponentWrapper(Generic[T]):
             data in the form fields.
             """
             return {
-                "type": self.component_type.data,
-                **(self.component.get_data()),
+                "type": self.element_type.data,
+                **(self.element.get_data()),
             }
 
         def process(
@@ -176,8 +179,8 @@ class ProjectComponentWrapper(Generic[T]):
                 **kwargs,
             )
 
-            if self.component_type.data:
-                self.form = self.component_class(formdata=formdata, **kwargs)
+            if self.element_type.data:
+                self.form = self.element_class(formdata=formdata, **kwargs)
 
         def validate(self, extra_validators=None) -> bool:
             """Validate form input for component type."""
@@ -192,18 +195,18 @@ class ProjectComponentWrapper(Generic[T]):
             if not self.form:
                 return False
 
-            return self.component_type.validate(
+            return self.element_type.validate(
                 self, extra
             ) and self.form.validate(extra_validators)
 
         def validate_component_type(self, comp_type) -> None:
             """Validate form input for component type."""
-            if comp_type.data not in self._components:
+            if comp_type.data not in self._elements:
                 raise ValidationError("Invalid component label")
 
         def __iter__(self) -> Iterator[str]:
             """Iterate over the classes contained in this wrapper."""
-            return iter(self._components)
+            return iter(self._elements)
 
         def __getitem__(self, name):
             """Retrieve and item by key.
@@ -214,8 +217,8 @@ class ProjectComponentWrapper(Generic[T]):
             Otherwise, the key is used to access the item of the currently
             active component.
             """
-            if name in self._components:
-                return self._components[name]
+            if name in self._elements:
+                return self._elements[name]
             return self.form[name]
 
     def __init__(self, *args, **kwargs) -> None:
@@ -229,11 +232,11 @@ class ProjectComponentWrapper(Generic[T]):
         Parameters to configure the Wrapper object. See its __init__ method
         for more details.
         """
-        self.wrapper = lambda **kwg: ProjectComponentWrapper.Wrapper[T](
+        self.wrapper = lambda **kwg: ProjectElementWrapper.Wrapper[T](
             *args, **{**kwargs, **kwg}  # Joining kwargs avoids mypy error
         )
 
-    def __call__(self, **kwargs) -> ProjectComponentWrapper.Wrapper[T]:
+    def __call__(self, **kwargs) -> ProjectElementWrapper.Wrapper[T]:
         """Create the stored wrapper object.
 
         Create the object using the stored lambda and newly provided
@@ -244,12 +247,12 @@ class ProjectComponentWrapper(Generic[T]):
 
 if __name__ == "__main__":
 
-    class MockComponent(ProjectComponentForm):
+    class MockComponent(ProjectElementForm):
         """Mock component object to instantiate the abstract superclass."""
 
         LABEL = "mock"
 
-        def get_data(self) -> dict[str, Any]:
+        def get_data(self) -> dict[str, ty.Any]:
             """Return the data in the form fields.
 
             Returns
@@ -259,6 +262,6 @@ if __name__ == "__main__":
             """
             return {}
 
-    f = ProjectComponentWrapper[MockComponent](MockComponent)
+    f = ProjectElementWrapper[MockComponent](MockComponent)
 
-    print(f().component_type.choices)
+    print(f().element_type.choices)

@@ -3,6 +3,7 @@
 # Python Libraries
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
 
 import wtforms
@@ -35,12 +36,21 @@ if TYPE_CHECKING:
     from humasol import model
 
 
-class PersonForm(forms.HumasolSubform):
+class PersonForm(forms.ProjectElementForm):
     """Class for a generic person form."""
 
     person_name = StringField("Name")
     email = StringField("Email")
     phone = StringField("Phone number")
+
+    # LABEL will be a constant
+    # pylint: disable=invalid-name
+    @property
+    @abstractmethod
+    def LABEL(self) -> str:
+        """Provide identifying label of the project component."""
+
+    # pylint: enable=invalid-name
 
     @staticmethod
     def person_to_dict(pers: model.Person) -> dict[str, Any]:
@@ -109,6 +119,8 @@ class PersonForm(forms.HumasolSubform):
 class StudentForm(PersonForm):
     """Class for a humasol student form."""
 
+    LABEL = model_interface.get_student_label()
+
     university = StringField("University")
     field_of_study = StringField("Field of study")
 
@@ -162,6 +174,8 @@ class StudentForm(PersonForm):
 class SupervisorForm(PersonForm):
     """Class for a humasol team supervisor form."""
 
+    LABEL = model_interface.get_supervisor_label()
+
     function = StringField("Function")
 
     @staticmethod
@@ -200,6 +214,8 @@ class SupervisorForm(PersonForm):
 
 class PartnerForm(PersonForm):
     """Class for a humasol partner form."""
+
+    LABEL = model_interface.get_partner_label()
 
     belgian_partner_type = model_interface.get_belgian_partner_label()
     southern_partner_type = model_interface.get_southern_partner_label()
@@ -717,20 +733,12 @@ class PeriodForm(forms.HumasolSubform):
 class FollowupJobForm(forms.HumasolSubform):
     """Class for a project follow-up work form."""
 
-    student_type = SubscriberForm.student_type
-    supervisor_type = SubscriberForm.supervisor_type
-    partner_type = SubscriberForm.partner_type
-
-    sub_type = SelectField(
-        "Subscriber type",
-        choices=[
-            (student_type, "Student"),
-            (supervisor_type, "Supervisor"),
-            (partner_type, "Partner"),
-        ],
-    )
     # TODO: Allow the selection of existing people
-    subscriber = FormField(SubscriberForm)
+    subscriber = FormField(
+        forms.ProjectElementWrapper[PersonForm](
+            PersonForm, default=StudentForm.LABEL
+        )
+    )
     periods = FieldList(FormField(PeriodForm), min_entries=1)
 
     @staticmethod
@@ -748,23 +756,6 @@ class FollowupJobForm(forms.HumasolSubform):
             "periods": list(map(PeriodForm.period_to_dict, work.periods))
         }
 
-        if isinstance(work.subscriber, model.Student):
-            data["sub_type"] = FollowupJobForm.student_type
-            data["subscriber"] = StudentForm.student_to_dict(work.subscriber)
-        elif isinstance(work.subscriber, model.Supervisor):
-            data["sub_type"] = FollowupJobForm.supervisor_type
-            data["subscriber"] = SupervisorForm.supervisor_to_dict(
-                work.subscriber
-            )
-        elif isinstance(work.subscriber, model.Partner):
-            data["sub_type"] = FollowupJobForm.partner_type
-            data["subscriber"] = PartnerForm.partner_to_dict(work.subscriber)
-        else:
-            raise RuntimeError(
-                f"Unexpected subscriber type for follow-up work: "
-                f"{type(work.subscriber)}"
-            )
-
         return data
 
     def get_data(self) -> dict[str, Any]:
@@ -779,14 +770,6 @@ class FollowupJobForm(forms.HumasolSubform):
             "periods": [p.get_data() for p in self.periods],
             "subscriber": self.subscriber.get_data(),
         }
-
-    def validate(self, extra_validators=None) -> bool:
-        """Validate form input.
-
-        Set the subscriber subform to the correct type for correct validation.
-        """
-        self.subscriber.set_sub_type(self.sub_type.data)
-        return super().validate(extra_validators)
 
 
 class SubscriptionForm(FollowupJobForm):

@@ -113,7 +113,8 @@ def get_time_unit_items() -> tuple[tuple[str, str], ...]:
     time unit and the second one is its value.
     """
     return tuple(
-        (k, str(v)) for k, v in model.Period.TimeUnit.__members__.items()
+        (k, str(v).capitalize())
+        for k, v in model.Period.TimeUnit.__members__.items()
     )
 
 

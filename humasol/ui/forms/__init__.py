@@ -12,7 +12,8 @@ from .base import (  # noqa
     IHumasolForm,
     HumasolBaseForm,
     HumasolSubform,
-    ProjectComponentForm,
+    ProjectElementForm,
+    ProjectElementWrapper,
 )
 
 from . import energy  # noqa
@@ -25,7 +26,13 @@ from .general import ProjectForm  # noqa
 
 
 def get_subforms() -> dict[str, list[type[HumasolSubform]]]:
-    """Return all defined concrete form classes extending HumasolSubform."""
+    """Return all defined concrete form classes extending HumasolSubform.
+
+    Returns
+    _______
+    Dictionary containing names of modules as keys which are mapped to lists
+    of classes.
+    """
     modules = [general, energy]
 
     forms = {

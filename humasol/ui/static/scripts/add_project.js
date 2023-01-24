@@ -34,33 +34,6 @@ function projectSpecifics(category) {
     }
 }
 
-function setProjectSpecifics(content) {
-
-    let ps = $("#project-specific")
-
-    if (ps.hasClass("hidden")) {
-        ps.removeClass("hidden")
-    }
-
-    ps.html(content)
-}
-
-
-/******************
- Add list elements
-*******************/
-function addStudent() {
-    addElementToList('#students', templates['student']);
-}
-
-function addSupervisor() {
-    addElementToList('#supervisors', templates['supervisor']);
-}
-
-function addPartner() {
-    addElementToList('#partners', templates['partner']);
-}
-
 function selectPartnerType(selector, type) {
     // Create a reference to the fields of that same partner
     let id = $(selector).attr('id').split('-')
@@ -84,138 +57,140 @@ function selectPartnerType(selector, type) {
     }
 }
 
-function addTask() {
-    addElementToList('#tasks', templates['task']);
+function setProjectSpecifics(content) {
+
+    let ps = $("#project-specific")
+
+    if (ps.hasClass("hidden")) {
+        ps.removeClass("hidden")
+    }
+
+    ps.html(content)
+}
+
+
+/******************
+ Add list elements
+*******************/
+
+function addPartner() {
+    addElementToList('#partners', templates['partner'], 'partners-x')
+    toggleButton('#partners')
+}
+
+function addPeriod(elem) {
+    elem = $(elem)
+
+    let card = elem.parent()
+    while(!(card.attr('id')
+        && card.attr('id').match(/[a-z]+-[0-9]+(-[a-z\-0-9]+){0,1}/i)
+    )) {
+        card = card.parent()
+    }
+
+    let parenID = card.attr('id')
+    let template = $(templates['period'])
+    template.attr('id', parenID + template.attr('id'))
+
+    addElementToList(
+        '#' + parenID + '-periods',
+        template[0],
+        parenID + '-periods-x'
+    )
+}
+
+function addStudent() {
+    addElementToList('#students', templates['student'], 'students-x')
+
+    // Check if max elements reached and deactivate button if necessary
+    toggleButton('#students', MAX_STUDENTS);
 }
 
 function addSubscription() {
-    addElementToList('#subscriptions', templates['subscription']);
+    addElementToList('#subscriptions', templates['subscription'], 'subscriptions-x')
+    let subs = $('#subscriptions').children()
+
+    // Renumber period IDs
+    $('#' + subs[subs.length - 1].id + '-periods').children().each(
+        (idx, item) => {
+            item = $(item)
+            item.attr(
+                'id',
+                insertIndex(item.attr('id'), idx, n => {return n == 'x'})
+            )
+        }
+    )
+
+    toggleButton('#subscriptions')
 }
 
-function taskSubscriberType(selector, origin) {
-    switch(selector.value) {
-        case "stu":
-            replaceSubscriber(selector, templates['task-student']);
-            break;
-        case "sup":
-            replaceSubscriber(selector, templates['task-supervisor']);
-            break;
-        case "par":
-            replaceSubscriber(
-                selector,
-                templates['task-partner'],
-                true
-            );
-            break;
-        default:
-            break;
-    }
+function addSupervisor() {
+    addElementToList('#supervisors', templates['supervisor'], 'supervisors-x')
+    toggleButton('#supervisors')
 }
 
-function subscriptionSubscriberType(selector, origin) {
-    switch(selector.value) {
-        case "stu":
-            replaceSubscriber(selector, templates['subscription-student']);
-            break;
-        case "sup":
-            replaceSubscriber(selector, templates['subscription-supervisor']);
-            break;
-        case "par":
-            replaceSubscriber(
-                selector,
-                templates['subscriber-partner'],
-                true
-            );
-            break;
-        default:
-            break;
-    }
+function addTask() {
+    addElementToList('#tasks', templates['task'], 'tasks-x')
+    let tasks = $('#tasks').children()
+
+    // Renumber period IDs
+    $('#' + tasks[tasks.length - 1].id + '-periods').children().each(
+        (idx, item) => {
+            item = $(item)
+            item.attr(
+                'id',
+                insertIndex(item.attr('id'), idx, n => {return n == 'x'})
+            )
+        }
+    )
+
+    toggleButton('#tasks')
 }
 
-function addPeriod(elem, prefix) {
-    addPeriodToList(elem, templates['period'], prefix);
-}
 
 /******************
  Field Lists
 *******************/
-
-function popLabels(listId, labels) {
-    // Remove labels with no corresponding input
-    if (listId == '#partners') {
-        labels.splice( 5, 1)
-    } else if (listId == '#tasks') {
-        labels.splice( 9, 1)
-        labels.splice( 3, 1)
-    } else if (listId == '#subscriptions') {
-        labels.splice( 7, 1)
-        labels.splice( 1, 1)
-    }
-
-    return labels;
-}
-
-function renumberPeriods(grid, elementIdentifier) {
-    grid.children().each((idx, period) => {
-        // Convert item from DOM element to jquery object
-        period = $(period)
-
-        // Get all the input fields in the period
-        let labels = period.find('label')
-        let inputs = period.find('input, select, textarea')
-
-        // Update the index contained in the name attribute
-        // Traverse name in reverse to find the second number first
-        insertIndex(idx, inputs, labels, elementIdentifier, true)
-    });
-}
-
-function toggleButton(listId) {
+function toggleButton(listId, max_entries=MAX_ENTRIES) {
     // Create ID reference to the button in question
     // Buttons corresponding to a list with ID lid are named lid-button
-    let buttonId = listId + '-button'; // listId includes # for jquery
+    let list = $(listId)
+    let buttonId = listId + '-button' // listId includes # for jquery
+    let button = $(buttonId)
 
-    // Less students are allowed than for the other categories
-    if (listId == '#students' && $(listId).children().length >= MAX_STUDENTS
-          || $(listId).children().length >= MAX_ENTRIES) {
-              $(buttonId).addClass("hidden");
-    }else if ((listId != '#students' && $(listId).children().length < MAX_ENTRIES
-          || $(listId).children().length < MAX_STUDENTS) &&
-        $(buttonId).hasClass("hidden") > -1) {
-        $(buttonId).removeClass("hidden");
+    if (list.children().length >= max_entries && !button.hasClass("hidden")) {
+        button.addClass("hidden")
+    }
+    if (list.children().length < max_entries && button.hasClass("hidden")) {
+        button.removeClass("hidden")
     }
 }
 
-function addPeriodToList(btn, period, prefix) {
-    let list = $(btn).parent().parent().parent().find('.form-grid')
 
-    period = $(period)
+/**************
+  Follow-up
+***************/
+function replaceSubscriber(selector, content, prefix) {
+    const isPartner = selector.value == 'partner';
 
-    // Get all the input fields in the card
-    let labels = period.find('label')
-    let inputs = period.find('input, select, textarea')
+    // Convert arguments to jQuery objects
+    selector = $(selector);
+    let sub = insertPrefix($(content), prefix);
 
-    inputs.each((idx, item) => {
-        let name = $(item).attr('name').split('-')
-        name[0] = prefix
-        name = name.join('-')
+    // Find task or subscription index from select element
+    let idx = prefix.split('-')[1];
 
-        // Labels have a for attribute referencing the id of an input
-        labels.eq(idx).attr('for', name);
-        $(item).attr('id', name);
-        // Inputs have a name and id attribute that should be updated
-        $(item).attr('name', name);
-    })
+    // Insert correct index
+    renumberElement(sub, idx, n => { return n == 'x' })
 
-    list.append(period)
-    renumberElements('#' + prefix, (n) => { return n == 'x' }); // Actually too much work... but easy
-}
+    // Insert new subscriber in html
+    let subSection = selector.parent();
+    subSection = $(subSection)
+    // Remove old card
+    subSection.children()[2].remove();
+    // Insert new card
+    subSection.append(sub);
 
-function deletePeriod(btn) {
-    let grid = $(btn).parent().parent().parent()
-
-    $(btn).parent().parent().remove()
-    renumberPeriods(grid, (n) => { return isNumeric(n) })
 }
 
 function showFollowup() {
@@ -225,36 +200,16 @@ function showFollowup() {
     $("#btn-followup").addClass("hidden");
 }
 
-/**************
-  Follow-up
-***************/
-function replaceSubscriber(selector, content, isPartner=false) {
+function subscriptionSubscriberType(selector) {
+    const templateKey = selector.value + '-nondelete';
+    const prefix = $(selector).attr('name').match(/(.+)-element_type/)[1]
 
-    // Convert arguments to jQuery objects
-    selector = $(selector);
-    let sub = $(content);
+    replaceSubscriber(selector, templates[templateKey], prefix);
+}
 
-    // Find task or subscription index from select element
-    let idx = getIndex(selector);
+function taskSubscriberType(selector) {
+    const templateKey = selector.value + '-nondelete';
+    const prefix = $(selector).attr('name').match(/(.+)-element_type/)[1]
 
-    // Get all the input fields in the new subscriber card
-    let labels = sub.find('label');
-    let inputs = sub.find('input, select, textarea');
-
-    if (isPartner) {
-        labels = popLabels('#partners', labels);
-    }
-
-    // Set correct index in names and attributes so the form
-    // gets parsed correctly
-    insertIndex(idx, inputs, labels, (n) => { return n == 'x' })
-
-    // Insert new subscriber in html
-    let subSection = selector.parent().parent().parent().children()[1];
-    subSection = $(subSection)
-    // Remove old card
-    subSection.children()[1].remove();
-    // Insert new card
-    subSection.append(sub);
-
+    replaceSubscriber(selector, templates[templateKey], prefix);
 }

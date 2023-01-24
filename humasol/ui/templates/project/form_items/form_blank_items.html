@@ -2,61 +2,69 @@
   `{{ str|trim }}`
 {%- endmacro %}
 
-{% macro student(deletable=True, prefix='students-x') -%}
-    <!--suppress XmlDuplicatedId -->
-    <div class="form-card form-row">
+{% macro person_element(element, deletable) -%}
+    {% if element.LABEL == 'student' %}
+        {{ student(element, deletable) }}
+    {% elif element.LABEL == 'supervisor' %}
+        {{ supervisor(element, deletable) }}
+    {% elif element.LABEL == 'partner' %}
+        {{ partner(element, deletable) }}
+    {% endif %}
+{%- endmacro %}
+
+{% macro student(form, deletable=True) -%}
+    <div id="students-x" class="form-card form-row">
         <div class="form-col grow-one col-center">
             <div class="form-row">
                 <img class="form-profile-image" src="{{ url_for('static', filename='img/humasol_icon_light.png') }}">
             </div>
         </div>
         <div class="form-col grow-four form-item">
-            <label class="form-item-label" for="{{ prefix }}-person_name">Name</label>
-            <input class="form-input" id="{{ prefix }}-person_name" name="{{ prefix }}-person_name" type="text" value="">
+            {{ form.person_name.label(class="form-item-label") }}
+            {{ form.person_name(class="form-input") }}
 
-            <label class="form-item-label" for="{{ prefix }}-email">Email</label>
-            <input class="form-input" id="{{ prefix }}-email" name="{{ prefix }}-email" type="text" value="">
+            {{ form.email.label(class="form-item-label") }}
+            {{ form.email(class="form-input") }}
 
-            <label class="form-item-label" for="{{ prefix }}-phone">Phone number</label>
-            <input class="form-input" id="{{ prefix }}-phone" name="{{ prefix }}-phone" type="text" value="">
+            {{ form.phone.label(class="form-item-label") }}
+            {{ form.phone(class="form-input") }}
         </div>
         <div class="form-col grow-four form-item">
-            <label class="form-item-label" for="{{ prefix }}-university">University</label>
-            <input class="form-input" id="{{ prefix }}-university" name="{{ prefix }}-university" type="text" value="">
+            {{ form.university.label(class="form-item-label") }}
+            {{ form.university(class="form-input") }}
 
-            <label class="form-item-label" for="{{ prefix }}-field_of_study">Field of study</label>
-            <input class="form-input" id="{{ prefix }}-field_of_study" name="{{ prefix }}-field_of_study" type="text" value="">
+            {{ form.field_of_study.label(class="form-item-label") }}
+            {{ form.field_of_study(class="form-input") }}
         </div>
         {% if deletable %}
             <div class="form-col col-center grow-one">
                 <!-- delete button -->
-                <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del"
-                     onclick="deleteElement(this)">
+                <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del" onclick="deleteElement(this)">
             </div>
         {% endif %}
     </div>
 {%- endmacro %}
 
-{% macro supervisor(deletable=True, prefix='supervisors-x') -%}
-    <div class="form-card form-row">
+{% macro supervisor(form, deletable=True) -%}
+    <div id="supervisors-x" class="form-card form-row">
         <div class="form-col grow-one col-center">
             <div class="form-row">
                 <img class="form-profile-image" src="{{ url_for('static', filename='img/humasol_icon_light.png') }}">
             </div>
         </div>
         <div class="form-col grow-four form-item">
-            <label class="form-item-label" for="{{ prefix }}-person_name">Name</label>
-            <input class="form-input" id="{{ prefix }}-person_name" name="{{ prefix }}-person_name" type="text" value="">
+            {{ form.person_name.label(class="form-item-label") }}
+            {{ form.person_name(class="form-input") }}
 
-            <label class="form-item-label" for="{{ prefix }}-email">Email</label>
-            <input class="form-input" id="{{ prefix }}-email" name="{{ prefix }}-email" type="text" value="">
+            {{ form.email.label(class="form-item-label") }}
+            {{ form.email(class="form-input") }}
         </div>
         <div class="form-col grow-four form-item">
-            <label class="form-item-label" for="{{ prefix }}-phone">Phone number</label>
-            <input class="form-input" id="{{ prefix }}-phone" name="{{ prefix }}-phone" type="text" value="">
+            {{ form.phone.label(class="form-item-label") }}
+            {{ form.phone(class="form-input") }}
 
-            <label class="form-item-label" for="{{ prefix }}-function">Function</label>
-            <input class="form-input" id="{{ prefix }}-function" name="{{ prefix }}-function" type="text" value="">
+            {{ form.function.label(class="form-item-label") }}
+            {{ form.function(class="form-input") }}
         </div>
         {% if deletable %}
             <div class="form-col col-center grow-one">
@@ -68,55 +76,48 @@
     </div>
 {%- endmacro %}
 
-{% macro partner(deletable=True, prefix='partners-x') -%}
-    <div class="form-card form-row">
+{% macro partner(form, deletable=True) -%}
+    <div id="partners-x" class="form-card form-row">
         <div class="form-col col-center grow-one">
             <img class="form-profile-image form-item" src="{{ url_for('static',filename='img/profile_icon_placeholder.png') }}">
         </div>
         <div class="form-col grow-six">
             <div class="form-row">
                 <div class="form-col grow-one form-item">
-                    <label class="form-item-label" for="{{ prefix }}-person_name">Name</label>
-                    <input class="form-input" id="{{ prefix }}-person_name" name="{{ prefix }}-person_name" type="text" value="">
+                    {{ form.person_name.label(class="form-item-label") }}
+                    {{ form.person_name(class="form-input") }}
 
-                    <label class="form-item-label" for="{{ prefix }}-email">Email</label>
-                    <input class="form-input" id="{{ prefix }}-email" name="{{ prefix }}-email" type="text" value="">
+                    {{ form.email.label(class="form-item-label") }}
+                    {{ form.email(class="form-input") }}
 
-                    <label class="form-item-label" for="{{ prefix }}-partner_type">Type</label>
-                    <select class="form-input" id="{{ prefix }}-partner_type" name="{{ prefix }}-partner_type"
-                            onchange="selectPartnerType(this, this.value)">
-                        <option value="bp">Belgian Partner</option>
-                        <option value="sp">Southern Partner</option>
-                    </select>
+                    {{ form.partner_type.label(class="form-item-label") }}
+                    {{ form.partner_type(class="form-input", onChange="selectPartnerType(this, this.value)") }}
                 </div>
                 <div class="form-col grow-one form-item">
-                    <label class="form-item-label" for="{{ prefix }}-phone">Phone number</label>
-                    <input class="form-input" id="{{ prefix }}-phone" name="{{ prefix }}-phone" type="text" value="">
+                    {{ form.phone.label(class="form-item-label") }}
+                    {{ form.phone(class="form-input") }}
 
-                    <label class="form-item-label" for="{{ prefix }}-function">Function</label>
-                    <input class="form-input" id="{{ prefix }}-function" name="{{ prefix }}-function" type="text" value="">
+                    {{ form.function.label(class="form-item-label") }}
+                    {{ form.function(class="form-input") }}
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-card form-row form-item grow-one">
                     <div class="form-col grow-one">
                         <div class="form-row form-item">
-                            <label class="form-input-label">Organization</label>
+                            {{ form.organization.label(class="form-input-label") }}
                         </div>
                         <div class="form-row">
                             <div class="form-col grow-four form-item">
-                                <label class="form-item-label" for="{{ prefix }}-organization-organization_name">Name</label>
-                                <input class="form-input" id="{{ prefix }}-organization-organization_name"
-                                       name="{{ prefix }}-organization-organization_name" type="text" value="">
+                                {{ form.organization.organization_name.label(class="form-item-label") }}
+                                {{ form.organization.organization_name(class="form-input") }}
 
-                                <label class="form-item-label hidden" for="{{ prefix }}-organization-country">Country</label>
-                                <input class="form-input hidden" id="{{ prefix }}-organization-country"
-                                       name="partners-x-organization-country" type="text" value="">
+                                {{ form.organization.country.label(class="form-item-label hidden") }}
+                                {{ form.organization.country(class="form-input hidden") }}
                             </div>
                             <div class="form-col grow-one form-item">
-                                <label class="form-item-label" for="{{ prefix }}-organization-logo">Partner logo</label>
-                                <input class="form-input" id="{{ prefix }}-organization-logo" name="partners-x-organization-logo"
-                                       type="file">
+                                {{ form.organization.logo.label(class="form-item-label") }}
+                                {{ form.organization.logo(class="form-input") }}
                             </div>
                         </div>
                     </div>
@@ -134,54 +135,42 @@
     </div>
 {%- endmacro %}
 
-{% macro period(prefix='prefix') -%}
-    <div class="form-container">
+{% macro period(form, prefix="-") -%}
+    <div id="{{ prefix }}periods-x" class="form-container">
         <div class="form-row no-wrap">
             <div class="form-col grow-four form-item">
-                <label class="form-input-label" for="{{ prefix }}-x-periods-x-period">Interval length</label>
-                <input class="form-input" id="{{ prefix }}-x-periods-x-period" name="{{ prefix }}-x-periods-x-period" type="text" value="">
+                {{ form.interval.label(class="form-input-label") }}
+                {{ form.interval(class="form-input") }}
 
-                <label class="form-input-label" for="{{ prefix }}-x-periods-x-unit">Interval unit</label>
-                <select class="form-input" id="{{ prefix }}-x-periods-x-unit" name="{{ prefix }}-x-periods-x-unit">
-                    <option value="WEEK">Week</option>
-                    <option value="MONTH">Month</option>
-                    <option value="YEAR">Year</option>
-                </select>
+                {{ form.unit.label(class="form-input-label") }}
+                {{ form.unit(class="form-input") }}
             </div>
             <div class="form-col grow-four form-item">
-                <label class="form-input-label" for="{{ prefix }}-x-periods-x-start">Starting date</label>
-                <input class="form-input" id="{{ prefix }}-x-periods-x-start" name="{{ prefix }}-x-periods-x-start" type="date" value="">
+                {{ form.start.label(class="form-input-label") }}
+                {{ form.start(class="form-input") }}
 
-                <label class="form-input-label" for="{{ prefix }}-x-periods-x-end">End date</label>
-                <input class="form-input" id="{{ prefix }}-x-periods-x-end" name="{{ prefix }}-x-periods-x-end" type="date" value="">
+                {{ form.end.label(class="form-input-label") }}
+                {{ form.end(class="form-input") }}
             </div>
 
             <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-period-del"
-                 onclick="deletePeriod(this)">
+                 onclick="deleteElement(this, 1)">
 
         </div>
     </div>
 {%- endmacro %}
 
-{% macro task() -%}
-    <div class="form-card form-row">
+{% macro task(form) -%}
+    <div id="tasks-x" class="form-card form-row">
         <div class="from-col grow-one">
             <div class="form-row">
                 <div class="form-col grow-four form-item">
-                    <label class="form-input-label" for="tasks-x-task_name">Task name</label>
-                    <input class="form-input" id="tasks-x-task_name" name="tasks-x-task_name" type="text" value="">
-
-                    <label class="form-input-label" for="tasks-x-sub_type">Subscriber type</label>
-                    <select class="form-input" id="tasks-x-sub_type" name="tasks-x-sub_type"
-                            onchange="taskSubscriberType(this)">
-                        <option value="stu">Student</option>
-                        <option value="sup">Supervisor</option>
-                        <option value="par">Partner</option>
-                    </select>
+                    {{ form.task_name.label(class="form-input-label") }}
+                    {{ form.task_name(class="form-input") }}
                 </div>
                 <div class="form-col grow-four form-item">
-                    <label class="form-input-label" for="tasks-x-function">Task description</label>
-                    <input class="form-input-large" id="tasks-x-function" name="tasks-x-function" type="text" value="">
+                    {{ form.function.label(class="form-input-label") }}
+                    {{ form.function(class="form-input") }}
                 </div>
                 <div class="form-col col-center grow-one">
                     <!-- delete button -->
@@ -191,28 +180,29 @@
             </div>
 
             <div class="form-item">
-                <label class="form-input-label">Subscriber</label>
+                {{ form.subscriber.label(class="form-input-label") }}
+                {{ form.subscriber.element_type(class="form-input random", onChange="taskSubscriberType(this)") }}
 
-                {{ student(False, 'tasks-x-subscriber') }}
-
+                {{ person_element(form.subscriber.element, False) }}
             </div>
 
             <div class="form-item">
                 <div class="form-card">
                     <div class="form-row form-center">
                         <div class="form-col grow-one form-item">
-                            <label class="form-input-label">Periods</label>
+                            {{ form.periods.label(class="form-input-label") }}
                         </div>
                         <div class="form-col col-end form-item">
-                            <button type="button" class="button button-secondary" onclick="addPeriod(this, 'tasks')">
+                            <button type="button" class="button button-secondary"
+                                    aria-label="tasks" onclick="addPeriod(this, 'tasks')">
                                 Add Period
                             </button>
                         </div>
                     </div>
-                    <div class="form-grid">
-
-                        {{ period('tasks') }}
-
+                    <div id="tasks-x-periods" class="form-grid">
+                        {% for p in form.periods %}
+                            {{ period(p, 'tasks-x-') }}
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -220,51 +210,45 @@
     </div>
 {%- endmacro %}
 
-{% macro subscription() -%}
-    <div class="form-card form-row">
+{% macro subscription(form) -%}
+    <div id="subscriptions-x" class="form-card form-row">
         <div class="from-col grow-one">
             <div class="form-row">
-                <div class="form-col grow-eight form-item">
-                    <label class="form-input-label" for="subscriptions-x-sub_type">Subscriber type</label>
-                    <select class="form-input" id="subscriptions-x-sub_type" name="subscriptions-x-sub_type"
-                            onchange="subscriptionSubscriberType(this)">
-                        <option value="stu">Student</option>
-                        <option value="sup">Supervisor</option>
-                        <option value="par">Partner</option>
-                    </select>
-                </div>
                 <div class="form-col col-center grow-one">
                     <!-- delete button -->
                     <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del"
-                         onclick="deleteElement(this, levels=4)">
+                         onclick="deleteElement(this)">
                 </div>
             </div>
 
             <div class="form-item">
-                <label class="form-input-label">Subscriber</label>
+                {{ form.subscriber.label(class="form-input-label") }}
+                {{ form.subscriber.element_type(class="form-input random", onChange="taskSubscriberType(this)") }}
 
-                {{ student(False, 'subscriptions-x-subscriber') }}
+                {{ person_element(form.subscriber.element, False) }}
             </div>
 
             <div class="form-item">
                 <div class="form-card">
                     <div class="form-row row-center">
                         <div class="form-col grow-one form-item">
-                            <label class="form-input-label">Periods</label>
+                            {{ form.periods.label(class="form-input-label") }}
                         </div>
                         <div class="form-col col-end form-item">
-                            <button type="button" class="button button-secondary" onclick="addPeriod(this, 'subscriptions')">
+                            <button type="button" class="button button-secondary"
+                                    aria-label="subscriptions" onclick="addPeriod(this, 'subscriptions')">
                                 Add Period
                             </button>
                         </div>
                     </div>
-                    <div class="form-grid">
-
-                        {{ period('subscriptions') }}
-
+                    <div id="subscriptions-x-periods" class="form-grid">
+                        {% for p in form.periods %}
+                            {{ period(p, 'subscriptions-x-') }}
+                        {% endfor %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 {%- endmacro %}

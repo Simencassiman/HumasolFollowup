@@ -81,7 +81,7 @@
 
                             {% set deletable = True %}
                             {% for student in form.students %}
-                                {% include 'project/form_items/student.html' %}
+                                {{ blanks.student(student) }}
                             {% endfor %}
 
                         </div>
@@ -103,7 +103,7 @@
                         <div id="supervisors" class="form-col grow-one">
                             {% set deletable = True %}
                             {% for supervisor in form.supervisors %}
-                                {% include 'project/form_items/supervisor.html' %}
+                                {{ blanks.supervisor(supervisor) }}
                             {% endfor %}
                         </div>
                     </div>
@@ -124,7 +124,7 @@
                         <div id="partners" class="form-col grow-one">
                             {% set deletable = True %}
                             {% for partner in form.partners %}
-                                {% include 'project/form_items/partner.html' %}
+                                {{ blanks.partner(partner) }}
                             {% endfor %}
                         </div>
                     </div>
@@ -295,7 +295,7 @@
     <script type="text/javascript">
         new MultiSelectTag('sdgs')  // id
     </script>
-    <script type="text/javascript">
+    <script type="text/javascript" defer>
 
         /*
         Render all templates that should be injected dynamically at some point
@@ -321,18 +321,15 @@
         */
 
         const templates = {
-            'student': {{ blanks.wrap(blanks.student()) }},
-            'supervisor': {{ blanks.wrap(blanks.supervisor()) }},
-            'partner': {{ blanks.wrap(blanks.partner()) }},
-            'task': {{ blanks.wrap(blanks.task()) }},
-            'task-student': {{ blanks.wrap(blanks.student(False, "tasks-x-subscriber")) }},
-            'task-supervisor': {{ blanks.wrap(blanks.supervisor(False, "tasks-x-subscriber")) }},
-            'task-partner': {{ blanks.wrap(blanks.partner(False, "tasks-x-subscriber")) }},
-            'subscription': {{ blanks.wrap(blanks.subscription()) }},
-            'subscription-student': {{ blanks.wrap(blanks.student(False, "subscriptions-x-subscriber")) }},
-            'subscription-supervisor': {{ blanks.wrap(blanks.supervisor(False, "subscriptions-x-subscriber")) }},
-            'subscription-partner': {{ blanks.wrap(blanks.partner(False, "subscriptions-x-subscriber")) }},
-            'period': {{ blanks.wrap(blanks.period()) }}
+            'student': {{ blanks.wrap(blanks.student(_forms['general']['StudentForm'])) }},
+            'supervisor': {{ blanks.wrap(blanks.supervisor(_forms['general']['SupervisorForm'])) }},
+            'partner': {{ blanks.wrap(blanks.partner(_forms['general']['PartnerForm'])) }},
+            'task': {{ blanks.wrap(blanks.task(_forms['general']['TaskForm'])) }},
+            'subscription': {{ blanks.wrap(blanks.subscription(_forms['general']['SubscriptionForm'])) }},
+            'student-nondelete': {{ blanks.wrap(blanks.student(_forms['general']['StudentForm'], False)) }},
+            'supervisor-nondelete': {{ blanks.wrap(blanks.supervisor(_forms['general']['SupervisorForm'], False)) }},
+            'partner-nondelete': {{ blanks.wrap(blanks.partner(_forms['general']['PartnerForm'], False)) }},
+            'period': {{ blanks.wrap(blanks.period(_forms['general']['PeriodForm'])) }}
         }
 
         const templates_specifics = {};
@@ -345,12 +342,14 @@
             'js': '{{ url_for("static", filename="scripts/energy.js") }}',
             'base': {{ blanks.wrap(project_specifics.energy(form.specifics.energy)) }},
             'source': {{ blanks.wrap(energy.source(unwrap(form.specifics.energy.sources))) }},
-            'generator': {{ blanks.wrap(energy.generator(_forms['energy']['generator'])) }},
-            'grid': {{ blanks.wrap(energy.grid(_forms['energy']['grid'])) }},
-            'pv': {{ blanks.wrap(energy.pv(_forms['energy']['pv'])) }},
+            'generator': {{ blanks.wrap(energy.generator(_forms['energy']['GeneratorForm'])) }},
+            'grid': {{ blanks.wrap(energy.grid(_forms['energy']['GridForm'])) }},
+            'pv': {{ blanks.wrap(energy.pv(_forms['energy']['PVForm'])) }},
             'storage': {{ blanks.wrap(energy.storage(unwrap(form.specifics.energy.storage))) }},
-            'battery': {{ blanks.wrap(energy.battery(_forms['energy']['battery'])) }},
+            'battery': {{ blanks.wrap(energy.battery(_forms['energy']['BatteryForm'])) }},
             'consumption': {{ blanks.wrap(energy.consumption(unwrap(form.specifics.energy.loads)))}}
         }
+
+        renumberListElements('#students', (n) => { return n == 'x' });
     </script>
 {% endblock %}

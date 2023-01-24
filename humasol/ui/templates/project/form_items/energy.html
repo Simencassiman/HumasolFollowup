@@ -4,14 +4,14 @@
 
 {% macro energy_component(form) -%}
 
-    {{ form.component_type.label(class="form-input-label") }}
-    {{ form.component_type(class="form-input", onChange="selectComponentType(this, this.value)") }}
+    {{ form.element_type.label(class="form-input-label") }}
+    {{ form.element_type(class="form-input", onChange="selectComponentType(this, this.value)") }}
 
-    {{ form.component.power.label(class="form-input-label") }}
-    {{ form.component.power(class="form-input") }}
+    {{ form.element.power.label(class="form-input-label") }}
+    {{ form.element.power(class="form-input") }}
 
-    {{ form.component.is_primary.label(class="form-input-label") }}
-    {{ form.component.is_primary() }}
+    {{ form.element.is_primary.label(class="form-input-label") }}
+    {{ form.element.is_primary() }}
 
 {%- endmacro %}
 
@@ -25,12 +25,12 @@
         <div class="form-col form-item">
             {{ energy_component(form) }}
 
-            {{ form.component.price.label(class="form-input-label") }}
-            {{ form.component.price(class="form-input") }}
+            {{ form.element.price.label(class="form-input-label") }}
+            {{ form.element.price(class="form-input") }}
 
         </div>
         <div id="component" class="form-col form-item">
-            {{ source_component(form.component) }}
+            {{ source_component(form.element) }}
         </div>
         <div class="form-col col-center grow-one">
             <!-- delete button -->
@@ -104,11 +104,11 @@
         <div class="form-col form-item">
             {{ energy_component(form) }}
 
-            {{ form.component.capacity.label(class="form-input-label") }}
-            {{ form.component.capacity(class="form-input") }}
+            {{ form.element.capacity.label(class="form-input-label") }}
+            {{ form.element.capacity(class="form-input") }}
         </div>
         <div id="component" class="form-col form-item">
-            {{ storage_component(form.component) }}
+            {{ storage_component(form.element) }}
         </div>
         <div class="form-col col-center grow-one">
             <!-- delete button -->
@@ -154,11 +154,11 @@
         <div class="form-col form-item">
             {{ energy_component(form) }}
 
-            {{ form.component.is_critical.label(class="form-input-label") }}
-            {{ form.component.is_critical() }}
+            {{ form.element.is_critical.label(class="form-input-label") }}
+            {{ form.element.is_critical() }}
         </div>
         <div id="component" class="form-col form-item">
-            {{ consumption_component(form.component) }}
+            {{ consumption_component(form.element) }}
         </div>
         <div class="form-col col-center grow-one">
             <!-- delete button -->

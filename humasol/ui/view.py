@@ -62,10 +62,7 @@ class GUI(Blueprint):
 
         self.app = app
         self._forms = {
-            n: {
-                (f.LABEL if hasattr(f, "LABEL") else f.__name__): f()
-                for f in fs
-            }
+            n: {f.__name__: f() for f in fs}
             for n, fs in forms.get_subforms().items()
         }
 

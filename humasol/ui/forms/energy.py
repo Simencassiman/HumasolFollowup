@@ -21,7 +21,7 @@ from humasol.ui import forms
 from humasol.ui.forms import base
 
 
-class EnergyProjectComponentForm(forms.ProjectComponentForm):
+class EnergyProjectComponentForm(forms.ProjectElementForm):
     """Form linked to an energy project component."""
 
     power = FloatField("Component power rating [kW]", default=0)
@@ -299,21 +299,21 @@ class EnergyProjectForm(forms.HumasolSubform):
 
     sources = FieldList(
         FormField(
-            base.ProjectComponentWrapper[SourceComponentForm](
+            base.ProjectElementWrapper[SourceComponentForm](
                 SourceComponentForm
             )
         ),
     )
     storage = FieldList(
         FormField(
-            base.ProjectComponentWrapper[StorageComponentForm](
+            base.ProjectElementWrapper[StorageComponentForm](
                 StorageComponentForm
             )
         )
     )
     loads = FieldList(
         FormField(
-            base.ProjectComponentWrapper[ConsumptionComponentForm](
+            base.ProjectElementWrapper[ConsumptionComponentForm](
                 ConsumptionComponentForm
             )
         )

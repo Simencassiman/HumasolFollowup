@@ -52,7 +52,7 @@ def get_subclasses(
 
 def unwrap(
     field_list: FieldList,
-) -> forms.base.ProjectComponentWrapper.Wrapper:
+) -> forms.base.ProjectElementWrapper.Wrapper:
     """Unwraps the form field unbound form class.
 
     Creates an instance of the wrapper so that its form fields become

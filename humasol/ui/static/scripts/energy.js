@@ -57,7 +57,7 @@ function selectComponentType(selector, type) {
             )
         )
         // Renumber the element in the list so the form parser will work
-        renumberElements('#' + card.parent().attr('id'), (n) => { return n == 'x' });
+        renumberListElements('#' + card.parent().attr('id'), (n) => { return n == 'x' });
     }
 
     component.children().each((idx, elem) => {

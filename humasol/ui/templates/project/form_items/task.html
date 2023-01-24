@@ -5,8 +5,10 @@
                 {{ task.task_name.label(class="form-input-label") }}
                 {{ task.task_name(class="form-input") }}
 
+                <!--
                 {{ task.sub_type.label(class="form-input-label") }}
                 {{ task.sub_type(class="form-input random", onChange="taskSubscriberType(this)") }}
+                -->
             </div>
             <div class="form-col grow-four form-item">
                 {{ task.function.label(class="form-input-label") }}
@@ -21,9 +23,10 @@
 
         <div class="form-item">
             {{ task.subscriber.label(class="form-input-label") }}
+            {{ task.sub_type(class="form-input random", onChange="taskSubscriberType(this)") }}
 
             {% set deletable = False %}
-            {% set student = task.subscriber.student %}
+            {% set student = task.subscriber.element %}
             {% include 'project/form_items/student.html' %}
         </div>
 

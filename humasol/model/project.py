@@ -148,7 +148,9 @@ class Project(model.BaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String, index=True, nullable=False)
     creator = db.relationship("User", lazy=True)
-    creator_id = db.Column(db.Integer, db.ForeignKey(model.User.id))
+    creator_id = db.Column(
+        db.Integer, db.ForeignKey(model.User.id)  # type: ignore
+    )
     code = db.Column(db.String, index=True, unique=True, nullable=False)
     creation_date = db.Column(db.DateTime, index=True, nullable=False)
     implementation_date = db.Column(db.DateTime, index=True, nullable=False)

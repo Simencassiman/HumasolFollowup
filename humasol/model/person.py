@@ -255,7 +255,7 @@ class Student(Person):
     field_of_study  -- Domain of expertise of the student
     """
 
-    LABEL = "stu"
+    LABEL = "student"
 
     # Definitions for the database tables #
     __tablename__ = "student"
@@ -393,7 +393,7 @@ class Supervisor(Person):
     function        -- Supervising function (e.g., coach)
     """
 
-    LABEL = "sup"
+    LABEL = "supervisor"
 
     # Definitions for the database tables #
     __tablename__ = "supervisor"
@@ -500,7 +500,7 @@ class Partner(Person):
                         (e.g., technician)
     """
 
-    LABEL = "par"
+    LABEL = "partner"
 
     # Definitions for the database tables #
     __tablename__ = "partner"

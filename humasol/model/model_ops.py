@@ -2,17 +2,60 @@
 
 All functions must be called from within an application context.
 """
-
 # Python Libraries
-from typing import Any
+import typing as ty
+
+import sqlalchemy
 
 # Local modules
-from humasol import model
+from humasol import exceptions, model
 from humasol import repository as repo
 from humasol.repository import db
 
 # TODO: remove pylint disable
 # pylint: disable=unused-argument
+
+
+T = ty.TypeVar("T", bound=model.ProjectElement)
+
+
+def _get_unique_attributes(
+    obj: model.Model | list[model.Model],
+) -> dict[str, ty.Any] | list[dict[str, ty.Any]]:
+    """Retrieve all attributes of the object with a uniqueness constraint."""
+    if isinstance(obj, list):
+        return [
+            {
+                attr: getattr(ob, attr)
+                for attr, val in type(ob).__dict__.items()
+                if hasattr(val, "unique") and getattr(val, "unique")
+            }
+            for ob in obj
+        ]
+
+    return {
+        attr: getattr(obj, attr)
+        for attr, val in type(obj).__dict__.items()
+        if hasattr(val, "unique") and getattr(val, "unique")
+    }
+
+
+def _merge_on_uniqueness(new_objs: list[model.ProjectElement]) -> list[str]:
+    type(new_objs[0])
+
+    # objs = [
+    #     repo.get_object_by_attributes(cls, obj)
+    #     for obj in _get_unique_attributes(new_objs)
+    # ]
+
+    problem_elements = list[str]()
+    # for i, (new, old) in enumerate(zip(new_objs, objs)):
+    #     if len(old) == 1:
+    #         new.update(old[0])
+    #     elif len(new) > 1:
+    #         problem_elements.append(f"{type(new).__name__} {i + 1}")
+
+    return problem_elements
 
 
 def admin_exists() -> bool:
@@ -35,7 +78,7 @@ def create_db_tables() -> None:
 
 # Pylint doesn't seem to detect inner class
 # pylint: disable=no-member
-def create_project(parameters: dict[str, Any]) -> model.Project:
+def create_project(parameters: dict[str, ty.Any]) -> model.Project:
     """Create a project from the provided project parameters.
 
     Parameters
@@ -90,6 +133,9 @@ def create_project(parameters: dict[str, Any]) -> model.Project:
 
         # Create follow-up objects
         if "data_source" in parameters:
+            # TODO: Remove this when the input is added to the form
+            parameters["data_source"]["data_manager"] = "EnergyDataManager"
+            parameters["data_source"]["report_manager"] = "EnergyReportManager"
             parameters["data_source"] = model.DataSource(
                 **parameters["data_source"]
             )
@@ -117,20 +163,37 @@ def create_project(parameters: dict[str, Any]) -> model.Project:
                 for params in parameters["subscriptions"]
             ]
 
+        if "components" in parameters:
+            parameters["components"] = [
+                model.ProjectFactory.get_project_component(comp)
+                for comp in parameters["components"]
+            ]
         # Create project object
         project = model.ProjectFactory.get_project(category, parameters)
+
     except KeyError as exc:
         # TODO: create proper exceptions structure
-        raise exc from exc
+        raise exceptions.MissingArgumentException(
+            f"Missing parameter: {str(exc)}"
+        ) from exc
+
+    except TypeError as exc:
+        raise exceptions.ModelException(str(exc)) from exc
 
     return project
 
 
-# pylint: enable=no-member
+def delete_project(project: model.Project) -> None:
+    """Delete the provided project from the database.
+
+    Parameters
+    __________
+    project     -- Project to be deleted
+    """
+    # TODO: remove any additional objects that are no longer referenced
+    repo.delete_project(project)
 
 
-# Pylint doesn't seem to detect inner class
-# pylint: disable=no-member
 def edit_project(
     project: model.Project, new_parameters: model.Project.ProjectArgs
 ) -> model.Project:
@@ -151,6 +214,76 @@ def edit_project(
 # pylint: enable=no-member
 
 
+def get_my_associated_projects(user: model.User) -> list[model.Project]:
+    """Retrieve all projects to which the user is associated.
+
+    A user is associated if they are listed under the people who collaborated.
+    """
+    return model.Project.query.filter(
+        sqlalchemy.or_(
+            model.Project.students.any(model.Student.email == user.email),
+            model.Project.supervisors.any(
+                model.Supervisor.email == user.email
+            ),
+            model.Project.partners.any(model.Partner.email == user.email),
+        )
+    ).all()
+
+
+def get_my_projects(user: model.User) -> list[model.Project]:
+    """Retrieve all projects created by the provided user.
+
+    Parameters
+    __________
+    user    -- Creator of the projects to be retrieved
+    """
+    return repo.get_object_by_attributes(
+        model.Project, {"creator_id": user.id}  # type: ignore
+    )
+
+
+def get_my_subscriptions(user: model.User) -> list[model.Project]:
+    """Retrieve projects to which the user is subscribed."""
+    return model.Project.query.filter(
+        model.Project.id.in_(
+            model.Project.query.with_entities(model.Project.id)
+            .filter(
+                model.Project.subscriptions.any(
+                    model.Subscription.id.in_(
+                        model.Subscription.query.with_entities(
+                            model.Subscription.id
+                        )
+                        .join(model.Person)
+                        .filter(model.Person.email == user.email)
+                        .scalar_subquery()
+                    )
+                )
+            )
+            .scalar_subquery()
+        )
+    ).all()
+
+
+def get_my_tasks(user: model.User) -> list[model.Project]:
+    """Retrieve all projects for which the user has a task."""
+    return model.Project.query.filter(
+        model.Project.id.in_(
+            model.Project.query.with_entities(model.Project.id)
+            .filter(
+                model.Project.tasks.any(
+                    model.Task.id.in_(
+                        model.Task.query.with_entities(model.Task.id)
+                        .join(model.Person)
+                        .filter(model.Person.email == user.email)
+                        .scalar_subquery()
+                    )
+                )
+            )
+            .scalar_subquery()
+        )
+    ).all()
+
+
 def get_project(project_id: int) -> model.Project:
     """Retrieve project with provided ID from the database.
 
@@ -158,7 +291,12 @@ def get_project(project_id: int) -> model.Project:
     __________
     project_id  -- Project identifier in the database
     """
-    project = repo.get_object_by_id(model.Project, project_id)  # type: ignore
+    try:
+        project = repo.get_object_by_id(
+            model.Project, project_id  # type: ignore
+        )
+    except exceptions.ObjectNotFoundException as exc:
+        raise exceptions.ModelException(str(exc)) from exc
 
     return project
 
@@ -171,6 +309,16 @@ def get_projects() -> list[model.Project]:
     Unsorted list of all projects.
     """
     return model.Project.query.all()
+
+
+def get_users() -> list[model.User]:
+    """Retrieve all users from the database.
+
+    Returns
+    _______
+    List of users
+    """
+    return model.User.query.all()
 
 
 def register_user(email: str, password: str, role: model.Role) -> model.User:
@@ -189,7 +337,9 @@ def register_user(email: str, password: str, role: model.Role) -> model.User:
     """
 
 
-def save_project(project: model.Project) -> None:
+def save_project(
+    project: model.Project,
+) -> tuple[ty.Literal[False], str] | tuple[ty.Literal[True], None]:
     """Save a new project to the database.
 
     By saving the project to the database, a new ID will be given to it.
@@ -197,8 +347,35 @@ def save_project(project: model.Project) -> None:
     preferred method), or one that is known not to be in the database.
     """
     # TODO: add checks for uniqueness
+    # Get all attributes with a uniqueness constraint from the project
+    # project_unique = _get_unique_attributes(project)
+    # project_match = repo.get_object_by_attributes(
+    #     model.Project, project_unique  # type: ignore
+    # )
+    #
+    # if len(project_match) > 0:
+    #     return False, "Some project attributes violate uniqueness constraint"
+    #
+    # # Go through lists (students, etc.)
+    # problem_elements = (
+    #         _merge_on_uniqueness(project.students)
+    #         + _merge_on_uniqueness(project.supervisors)
+    #         + _merge_on_uniqueness(project.partners)
+    #         + _merge_on_uniqueness(project.tasks)
+    #         + _merge_on_uniqueness(project.subscriptions)
+    # )
+    # contact_person = repo.get_object_by_attributes(
+    #     model.Person, _get_unique_attributes(project.contact_person)
+    # )
+    #
+    # if len(problem_elements):
+    #     return False, f"Elements {problem_elements} have attributes that " \
+    #                   f"violate uniqueness constraints"
+
     # TODO: unify existing objects with new ones
     repo.save_project(project)
+
+    return True, None
 
 
 def search(value: str) -> list[model.Project]:
@@ -217,19 +394,13 @@ def search(value: str) -> list[model.Project]:
 
 def tables_exist() -> bool:
     """Check whether the database tables have been created."""
-    return db.engine.execute(
-        db.text(
-            """
-            SELECT EXISTS (
-                SELECT FROM
-                    pg_tables
-                WHERE
-                    schemaname = 'public' AND
-                    tablename  = 'user'
-            );
-            """
-        )
-    ).first()[0]
+    return repo.table_exists("user")
 
 
 # pylint: enable=unused-argument
+
+
+if __name__ == "__main__":
+    s = model.Student("a", "a@gmail.com", "KUL", "Elec")
+
+    _merge_on_uniqueness([s])

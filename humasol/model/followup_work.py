@@ -25,16 +25,14 @@ from dateutil.relativedelta import relativedelta
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import DeclarativeMeta
 
 # Local modules
+from humasol import exceptions, model
 from humasol.model import person, utils
 from humasol.repository import db
 
-BaseModel: DeclarativeMeta = db.Model
 
-
-class FollowupJob(BaseModel):
+class FollowupJob(model.BaseModel, model.ProjectElement):
     """Abstract base class for work related to project follow-up.
 
     Humasol is interested in carrying out various tasks to follow a finished
@@ -109,24 +107,24 @@ class FollowupJob(BaseModel):
         # Disable pylint. Need type to ignore subclasses
         # pylint: disable=unidiomatic-typecheck
         if type(self) == FollowupJob:
-            raise TypeError(
+            raise exceptions.IllegalArgumentException(
                 "FollowupWork is an abstract class and cannot be instantiated"
             )
         # pylint: enable=unidiomatic-typecheck
 
         if not FollowupJob.is_legal_subscriber(subscriber):
-            raise TypeError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'subscriber' should not be None and of a "
                 "subclass of Person"
             )
 
         if not FollowupJob.are_legal_periods(periods):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'periods' must be a list and contain unique Periods"
             )
 
         if not FollowupJob.is_legal_last_notification(last_notification):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'last_notification' should be a date "
                 "(of type datetime.date) in the future, or None"
             )
@@ -218,10 +216,8 @@ class FollowupJob(BaseModel):
 
     def add_period(self, period: Period) -> None:
         """Add the provided period to the job's periods list."""
-        if not isinstance(period, Period):
-            raise TypeError("Invalid period. Cannot be None")
         if not self.is_valid_period(period):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Invalid period was provided. Make sure it doesn't "
                 "overlap with existing periods"
             )
@@ -249,7 +245,9 @@ class FollowupJob(BaseModel):
         """Remove the given period from this job's periods list."""
         if period in self.periods:
             if len(self.periods) == 1:
-                raise TypeError("Invalid operation. Cannot remove only period")
+                raise exceptions.IllegalStateException(
+                    "Invalid operation. Cannot remove only period"
+                )
             self.periods.remove(period)
 
     def should_notify(self) -> bool:
@@ -399,13 +397,13 @@ class Task(FollowupJob):
         last_notification -- Date on which the subscriber was last notified
         """
         if not Task.is_legal_name(name):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'name' should be of type str and only "
                 "contain letters (at least one) and white spaces"
             )
 
         if not Task.is_legal_function(function):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'function' should only contain letters "
                 "(at least one), white spaces, commas or periods"
             )
@@ -493,7 +491,7 @@ class Task(FollowupJob):
         )
 
 
-class Period(BaseModel):
+class Period(model.BaseModel, model.ProjectElement):
     """Class representing a period over which a job is active.
 
     Jobs can be active for different intervals during different extents of
@@ -524,11 +522,12 @@ class Period(BaseModel):
             """Provide a time unit object from a string."""
             unit = unit.upper()
 
-            for key, val in Period.TimeUnit.__members__.items():
-                if unit == key:
-                    return val
+            if unit not in Period.TimeUnit.__members__:
+                raise exceptions.IllegalArgumentException(
+                    "Parameter 'unit' has an unknown value"
+                )
 
-            raise ValueError("Parameter 'unit' has an unknown value")
+            return Period.TimeUnit.__members__[unit]
 
         def __str__(self) -> str:
             """Convert instance to string."""
@@ -575,30 +574,30 @@ class Period(BaseModel):
         end         -- End date of the period of activity (none for indefinite)
         """
         if not Period.is_legal_interval(interval):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'interval' has an invalid value. Only positive "
                 "integers are allowed"
             )
 
         if not Period.is_legal_unit(unit):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'unit' should not be None and of type "
                 "Period.TimeUnit"
             )
 
         if not Period.is_legal_start(start):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'start' should not be None and of type "
                 "datetime.date"
             )
 
         if not Period.is_legal_end(end):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'end' should be of type datetime.date or None"
             )
 
         if not Period.are_legal_dates(start, end):
-            raise ValueError(
+            raise exceptions.IllegalArgumentException(
                 "Parameter 'end' has invalid content. End date should be "
                 "after start date"
             )
@@ -857,7 +856,6 @@ def construct_followup_work(constructor: Type[T], params: Dict[str, Any]) -> T:
     _______
     An object subclassing FollowupWork.
     """
-    print(params["subscriber"])
     params["subscriber"] = person.construct_person(
         person.get_constructor_from_type(params["subscriber"].pop("type")),
         params["subscriber"],

@@ -38,16 +38,7 @@ def api_manager_exists(
     return manager in api_managers
 
 
-DATA_MANAGERS = {
-    model.ProjectCategory.ENERGY: {
-        "GridDataManager",
-        "BatteryDataManager",
-        "GeneratorDataManager",
-        "BatteryGridDataManager",
-        "BatteryGridGeneratorDataManager",
-        "BatteryGeneratorDataManager",
-    }
-}
+DATA_MANAGERS = {model.ProjectCategory.ENERGY: {"EnergyDataManager"}}
 
 
 def data_manager_exists(

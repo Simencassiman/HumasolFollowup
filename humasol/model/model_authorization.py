@@ -1,6 +1,15 @@
 """Provides functionality for authorization."""
 
+from humasol import exceptions
 from humasol.model import user
+
+
+def get_role(role: str) -> user.Role:
+    """Retrieve enum value from string."""
+    try:
+        return user.Role.get(role)
+    except KeyError as exc:
+        raise exceptions.ModelException(exc) from exc
 
 
 def get_role_admin() -> user.Role:

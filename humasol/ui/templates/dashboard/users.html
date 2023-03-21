@@ -1,0 +1,65 @@
+{% extends 'dashboard/panel.html' %}
+{% from "security/_macros.html" import render_field_with_errors, render_field, render_field_errors, render_form_errors, prop_next %}
+
+{% block panel_title %}
+    Users
+{% endblock %}
+
+{% block panel_content %}
+    {% if users | length == 1 %}
+        <p>There is 1 user registered.</p>
+    {% else %}
+        <p>There are {{ users | length }} users registered.</p>
+    {% endif %}
+
+    {% for user in users %}
+    <div>
+        <p>{{ user.email }}, {{ user.roles[0].name.name }}</p>
+    </div>
+    {% endfor %}
+    <h2>Register User</h2>
+    <form id="register-form" method="post" name="register_user_form">
+        {{ register_user_form.hidden_tag() }}
+        {{ render_field_with_errors(register_user_form.email) }}
+        {{ render_field_with_errors(register_user_form.password) }}
+        {{ render_field_with_errors(register_user_form.roles) }}
+        {{ render_field(register_user_form.submit) }}
+    </form>
+    <script>
+        let inputs = ["users-csrf_token", "users-email", "users-password", "users-roles"];
+        let types = ['input', 'input', 'input', 'select']
+        changeFormSubmit(
+            "{{ url_for('gui.register_user') }}",
+            "register-form",
+            inputs,
+            (data) => {
+                let idx = $('.message-container').children().length;
+                let cls = data['success']? 'message-success' : 'message-warning';
+                let content = `
+                    <div id="messages-${idx}" class="message ${cls}">
+                        <div>${data['msg']}</div>
+                        <div>
+                            <!-- delete button -->
+                            <img
+                                src="{{ url_for('static', filename='img/cross_icon.png') }}"
+                                class="form-item form-del"
+                                onClick="deleteElement(this)">
+                        </div>
+                    </div>
+                `;
+                $('.message-container').append(content);
+
+                // Clear fields
+                inputs.map((id) => {
+                    $("input#" + id).val("")
+                })
+            },
+            types
+        )
+    </script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/select_multiple.js') }}"></script>
+    <script type="text/javascript">
+        // Roles multiselect
+        new MultiSelectTag('select#users-roles')
+    </script>
+{% endblock %}

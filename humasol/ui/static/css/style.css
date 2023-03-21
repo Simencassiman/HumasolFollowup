@@ -1,11 +1,41 @@
+/*
+File organization:
+
+1. Variable declaration
+2. Base style declaration
+3. General styles
+4. Site header
+    4.1 Main header
+    4.2 Navigation
+5. Loader style
+6. Page header
+7. Project list
+8. Project page
+9. Project form
+10. Dashboard
+11. Utilities
+
+
+ */
+
+
+/************************
+ Variable declaration
+*************************/
 
 :root {
-    --humasol-orange: #ff8200;
+    --humasol-orange: #e49730;
     --humasol-brown: #863c14;
     --humasol-yellow: #00000000;
-    --humasol-meat: #eca47c44;
+    --humasol-meat: #eca47c;
+    --humasol-green: #83ec7c;
     --border-grey: #ccc;
 }
+
+
+/************************
+ Base styles
+*************************/
 
 *,
 *::before,
@@ -16,6 +46,11 @@
     accent-color: var(--humasol-brown);
     margin: 0px;
 }
+
+
+/************************
+ General styles
+*************************/
 
 html {
     background-color: #f7f7f7;
@@ -39,6 +74,15 @@ a {
   color: inherit;
   text-decoration: none; /* no underline */
 }
+
+a:hover {
+    color: var(--humasol-orange);
+}
+
+
+/************************
+ Site header
+*************************/
 
 .main-header {
     position: -webkit-sticky; /* Safari */
@@ -84,6 +128,65 @@ a {
 }
 
 
+/************************
+ Loader style
+*************************/
+
+.loader {
+    position: absolute;
+    z-index: 999;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.loader-canvas {
+    width: 10rem;
+    height: 10rem;
+}
+
+.loader-path {
+    fill: none;
+    stroke-width:2.11667;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    stroke-miterlimit:4;
+    stroke-dasharray:none;
+    stroke-opacity:1;
+    transform-origin: 50% 50%;
+    animation: rotation var(--duration, 1s) infinite linear;
+    animation-direction: var(--orientation, normal);
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
+}
+
+.loader-path__outer {
+    stroke:#ff8200;
+    --duration: 1.5s;
+}
+
+.loader-path__middle {
+    stroke:#eca47c;
+    --duration: 1.25s;
+    --orientation: reverse;
+}
+
+.loader-path__inner {
+    stroke:#863c14;
+}
+
+
+
+/************************
+ Page header
+*************************/
 
 .title-light {
     color: #fff;
@@ -129,6 +232,39 @@ a.nav {
     text-decoration: none;
 }
 
+.message-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+}
+
+.message-container:has(div.message) {
+    margin-top: 5px;
+}
+
+.message {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    align-items: center;
+    padding: 10px;
+    border-radius: 2px;
+    background-color: var(--message-bg, var(--humasol-meat));
+}
+
+.message-success {
+    --message-bg: var(--humasol-green);
+}
+
+.message-positive {
+    --message-bg: var(--humasol-meat);
+}
+
+.message > div:first-child {
+    flex-grow: 1;
+}
+
 
 /************************
   Project list formatting
@@ -145,7 +281,7 @@ a.nav {
     border-radius: 2px;
     box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.15);
     overflow: hidden;
-    margin: 2px, 5px;
+    margin: 2px 5px;
     transition: 100ms transform ease-in-out;
 }
 
@@ -448,9 +584,9 @@ a.nav {
 }
 
 
-/****************
-  Form formatting
-*****************/
+/*************************
+  Project form formatting
+**************************/
 
 .form-section {
     background-color: #fafafa;
@@ -556,54 +692,6 @@ a.nav {
     font-weight: normal;
 }
 
-.row-center {
-  align-items: center;
-}
-
-.row-end {
-  justify-content: flex-end;
-}
-
-.col-center {
-  align-items: center;
-}
-
-.col-bottom {
-  justify-content: flex-end;
-}
-
-.grow-one {
-    flex-grow: 1;
-}
-
-.grow-two {
-    flex-grow: 2;
-}
-
-.grow-three {
-  flex-grow: 3;
-}
-
-.grow-four {
-  flex-grow: 4;
-}
-
-.grow-five {
-  flex-grow: 5;
-}
-
-.grow-six {
-  flex-grow: 6;
-}
-
-.grow-seven {
-  flex-grow: 7;
-}
-
-.grow-eight {
-  flex-grow: 8;
-}
-
 .form-col.energy-component {
     width: 280px;
 }
@@ -650,6 +738,8 @@ a.nav {
 .no-wrap {
     flex-wrap: nowrap;
 }
+
+
 /*******************
   Button formatting
 ********************/
@@ -702,6 +792,240 @@ a.nav {
 }
 
 
+/*****************
+ Dashboard
+******************/
+.dash-content {
+    display: flex;
+    flex-direction: row;
+    margin-top: 2.5rem;
+}
+
+.sidebar {
+    height:100%;
+    width:200px;
+    display:flex;
+    flex-direction: column;
+    padding:8px 16px;
+    text-align:left;
+    white-space:normal;
+}
+
+.sidebar-item{
+    width:100%;
+    padding:8px 16px;
+    text-align:left;
+    white-space:normal;
+    border: none;
+    background-color: inherit;
+}
+
+.sidebar-item:hover {
+    color: var(--humasol-orange);
+}
+
+.sidebar-item__selected {
+    color: var(--humasol-orange);
+}
+
+.dash-panel{
+    flex-grow: 1;
+    padding:16px;
+}
+
+.dash-panel__container {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    animation: animateleft 0.4s;
+}
+
+.dash-panel__header {
+    margin-bottom: 1rem;
+}
+
+.dash-panel__subheader {
+    font-weight: bold;
+    font-size: 1em;
+}
+
+.dash-panel__paragraph-header {
+    font-weight: normal;
+    font-size: 1em;
+}
+
+.dash-panel__content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@keyframes animateleft {
+    from {
+        left: -50px;
+        opacity: 0;
+    }
+    to {
+        left: 0;
+        opacity: 1;
+    }
+}
+
+/**************
+* Select multi
+***************/
+
+.mult-select-tag {
+    display: flex;
+    width:100%;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --tw-shadow-color: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);
+    --border-color: rgb(218, 221, 224);
+    font-family: Verdana, sans-serif;
+}
+
+.mult-select-tag .wrapper {
+    width: 100%;
+}
+
+.mult-select-tag .body {
+    display: flex;
+    border: 1px solid var(--border-color);
+    background: white;
+    min-height: 2.15rem;
+    width:100%;
+    min-width: 14rem;
+
+}
+
+.mult-select-tag .input-container {
+    display: flex;
+    flex-wrap: wrap;
+    flex: 1 1 auto;
+    padding: 0.1rem;
+}
+
+.mult-select-tag .input-body {
+    display: flex;
+    width: 100%;
+}
+
+.mult-select-tag .input {
+    flex:1;
+    background: transparent;
+    border-radius: 0.25rem;
+    padding: 0.45rem;
+    margin: 10px;
+    color: #2d3748;
+    outline: 0;
+    border: 1px solid var(--border-color);
+}
+
+.mult-select-tag .btn-container {
+    color: #e2eBf0;
+    padding: 0.5rem;
+    display: flex;
+    border-left: 1px solid var(--border-color);
+}
+
+.mult-select-tag button {
+    cursor: pointer;
+    width: 100%;
+    color: #718096;
+    outline: 0;
+    height: 100%;
+    border: none;
+    padding: 0;
+    background: transparent;
+    background-image: none;
+    -webkit-appearance: none;
+    text-transform: none;
+    margin: 0;
+}
+
+.mult-select-tag button:first-child {
+    width: 1rem;
+    height: 90%;
+}
+
+
+.mult-select-tag .drawer {
+    position: absolute;
+    background: white;
+    max-height: 15rem;
+    z-index: 40;
+    top: 98%;
+    width: 100%;
+    overflow-y: scroll;
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+}
+
+.mult-select-tag ul {
+    list-style-type: none;
+    padding: 0.5rem;
+    margin: 0;
+}
+
+.mult-select-tag ul li {
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.mult-select-tag ul li:hover {
+    background: rgb(243 244 246);
+}
+
+.mult-select-tag .item-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--humasol-orange);
+    padding: 0.2rem 0.4rem;
+    margin: 0.2rem;
+    font-weight: 500;
+    border: var(--humasol-brown);
+    background: var(--humasol-meat);
+    border-radius: 9999px;
+}
+
+.mult-select-tag .item-label {
+    max-width: 100%;
+    line-height: 1;
+    font-size: 0.75rem;
+    font-weight: 400;
+    flex: 0 1 auto;
+    color: var(--humasol-brown);
+}
+
+.mult-select-tag .item-close-container {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: row-reverse;
+}
+
+.mult-select-tag .item-close-svg {
+    width: 1rem;
+    margin-left: 0.5rem;
+    height: 1rem;
+    cursor: pointer;
+    border-radius: 9999px;
+    display: block;
+}
+
+.mult-select-tag .shadow  {
+    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+
+.mult-select-tag .rounded {
+    border-radius: .375rem;
+}
+
+
 /**************
 * Miscellaneous
 ***************/
@@ -710,6 +1034,64 @@ a.nav {
 To initially hide content
 Important to keep this at the bottom so it overrides other classes!
 */
+.flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.row-center {
+  align-items: center;
+}
+
+.row-end {
+  justify-content: flex-end;
+}
+
+.col-center {
+  align-items: center;
+}
+
+.col-bottom {
+  justify-content: flex-end;
+}
+
+.grow-one {
+    flex-grow: 1;
+}
+
+.grow-two {
+    flex-grow: 2;
+}
+
+.grow-three {
+  flex-grow: 3;
+}
+
+.grow-four {
+  flex-grow: 4;
+}
+
+.grow-five {
+  flex-grow: 5;
+}
+
+.grow-six {
+  flex-grow: 6;
+}
+
+.grow-seven {
+  flex-grow: 7;
+}
+
+.grow-eight {
+  flex-grow: 8;
+}
+
 .hidden {
   display: none;
 }

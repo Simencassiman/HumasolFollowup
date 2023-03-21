@@ -5,24 +5,26 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import flask_security.forms as sec_forms
 from flask import (
     Blueprint,
     Response,
+    flash,
     redirect,
     render_template,
     request,
     url_for,
 )
-from flask_security import roles_accepted
+from flask_security import login_required, roles_accepted
 from flask_security import utils as sec_util
 from flask_security.forms import form_errors_munge
 
 # Local modules
 from werkzeug.datastructures import MultiDict
 
+from humasol import exceptions
 from humasol.model import model_authorization as ma
-from humasol.ui import utils
-from humasol.ui.forms import ProjectForm
+from humasol.ui import forms, utils
 
 if TYPE_CHECKING:
     # This is necessary for type checking and to avoid cyclic
@@ -35,6 +37,7 @@ HtmlPage = str  # A full HTML page with head and body
 HtmlContent = str  # Portion of HTML formatted content
 
 
+# pylint: disable=too-many-public-methods
 class GUI(Blueprint):
     """Class containing the GUI functionality related to projects."""
 
@@ -42,6 +45,7 @@ class GUI(Blueprint):
     # TODO: add error handler
     # TODO: add logging
 
+    # Roles access permissions
     ROLES_ADD_PROJECT = {ma.get_role_admin(), *ma.get_roles_humasol()}
     ROLES_ARCHIVE_PROJECT = {ma.get_role_admin(), *ma.get_roles_humasol()}
     ROLES_REGISTER_USER = {ma.get_role_admin(), ma.get_role_humasol_followup()}
@@ -59,6 +63,10 @@ class GUI(Blueprint):
         super().__init__("gui", __name__, **kwargs)
 
         self.app = app
+        self._forms = {
+            n: {f.__name__: f() for f in fs}
+            for n, fs in forms.get_subforms().items()
+        }
 
         self.context_processor(self._set_context)
 
@@ -92,6 +100,29 @@ class GUI(Blueprint):
         )
         self.add_url_rule(
             "/save-project", "add_project", self.add_project, methods=["POST"]
+        )
+        self.add_url_rule(
+            "/remove-project",
+            "remove_project",
+            self.remove_project,
+            methods=["GET"],
+        )
+
+        self.add_url_rule("/dashboard", "view_dashboard", self.view_dashboard)
+        self.add_url_rule(
+            "/dashboard-content", "get_dashboard", self.get_dashboard
+        )
+        self.add_url_rule(
+            "/change-password",
+            "change_password",
+            self.change_password,
+            methods=["POST"],
+        )
+        self.add_url_rule(
+            "/register-user",
+            "register_user",
+            self.register_user,
+            methods=["POST"],
         )
 
     def _set_context(self) -> dict[str, bool]:
@@ -131,21 +162,28 @@ class GUI(Blueprint):
         __________
         form    -- Completed project form
         """
-        form = ProjectForm(request.form)
+        form = forms.ProjectForm(request.form)
 
+        # TODO: improve flash messages
         if form.validate_on_submit():
-            print("Received form, success")
+            try:
 
-            project_id = self.app.create_project(form.get_data())
+                project_id = self.app.create_project(form.get_data())
 
-            self.app.get_session()["project_id"] = project_id
+                if project_id >= 0:  # Success
+                    self.app.get_session()["project_id"] = project_id
 
-            return redirect(url_for("gui.view_project"))
+                    return redirect(url_for("gui.view_project"))
 
-        print("Form validation failed:")
+                # Saving failed
+                flash("Some of the fields violate the uniqueness constraint.")
 
-        # TODO: use flash messages
-        print(form.errors)
+            except exceptions.FormError as exc:
+                flash(str(exc))
+
+        else:
+            for key, err in form.errors.items():
+                flash(f"{key}: {err}")
 
         self.app.get_session()["project_form"] = request.form
 
@@ -163,8 +201,28 @@ class GUI(Blueprint):
         project_id  -- Identifier of the project to archive
         """
 
+    @roles_accepted(*ma.get_roles_all())
+    def change_password(self) -> dict:
+        """Reset a user's password."""
+        form = sec_forms.ChangePasswordForm(request.form, prefix="profile")
+
+        success = False
+        if form.validate_on_submit():
+            success = self.app.change_user_password(
+                self.app.get_user(), form.new_password.data
+            )
+
+        return {
+            "success": success,
+            "msg": (
+                "Password has been changed"
+                if success
+                else "Something went wrong while changing the password"
+            ),
+        }
+
     @roles_accepted(*ROLES_ADD_PROJECT)
-    def edit_project(self, project_id: int, form: ProjectForm) -> None:
+    def edit_project(self, project_id: int, form: forms.ProjectForm) -> None:
         """Update the referenced project with the provided input.
 
         Parameters
@@ -216,6 +274,31 @@ class GUI(Blueprint):
         Return HTML code (not a full page) containing all the requested
         information.
         """
+        info = self.app.get_dashboard()
+
+        if not info:
+            return redirect(url_for("gui.login"))
+
+        if "profile" in info:
+            info["profile"][
+                "change_password_form"
+            ] = sec_forms.ChangePasswordForm(prefix="profile")
+        if "users" in info:
+            info["users"]["register_user_form"] = forms.security.RegisterForm(
+                prefix="users"
+            )
+
+        # Render each panel
+        dashboard_templates = {
+            "profile": "dashboard/profile.html",
+            "users": "dashboard/users.html",
+        }
+        tabs = {
+            k: render_template(dashboard_templates[k], **v)
+            for k, v in info.items()
+        }
+
+        return render_template("dashboard/dashboard_content.html", tabs=tabs)
 
     @roles_accepted(*ma.get_roles_all())
     def get_project(self) -> HtmlContent | Response:
@@ -316,9 +399,7 @@ class GUI(Blueprint):
         return redirect("/")
 
     @roles_accepted(*ROLES_REGISTER_USER)
-    def register_user(
-        self, username: str, password: str, role: str, email: str
-    ) -> None:
+    def register_user(self) -> dict:
         """Register a new user of the system.
 
         Parameters
@@ -329,6 +410,41 @@ class GUI(Blueprint):
                         webapp
         email       -- Email of the person behind the user
         """
+        _form = request.form.copy()
+        for role in request.form.getlist("users-roles[]"):
+            _form.add("users-roles", role)
+        form = forms.security.RegisterForm(_form, prefix="users")
+
+        success = False
+        if form.validate_on_submit():
+            success = self.app.register_user(**form.get_data()) is not None
+
+        return {
+            "success": success,
+            "msg": f"Registration "
+            f'{"successful" if success else "unsuccessful"}',
+        }
+
+    @roles_accepted(*ROLES_ADD_PROJECT)
+    def remove_project(self) -> Response:
+        """Remove a project.
+
+        Parameters
+        __________
+        id  -- ID of the project to remove
+        """
+        if not (p_id := request.args.get("id", None)):
+            # TODO: raise 403
+            return redirect(url_for("gui.view_projects"))
+
+        success = self.app.remove_project(int(p_id))
+
+        if success:
+            flash("Deletion was successful")
+        else:
+            flash("Deletion was unsuccessful")
+
+        return redirect(url_for("gui.view_projects"), code=200)
 
     @roles_accepted(*ROLES_SEARCH_PROJECT)
     def search_project(self, value: str) -> HtmlPage:
@@ -356,15 +472,21 @@ class GUI(Blueprint):
         """
         if form_data := self.app.get_session().get("project_form", None):
             self.app.get_session().pop("project_form")
-            form = ProjectForm(MultiDict(form_data))
+            form = forms.ProjectForm(MultiDict(form_data))
         else:
-            form = ProjectForm()
+            form = forms.ProjectForm()
+
+        # TODO: reload category JS if one is selected already
 
         return render_template(
-            "project/form_add_project.html", form=form, show_followup=False
+            "project/form_add_project.html",
+            form=form,
+            show_followup=False,
+            _forms=self._forms,
+            unwrap=forms.utils.unwrap,
         )
 
-    @roles_accepted(*ROLES_VIEW_DASHBOARD)
+    @login_required
     def view_dashboard(self) -> HtmlPage:
         """Retrieve the page for the dashboard view.
 
@@ -377,6 +499,7 @@ class GUI(Blueprint):
         Return an empty HTML dashboard page that will fetch the data while
         loading.
         """
+        return render_template("dashboard/dashboard.html")
 
     @roles_accepted(*ROLES_ADD_PROJECT)
     def view_edit_project(self, project_id: int) -> HtmlPage:
@@ -461,3 +584,6 @@ class GUI(Blueprint):
             logged_in=user is not None,
             add_permissions=permission,
         )
+
+
+# pylint: enable=too-many-public-methods

@@ -1,10 +1,10 @@
 
 function scalePersonInfo() {
-    var threshold = 130;
-    var info = $('.person-info > p');
+    let threshold = 130;
+    let info = $('.person-info > p');
 
     info.each((idx, elem) => {
-        var item = $(elem), fs = parseInt(item.css('font-size'));
+        let item = $(elem), fs = parseInt(item.css('font-size'));
         console.log(elem);
         console.log(idx);
         console.log(item.width() > threshold);

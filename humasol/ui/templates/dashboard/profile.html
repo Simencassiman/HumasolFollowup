@@ -1,0 +1,106 @@
+{% extends 'dashboard/panel.html' %}
+{% from "security/_macros.html" import render_field_with_errors, render_field, render_field_errors, render_form_errors, prop_next %}
+{% import 'utils.html' as utils %}
+
+{% block panel_title %}
+    Profile
+{% endblock %}
+
+{% block panel_content %}
+    <div>
+        <h3 class="dash-panel__subheader">Personal details</h3>
+        <div>
+            <p>Name: {{ user.email }}</p>
+            <p>Roles: {% for role in user.roles %} {{ role.name.name | capitalize }} {% endfor %}</p>
+        </div>
+
+        <div>
+            <h4 class="dash-panel__paragraph-header">Change Password</h4>
+            <form id="password-form" method="post" name="change_password_form">
+                {{ change_password_form.hidden_tag() }}
+                {{ render_field_with_errors(change_password_form.password) }}
+                {{ render_field_with_errors(change_password_form.new_password) }}
+                {{ render_field_with_errors(change_password_form.new_password_confirm) }}
+                {{ render_field(change_password_form.submit) }}
+            </form>
+        </div>
+    </div>
+    <div>
+        <h3 class="dash-panel__subheader">My Projects</h3>
+        {% if my_projects | length == 0 %}
+            <p>You have currently not created any projects!</p>
+        {% else %}
+            {% for project in my_projects %}
+                <div>
+                    <a href="{{ url_for('gui.view_project') }}?id={{ project.id }}">{{ project.name }}</a>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <div>
+        <h3 class="dash-panel__subheader">My Associated Projects</h3>
+        {% if connected_projects | length == 0 %}
+            <p>You are currently not associated with any projects!</p>
+        {% else %}
+            {% for project in connected_projects %}
+                <div>
+                    <a href="{{ url_for('gui.view_project') }}?id={{ project.id }}">{{ project.name }}</a>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <div>
+        <h3 class="dash-panel__subheader">My Subscriptions</h3>
+        {% if subscriptions | length == 0 %}
+            <p>You are currently not subscribed to any projects!</p>
+        {% else %}
+            {% for project in subscriptions %}
+                <div>
+                    <a href="{{ url_for('gui.view_project') }}?id={{ project.id }}">{{ project.name }}</a>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <div>
+        <h3 class="dash-panel__subheader">My Tasks</h3>
+        {% if tasks | length == 0 %}
+            <p>You currently have no tasks for any projects!</p>
+        {% else %}
+            {% for project in tasks %}
+                <div>
+                    <a href="{{ url_for('gui.view_project') }}?id={{ project.id }}">{{ project.name }}</a>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <script>
+        let inputs = ["profile-csrf_token", "profile-password", "profile-new_password", "profile-new_password_confirm"];
+        changeFormSubmit(
+            "{{ url_for('gui.change_password') }}",
+            "password-form",
+            inputs,
+            (data) => {
+                let idx = $('.message-container').children().length;
+                let cls = data['success']? 'message-success' : 'message-warning';
+                let content = `
+                    <div id="messages-${idx}" class="message ${cls}">
+                        <div>${data['msg']}</div>
+                        <div>
+                            <!-- delete button -->
+                            <img
+                                src="{{ url_for('static', filename='img/cross_icon.png') }}"
+                                class="form-item form-del"
+                                onClick="deleteElement(this)">
+                        </div>
+                    </div>
+                `;
+                $('.message-container').append(content);
+
+                // Clear fields
+                inputs.map((id) => {
+                    $("input#" + id).val("")
+                })
+            }
+        )
+    </script>
+{% endblock %}

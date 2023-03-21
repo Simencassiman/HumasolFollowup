@@ -1,14 +1,12 @@
 {% extends 'base.html' %}
 
 {% block title %}
-  Project
+Project
 {% endblock %}
 
 {% block scripts %}
 <script>
-    $.get("{{ url_for('gui.get_project') }}?id={{ project_id }}", function( data ) {
-      $( "#main-content" ).html( data );
-    })
+    loadContent("{{ url_for('gui.get_project') }}?id={{ project_id }}", "#main-content")
 </script>
 <script type="text/javascript" src="{{ url_for('static', filename='scripts/project.js') }}" defer></script>
 {% endblock %}

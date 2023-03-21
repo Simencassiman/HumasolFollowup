@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
-{% import 'project/form_blank_items.html' as blanks %}
-{% import 'project/form_project_specifics.html' as project_specifics %}
+{% import 'project/form_items/form_blank_items.html' as blanks %}
+{% import 'project/form_items/form_project_specifics.html' as project_specifics %}
+{% import 'project/form_items/energy.html' as energy %}
 
 {% block title %}
   Add Project
@@ -47,7 +48,14 @@
             </div>
 
             <div class="form-row">
-                {% include 'project/location.html' %}
+                {% include 'project/form_items/location.html' %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-col grow-one form-item">
+                    {{ form.sdgs.label(class="form-input-label") }}
+                    {{ form.sdgs(class="form-input-large", multiple=True) }}
+                </div>
             </div>
 
             <div class="form-row">
@@ -67,7 +75,7 @@
 
                             {% set deletable = True %}
                             {% for student in form.students %}
-                                {% include 'project/student.html' %}
+                                {{ blanks.student(student) }}
                             {% endfor %}
 
                         </div>
@@ -89,7 +97,7 @@
                         <div id="supervisors" class="form-col grow-one">
                             {% set deletable = True %}
                             {% for supervisor in form.supervisors %}
-                                {% include 'project/supervisor.html' %}
+                                {{ blanks.supervisor(supervisor) }}
                             {% endfor %}
                         </div>
                     </div>
@@ -110,7 +118,7 @@
                         <div id="partners" class="form-col grow-one">
                             {% set deletable = True %}
                             {% for partner in form.partners %}
-                                {% include 'project/partner.html' %}
+                                {{ blanks.partner(partner) }}
                             {% endfor %}
                         </div>
                     </div>
@@ -119,14 +127,6 @@
                             Add Partner
                         </button>
                     </div>
-                </div>
-            </div>
-
-
-            <div class="form-row">
-                <div class="form-col grow-one form-item">
-                    {{ form.sdgs.label(class="form-input-label") }}
-                    {{ form.sdgs(class="form-input-large", multiple=True) }}
                 </div>
             </div>
 
@@ -139,7 +139,7 @@
                 <div id="specifics-content">
                     <!-- Specific forms for subclasses of project will be inserted here -->
                     {% if form.category.data %}
-                        {{ project_specifics.get(form) }}
+                        {{ project_specifics.get(form.specifics) }}
                     {% else %}
                         <p class="form-item">Please select a project category...</p>
                     {% endif %}
@@ -159,7 +159,7 @@
                     <div class="form-row">
                         <div id="tasks" class="form-col grow-one">
                             {% for task in form.tasks %}
-                                {% include 'project/task.html' %}
+                                {% include 'project/form_items/task.html' %}
                             {% endfor %}
                         </div>
                     </div>
@@ -171,42 +171,7 @@
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-col grow-one">
-                    <div class="form-row">
-                        <div class="form-col form-item grow-one">
-                            {{ form.data_source.source.label(class="form-input-label") }}
-                            {{ form.data_source.source(class="form-input") }}
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-col form-item grow-one">
-                            {{ form.data_source.api_manager.label(class="form-input-label") }}
-                            {{ form.data_source.api_manager(class="form-input") }}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-col grow-one">
-                    <div class="form-row">
-                        <div class="form-col form-item grow-one">
-                            {{ form.data_source.username.label(class="form-input-label") }}
-                            {{ form.data_source.username(class="form-input") }}
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-col form-item grow-one">
-                            {{ form.data_source.password.label(class="form-input-label") }}
-                            {{ form.data_source.password(class="form-input") }}
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-col form-item grow-one">
-                            <!--  -->
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {% include 'project/form_items/datasource.html' %}
 
             <div class="form-row">
                 <div class="form-col grow-one form-item">
@@ -250,7 +215,7 @@
                     <div class="form-row">
                         <div id="subscriptions" class="form-col grow-one">
                             {% for subscription in form.subscriptions %}
-                                {% include 'project/subscription.html' %}
+                                {% include 'project/form_items/subscription.html' %}
                             {% endfor %}
                         </div>
                     </div>
@@ -284,88 +249,85 @@
 
 {% block scripts %}
     <script type="text/javascript" src="{{ url_for('static', filename='scripts/add_project.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/utils.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/select_multiple.js') }}"></script>
+    <script type="text/javascript" defer>
+
+        /*
+        Render all templates that should be injected dynamically at some point
+        using javascript.
+        Store them in a globally accessible dictionary. This can be accessed
+        from any JS script, and doing so allows to separate the actual logic
+        into a .js file.
+
+        The templates dictionary contains general components used in each
+        project form.
+
+        The templates_specifics dictionary contains templates used for specific
+        project classes. It is structured with nested dictionaries, indexed by
+        as string matching the ProjectCategory enum member name.
+        To add a new category member, simply assign a nested dictionary to the
+        category key.
+        Each nested dictionary must contain at least one entry:
+            - 'base': with the template for the rendered subform
+        Optionally it can also contain:
+            - 'js': the url to the matching static .js file which should be
+                    loaded when this category is selected
+            - self-defined keys mapping to the required rendered templates
+        */
+
+        const templates = {
+            'student': {{ blanks.wrap(blanks.student(_forms['general']['StudentForm'])) }},
+            'supervisor': {{ blanks.wrap(blanks.supervisor(_forms['general']['SupervisorForm'])) }},
+            'partner': {{ blanks.wrap(blanks.partner(_forms['general']['PartnerForm'])) }},
+            'task': {{ blanks.wrap(blanks.task(_forms['general']['TaskForm'])) }},
+            'subscription': {{ blanks.wrap(blanks.subscription(_forms['general']['SubscriptionForm'])) }},
+            'student-nondelete': {{ blanks.wrap(blanks.student(_forms['general']['StudentForm'], False)) }},
+            'supervisor-nondelete': {{ blanks.wrap(blanks.supervisor(_forms['general']['SupervisorForm'], False)) }},
+            'partner-nondelete': {{ blanks.wrap(blanks.partner(_forms['general']['PartnerForm'], False)) }},
+            'period': {{ blanks.wrap(blanks.period(_forms['general']['PeriodForm'])) }}
+        }
+
+        const templates_specifics = {};
+
+        templates_specifics['default'] = {
+            'base': {{ blanks.wrap(project_specifics.default()) }}
+        }
+
+        templates_specifics['ENERGY'] = {
+            'js': '{{ url_for("static", filename="scripts/energy.js") }}',
+            'base': {{ blanks.wrap(project_specifics.energy(form.specifics.energy)) }},
+            'source': {{ blanks.wrap(energy.source(unwrap(form.specifics.energy.sources))) }},
+            'generator': {{ blanks.wrap(energy.generator(_forms['energy']['GeneratorForm'])) }},
+            'grid': {{ blanks.wrap(energy.grid(_forms['energy']['GridForm'])) }},
+            'pv': {{ blanks.wrap(energy.pv(_forms['energy']['PVForm'])) }},
+            'storage': {{ blanks.wrap(energy.storage(unwrap(form.specifics.energy.storage))) }},
+            'battery': {{ blanks.wrap(energy.battery(_forms['energy']['BatteryForm'])) }},
+            'consumption': {{ blanks.wrap(energy.consumption(unwrap(form.specifics.energy.loads)))}}
+        }
+    </script>
     <script type="text/javascript">
-        function projectSpecifics(category) {
-            var elements = $(category).find("input")
+        /*
+        Format on load
+        */
 
-            var selected
-            for(var i in elements) {
-                if(elements[i].checked) {
-                    selected = elements[i].value
-                    break;
-                }
+        // SDG multiselect
+        new MultiSelectTag('#sdgs')  // id
+
+        // Default student cards
+        renumberListElements('#students', (n) => { return n == 'x' });
+
+        {% if form.category.data %}
+            selected = '{{ form.category.data }}'
+            if ('js' in templates_specifics[selected]) {
+                addScript(
+                    selected.toLowerCase() + SCRIPT_SUFFIX,
+                    templates_specifics[selected]['js']
+                )
             }
 
-            console.log(selected)
+            updateManagers('{{ form.category.data }}')
+        {% endif %}
 
-            var content;
-            switch(selected) {
-                case "ENERGY":
-                    content = {{ blanks.wrap(project_specifics.energy(form.specifics)) }};
-                    break;
-                default:
-                    content = '';
-            }
-
-            setProjectSpecifics(content);
-        }
-
-        function addStudent() {
-            addElementToList('#students', {{ blanks.wrap(blanks.student()) }} );
-        }
-
-        function addSupervisor() {
-            addElementToList('#supervisors', {{ blanks.wrap(blanks.supervisor()) }} );
-        }
-
-        function addPartner() {
-            addElementToList('#partners', {{ blanks.wrap(blanks.partner()) }} );
-        }
-
-        function addTask() {
-            addElementToList('#tasks', {{ blanks.wrap(blanks.task()) }} );
-        }
-
-        function addSubscription() {
-            addElementToList('#subscriptions', {{ blanks.wrap(blanks.subscription()) }} );
-        }
-
-        function taskSubscriberType(selector, origin) {
-            {% set origin = origin %}
-            switch(selector.value) {
-                case "stu":
-                    replaceSubscriber(selector, {{ blanks.wrap(blanks.student(False, "tasks-x-subscriber")) }});
-                    break;
-                case "sup":
-                    replaceSubscriber(selector, {{ blanks.wrap(blanks.supervisor(False, "tasks-x-subscriber")) }});
-                    break;
-                case "par":
-                    replaceSubscriber(selector, {{ blanks.wrap(blanks.partner(False, "tasks-x-subscriber")) }}, true);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        function subscriptionSubscriberType(selector, origin) {
-            {% set origin = origin %}
-            switch(selector.value) {
-                case "stu":
-                    replaceSubscriber(selector, {{ blanks.wrap(blanks.student(False, "subscriptions-x-subscriber")) }});
-                    break;
-                case "sup":
-                    replaceSubscriber(selector, {{ blanks.wrap(blanks.supervisor(False, "subscriptions-x-subscriber")) }});
-                    break;
-                case "par":
-                    replaceSubscriber(selector, {{ blanks.wrap(blanks.partner(False, "subscriptions-x-subscriber")) }}, true);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        function addPeriod(elem, prefix) {
-            addPeriodToList(elem, {{ blanks.wrap(blanks.period(prefix)) }}, prefix);
-        }
     </script>
 {% endblock %}

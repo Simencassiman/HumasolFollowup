@@ -3,14 +3,15 @@
 # Python Libraries
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
 
 import wtforms
-from flask_wtf import FlaskForm
-from wtforms import BooleanField, FieldList, FileField, FloatField
-from wtforms import Form as NoCsrfForm
 from wtforms import (
+    BooleanField,
+    FieldList,
+    FileField,
+    FloatField,
     FormField,
     HiddenField,
     IntegerField,
@@ -22,61 +23,34 @@ from wtforms import (
     SubmitField,
     TextAreaField,
 )
-from wtforms.fields import DateField, DecimalRangeField
+from wtforms.fields import DateField
 from wtforms.validators import ValidationError
 
 # Local Modules
+from humasol import exceptions
 from humasol.model import model_interface
 from humasol.model import model_validation as model_val
+from humasol.ui import forms
 
 if TYPE_CHECKING:
     from humasol import model
 
 
-# pylint: disable=too-few-public-methods
-
-
-class IHumasolForm(ABC):
-    """Humasol form interface."""
-
-    @abstractmethod
-    def get_data(self) -> dict[str, Any]:
-        """Return the data in the form fields.
-
-        Returns
-        _______
-        Dictionary mapping attributes from the corresponding models to the data
-        in the form fields.
-        """
-
-
-class MetaBaseForm(type(FlaskForm), type(ABC)):  # type: ignore
-    """Combine superclasses with distinct meta classes into one meta class."""
-
-
-class MetaNoCsrfForm(type(NoCsrfForm), type(ABC)):  # type: ignore
-    """Combine superclasses with distinct meta classes into one meta class."""
-
-
-class HumasolBaseForm(FlaskForm, IHumasolForm, ABC, metaclass=MetaBaseForm):
-    """Base form to use for any Humasol form."""
-
-
-class HumasolNoCsrfForm(
-    NoCsrfForm, IHumasolForm, ABC, metaclass=MetaNoCsrfForm
-):
-    """Superclass to use with any subform."""
-
-
-# pylint: enable=too-few-public-methods
-
-
-class PersonForm(HumasolNoCsrfForm):
+class PersonForm(forms.ProjectElementForm):
     """Class for a generic person form."""
 
     person_name = StringField("Name")
     email = StringField("Email")
     phone = StringField("Phone number")
+
+    # LABEL will be a constant
+    # pylint: disable=invalid-name
+    @property
+    @abstractmethod
+    def LABEL(self) -> str:
+        """Provide identifying label of the project component."""
+
+    # pylint: enable=invalid-name
 
     @staticmethod
     def person_to_dict(pers: model.Person) -> dict[str, Any]:
@@ -90,7 +64,7 @@ class PersonForm(HumasolNoCsrfForm):
         return {
             "person_name": pers.name,
             "email": pers.email,
-            "phone": pers.phone,  # if pers.phone is not None else ''
+            "phone": pers.phone,
         }
 
     def get_data(self) -> dict[str, Any]:
@@ -145,6 +119,8 @@ class PersonForm(HumasolNoCsrfForm):
 class StudentForm(PersonForm):
     """Class for a humasol student form."""
 
+    LABEL = model_interface.get_student_label()
+
     university = StringField("University")
     field_of_study = StringField("Field of study")
 
@@ -198,6 +174,8 @@ class StudentForm(PersonForm):
 class SupervisorForm(PersonForm):
     """Class for a humasol team supervisor form."""
 
+    LABEL = model_interface.get_supervisor_label()
+
     function = StringField("Function")
 
     @staticmethod
@@ -237,10 +215,12 @@ class SupervisorForm(PersonForm):
 class PartnerForm(PersonForm):
     """Class for a humasol partner form."""
 
+    LABEL = model_interface.get_partner_label()
+
     belgian_partner_type = model_interface.get_belgian_partner_label()
     southern_partner_type = model_interface.get_southern_partner_label()
 
-    class OrganizationForm(HumasolNoCsrfForm):
+    class OrganizationForm(forms.HumasolSubform):
         """Class for an external organization form."""
 
         organization_name = StringField("Name")
@@ -406,7 +386,7 @@ class PartnerForm(PersonForm):
 
 # TODO: solve as composition
 # pylint: disable=too-many-ancestors
-class SubscriberForm(HumasolNoCsrfForm):
+class SubscriberForm(forms.HumasolSubform):
     """Class for a subscriber form.
 
     A subscriber can be any type of person.
@@ -425,7 +405,20 @@ class SubscriberForm(HumasolNoCsrfForm):
     def __init__(self, **kwargs) -> None:
         """Instantiate the subscriber form."""
         super().__init__(**kwargs)
-        self._sub_type: Optional[str] = None
+        self.sub_type = self.student_type
+
+    @property
+    def person(self) -> FormField[PersonForm]:
+        """Provide the currently active person subform."""
+        match self.sub_type:
+            case self.student_type:
+                return self.student
+            case self.supervisor_type:
+                return self.supervisor
+            case self.partner_type:
+                return self.partner
+            case _:
+                raise RuntimeError(f"Unknown subscriber type: {self.sub_type}")
 
     def get_data(self) -> dict[str, Any]:
         """Return the data in the form fields.
@@ -435,24 +428,14 @@ class SubscriberForm(HumasolNoCsrfForm):
         Dictionary mapping attributes from the corresponding models to the data
         in the form fields.
         """
-        data = {"type": self._sub_type}
-
-        match self._sub_type:
-            case self.student_type:
-                return data | self.student.get_data()
-            case self.supervisor_type:
-                return data | self.supervisor.get_data()
-            case self.partner_type:
-                return data | self.partner.get_data(self)
-            case _:
-                return {}
+        return {"type": self.sub_type, **self.person.get_data()}
 
     def set_sub_type(self, sub: str) -> None:
         """Set the type of subscriber.
 
         The type is important to use the appropriate validators.
         """
-        self._sub_type = sub
+        self.sub_type = sub
 
     def validate(self, extra_validators=None) -> bool:
         """Validate the form inputs.
@@ -460,26 +443,18 @@ class SubscriberForm(HumasolNoCsrfForm):
         Configure the organization subform for correct validation.
         Call super method to continue normal validation flow.
         """
-        if self._sub_type == self.partner_type:
+        if self.sub_type == self.partner_type:
             self.partner.organization.set_validate(True)
         else:
             self.partner.organization.set_validate(False)
 
-        match self._sub_type:
-            case self.student_type:
-                return self.student.validate(extra_validators)
-            case self.supervisor_type:
-                return self.supervisor.validate(extra_validators)
-            case self.partner_type:
-                return self.partner.validate(extra_validators)
-            case _:
-                return False
+        return self.person.validate(extra_validators)
 
 
 # pylint: enable=too-many-ancestors
 
 
-class LocationFrom(HumasolNoCsrfForm):
+class LocationFrom(forms.HumasolSubform):
     """Class for a project location form."""
 
     street = StringField("Street")
@@ -578,12 +553,25 @@ class LocationFrom(HumasolNoCsrfForm):
             raise ValidationError("Invalid longitude")
 
 
-class DataSourceForm(HumasolNoCsrfForm):
+class DataSourceForm(forms.HumasolSubform):
     """Class for a project data source form."""
 
     # A data source is optional for a project,
     # validation should not fail if not provided
     _category: Optional[str] = None
+
+    @staticmethod
+    def _format_managers(
+        managers: dict[str, set[str]]
+    ) -> dict[str, tuple[str, ...]]:
+        """Format manager choices for a select field with groups.
+
+        Defined at the top so that it can be used for the variables below.
+        """
+        return {
+            k.capitalize(): tuple(v)
+            for k, v in (managers | {"": {"---"}}).items()
+        }
 
     source = StringField("Data source address")
     username = StringField("Username")
@@ -593,13 +581,20 @@ class DataSourceForm(HumasolNoCsrfForm):
     #  (build in check in API if token retrieval has been written,
     #  only activate if it exists)
     token = HiddenField("Token")
-    # TODO: Add correct API managers dynamically on category selection
-    # api_manager =
-    # SelectField("Data API manager", choices=[('', '---')]) VictronAPI
     api_manager = SelectField(
         "Data API manager",
-        choices=[("VictronAPI", "Victron Energy")],
-        default="VictronAPI",
+        choices=_format_managers(model_interface.get_api_managers()),
+        default="---",
+    )
+    data_manager = SelectField(
+        "Data manager",
+        choices=_format_managers(model_interface.get_data_managers()),
+        default="---",
+    )
+    report_manager = SelectField(
+        "Report manager",
+        choices=_format_managers(model_interface.get_report_managers()),
+        default="---",
     )
 
     @staticmethod
@@ -667,6 +662,9 @@ class DataSourceForm(HumasolNoCsrfForm):
 
     def validate_password(self, password) -> None:
         """Validate form input for datasource password."""
+        if len(password.data.strip()) == 0:
+            password.data = None
+
         if (
             self.token.data is None
             and not model_val.is_legal_datasource_password(password.data)
@@ -685,7 +683,7 @@ class DataSourceForm(HumasolNoCsrfForm):
             raise ValidationError("Invalid API manager for selected category")
 
 
-class PeriodForm(HumasolNoCsrfForm):
+class PeriodForm(forms.HumasolSubform):
     """Class for a project follow-up task period form."""
 
     interval = IntegerField("Interval length")
@@ -706,7 +704,7 @@ class PeriodForm(HumasolNoCsrfForm):
         the data from the provided period.
         """
         return {
-            "period": period.interval,
+            "interval": period.interval,
             "unit": period.unit.name,
             "start": period.start,
             "end": period.end,
@@ -752,23 +750,15 @@ class PeriodForm(HumasolNoCsrfForm):
             )
 
 
-class FollowupWorkForm(HumasolNoCsrfForm):
+class FollowupJobForm(forms.HumasolSubform):
     """Class for a project follow-up work form."""
 
-    student_type = SubscriberForm.student_type
-    supervisor_type = SubscriberForm.supervisor_type
-    partner_type = SubscriberForm.partner_type
-
-    sub_type = SelectField(
-        "Subscriber type",
-        choices=[
-            (student_type, "Student"),
-            (supervisor_type, "Supervisor"),
-            (partner_type, "Partner"),
-        ],
-    )
     # TODO: Allow the selection of existing people
-    subscriber = FormField(SubscriberForm)
+    subscriber = FormField(
+        forms.ProjectElementWrapper[PersonForm](
+            PersonForm, default=StudentForm.LABEL
+        )
+    )
     periods = FieldList(FormField(PeriodForm), min_entries=1)
 
     @staticmethod
@@ -786,23 +776,6 @@ class FollowupWorkForm(HumasolNoCsrfForm):
             "periods": list(map(PeriodForm.period_to_dict, work.periods))
         }
 
-        if isinstance(work.subscriber, model.Student):
-            data["sub_type"] = FollowupWorkForm.student_type
-            data["subscriber"] = StudentForm.student_to_dict(work.subscriber)
-        elif isinstance(work.subscriber, model.Supervisor):
-            data["sub_type"] = FollowupWorkForm.supervisor_type
-            data["subscriber"] = SupervisorForm.supervisor_to_dict(
-                work.subscriber
-            )
-        elif isinstance(work.subscriber, model.Partner):
-            data["sub_type"] = FollowupWorkForm.partner_type
-            data["subscriber"] = PartnerForm.partner_to_dict(work.subscriber)
-        else:
-            raise RuntimeError(
-                f"Unexpected subscriber type for follow-up work: "
-                f"{type(work.subscriber)}"
-            )
-
         return data
 
     def get_data(self) -> dict[str, Any]:
@@ -818,16 +791,8 @@ class FollowupWorkForm(HumasolNoCsrfForm):
             "subscriber": self.subscriber.get_data(),
         }
 
-    def validate(self, extra_validators=None) -> bool:
-        """Validate form input.
 
-        Set the subscriber subform to the correct type for correct validation.
-        """
-        self.subscriber.set_sub_type(self.sub_type.data)
-        return super().validate(extra_validators)
-
-
-class SubscriptionForm(FollowupWorkForm):
+class SubscriptionForm(FollowupJobForm):
     """Class for a project subscription form."""
 
     @staticmethod
@@ -841,11 +806,11 @@ class SubscriptionForm(FollowupWorkForm):
         A dictionary with keys matching the form items and as values
         the data from the provided subscription.
         """
-        return FollowupWorkForm.followup_work_to_dict(subscription)
+        return FollowupJobForm.followup_work_to_dict(subscription)
 
 
-class TaskForm(FollowupWorkForm):
-    """Class for a project subscription form."""
+class TaskForm(FollowupJobForm):
+    """Class for a project task form."""
 
     task_name = StringField("Task name")
     function = StringField("Task description")
@@ -859,7 +824,7 @@ class TaskForm(FollowupWorkForm):
         A dictionary with keys matching the form items and as values
         the data from the provided task.
         """
-        data = FollowupWorkForm.followup_work_to_dict(task)
+        data = FollowupJobForm.followup_work_to_dict(task)
 
         data["task_name"] = task.name
         data["function"] = task.function
@@ -897,47 +862,41 @@ class TaskForm(FollowupWorkForm):
             raise ValidationError("Invalid task function")
 
 
-class EnergyProjectForm(HumasolNoCsrfForm):
-    """Class for en energy project's specific section form.
+class ProjectSpecificForm(forms.HumasolSubform):
+    """Class containing all elements of project specific forms.
 
-    The form contains all the inputs for details specific to an energy form.
+    Add all project-specific forms as subform so that
+    the FormField knows about all possible form fields
+    Select which one should be validated based on the selected category.
+
+    To add a new project specific section add the form and its category label:
+    'new'_category = model_interface.get_category_'new'()
+    new_subform = FormField(NewSubform)
+
+    In the subform property method add a match case for the newly added
+    subform (before the default case).
     """
 
-    # TODO: Show individual power ratings only when there are
-    #  multiple sources (PowerDivision)
-    # TODO: Adjust form to new energy project format with multiple objects
-    #  of each type of component
+    # Add sub-forms and category labels here
+    energy_category = model_interface.get_category_energy()
+    energy = FormField(forms.energy.EnergyProjectForm)
 
-    power = FloatField("System power rating [kW]", default=0)
+    def __init__(self, *args, **kwargs) -> None:
+        """Instantiate form object."""
+        super().__init__(*args, **kwargs)
 
-    battery = BooleanField("There is a battery")
-    battery_power = FloatField("Battery power rating [kW]", default=0)
-    battery_is_primary = BooleanField("Battery as a primary source")
-    battery_capacity = FloatField("Battery capacity [kWh]", default=0)
-    battery_type = SelectField(
-        "Battery Type",
-        choices=model_interface.get_battery_type_values(),
-    )
-    # TODO: set slider markers and/or show value
-    battery_base_soc = DecimalRangeField("Base State of Charge (%)")
-    battery_min_soc = DecimalRangeField("Minimum State of Charge (%)")
+        self.category: Optional[str] = None
 
-    grid = BooleanField("There is a grid connection")
-    grid_power = FloatField("Grid power rating [kW]", default=0)
-    grid_is_primary = BooleanField("Grid as a primary source")
-    grid_energy_cost = FloatField("Electricity buying cost [€/kWh]", default=0)
-    grid_blackout_threshold = FloatField("Grid blackout threshold", default=0)
-    grid_injection_cost = FloatField(
-        "Electricity injection cost [€/kWh]", default=0
-    )
-
-    generator = BooleanField("There is a generator")
-    generator_power = FloatField("Generator power rating [kW]", default=0)
-    generator_is_primary = BooleanField("Generator as a primary source")
-    generator_fuel_cost = FloatField("Fuel cost [€/kWh]", default=0)
-    generator_overheats = BooleanField("The generator overheats")
-    # TODO: Deactivate cool-down time if overheating is not selected
-    generator_cooldown_time = FloatField("Generator cool-down time", default=0)
+    @property
+    def subform(self) -> FormField:
+        """Provide the active subform."""
+        match self.category:
+            case self.energy_category:
+                return self.energy.form
+            case _:
+                raise exceptions.FormError(
+                    "Unknown project category for specifics section"
+                )
 
     def get_data(self) -> dict[str, Any]:
         """Return the data in the form fields.
@@ -947,138 +906,21 @@ class EnergyProjectForm(HumasolNoCsrfForm):
         Dictionary mapping attributes from the corresponding models to the data
         in the form fields.
         """
-        return {"power": self.power.data}
+        return self.subform.get_data()
 
-    def validate_power(self, power) -> None:
-        """Validate form input for this project's power."""
-        if not model_val.is_legal_energy_project_power(power.data):
-            raise ValidationError("Invalid power for an Energy project")
+    def set_category(self, category: str) -> None:
+        """Set the correct project category to be matched with a subform."""
+        self.category = category
 
-    def validate_battery(self, battery) -> None:
-        """Validate from input for the battery selector."""
-        if not battery.data and not self.grid.data and not self.generator.data:
-            raise ValidationError(
-                "Energy system should have at least one component"
-            )
-
-    def validate_battery_power(self, power) -> None:
-        """Validate form input for the battery power."""
-        if (
-            self.battery.data
-            and not model_val.is_legal_energy_project_component_power(
-                power.data
-            )
-        ):
-            raise ValidationError("Invalid battery power")
-
-    def validate_battery_capacity(self, capacity) -> None:
-        """Validate form input for the battery capacity."""
-        if (
-            self.battery.data
-            and not model_val.is_legal_storage_component_capacity(
-                capacity.data
-            )
-        ):
-            raise ValidationError("Invalid battery capacity")
-
-    def validate_battery_type(self, btype) -> None:
-        """Validate form input for the battery type."""
-        if self.battery.data and not model_val.is_legal_battery_type(
-            btype.data
-        ):
-            raise ValidationError("Invalid battery type")
-
-    def validate_battery_base_soc(self, soc) -> None:
-        """Validate form input for the battery base SOC."""
-        if self.battery.data and not model_val.is_legal_battery_base_soc(
-            float(soc.data)
-        ):
-            raise ValidationError("Invalid battery base state of charge")
-
-    def validate_battery_min_soc(self, soc) -> None:
-        """Validate form input for the battery minimal SOC."""
-        if self.battery.data and not model_val.is_legal_battery_min_soc(
-            float(soc.data)
-        ):
-            raise ValidationError("Invalid battery minimum SOC")
-
-        if self.battery.data and soc.data > self.battery_base_soc.data:
-            raise ValidationError(
-                "Invalid battery minimum state of charge. "
-                "Minimum must be below base SOC"
-            )
-
-    def validate_grid_power(self, power) -> None:
-        """Validate form input for the grid power."""
-        if (
-            self.grid.data
-            and not model_val.is_legal_energy_project_component_power(
-                power.data
-            )
-        ):
-            raise ValidationError("Invalid grid power")
-
-    def validate_grid_energy_cost(self, cost) -> None:
-        """Validate form input for grid energy cost."""
-        if self.grid.data and not model_val.is_legal_source_component_price(
-            cost.data
-        ):
-            raise ValidationError("Invalid grid cost")
-
-    def validate_grid_blackout_threshold(self, threshold) -> None:
-        """Validate form input for grid blackout threshold."""
-        if self.grid.data and not model_val.is_legal_grid_blackout_threshold(
-            threshold.data
-        ):
-            raise ValidationError("Invalid grid blackout threshold")
-
-    def valid_grid_injection_cost(self, cost) -> None:
-        """Validate form input for grid injection cost."""
-        if self.grid.data and not model_val.is_legal_grid_injection_price(
-            cost.data
-        ):
-            raise ValidationError("Invalid grid injection cost")
-
-    def validate_generator_power(self, power) -> None:
-        """Validate form input for generator power."""
-        if (
-            self.generator.data
-            and not model_val.is_legal_energy_project_component_power(
-                power.data
-            )
-        ):
-            raise ValidationError("Invalid generator power")
-
-    def validate_generator_fuel_cost(self, cost) -> None:
-        """Validate form input for generator fuel cost."""
-        if self.generator.data and not model_val.is_legal_generator_fuel_cost(
-            cost.data
-        ):
-            raise ValidationError("Invalid generator cost")
-
-    def validate_generator_cooldown_time(self, time) -> None:
-        """Validate form input for generator cool down time."""
-        if (
-            self.generator.data
-            and self.generator_overheats.data
-            and not model_val.is_legal_generator_cooldown_time(time.data)
-        ):
-            raise ValidationError("Invalid generator cool-down time")
+    def validate(self, extra_validators=None) -> bool:
+        """Validate the form input."""
+        try:
+            return self.subform.validate(extra_validators)
+        except exceptions.FormError:
+            return False
 
 
-class ProjectSpecificForm(EnergyProjectForm):
-    """Class containing all elements of project specific forms.
-
-    Add all project-specific forms as superclasses so that
-    the FormField knows about all possible form fields
-    Select which one should be validated based on the selected category
-    """
-
-    # TODO: create this as superclass with subforms,
-    #  at validation select correct subform to validate
-
-
-class ProjectForm(HumasolBaseForm):
+class ProjectForm(forms.HumasolBaseForm):
     """Form for creating a project."""
 
     # TODO: Add asterisk for required fields
@@ -1129,6 +971,9 @@ class ProjectForm(HumasolBaseForm):
         should_populate     -- Whether the project data should be used
         """
         super().__init__(*args, **kwargs)
+
+        if self.category.data:
+            self.specifics.set_category(self.category.data)
 
     @classmethod
     def get_attributes(cls) -> dict[str, None | list | str | bool]:
@@ -1205,6 +1050,7 @@ class ProjectForm(HumasolBaseForm):
 
     def validate(self, extra_validators=None) -> bool:
         """Validate the form inputs."""
+        self.specifics.set_category(self.category.data)
         self.data_source.set_category(self.category.data)
 
         return super().validate(extra_validators)
@@ -1264,3 +1110,7 @@ class ProjectForm(HumasolBaseForm):
             raise ValidationError(
                 f"Invalid project dashboard: {dashboard.data}"
             )
+
+
+if __name__ == "__main__":
+    pass

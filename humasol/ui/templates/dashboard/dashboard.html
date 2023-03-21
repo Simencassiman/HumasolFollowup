@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Dashboard
+{% endblock %}
+
+{% block content %}
+
+    <div class="page-header">
+        <h1 class="page-title">Dashboard</h1>
+    </div>
+    <section id="dash-content" class="dash-content">
+        <!-- Project list will be added here dynamically -->
+    </section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    loadContent("{{ url_for('gui.get_dashboard') }}", "#dash-content")
+</script>
+<script>
+    function openLink(evt, tab) {
+        $('.dashboard-panel').each((idx, item) => {
+            item = $(item)
+            if (item.attr('id') == tab) {
+                if (item.hasClass('hidden')) {
+                    item.toggleClass('hidden')
+                }
+            } else {
+                if (!item.hasClass('hidden')) {
+                    item.toggleClass('hidden')
+                }
+            }
+        })
+
+        $('.tablink').each((idx, item) => {
+            item = $(item)
+            if (item.attr('name') == tab) {
+                if (!item.hasClass('sidebar-item__selected')) {
+                    item.toggleClass('sidebar-item__selected')
+                }
+            } else {
+                if (item.hasClass('sidebar-item__selected')) {
+                    item.toggleClass('sidebar-item__selected')
+                }
+            }
+        })
+    }
+</script>
+{% endblock %}

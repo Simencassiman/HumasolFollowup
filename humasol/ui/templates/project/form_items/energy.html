@@ -1,0 +1,171 @@
+<!--suppress XmlDuplicatedId -->
+
+<!---------------------
+------ General --------
+---------------------->
+
+{% macro energy_component(form) -%}
+
+    {{ form.element_type.label(class="form-input-label") }}
+    {{ form.element_type(class="form-input", onChange="selectComponentType(this, this.value)") }}
+
+    {{ form.element.power.label(class="form-input-label") }}
+    {{ form.element.power(class="form-input") }}
+
+    {{ form.element.is_primary.label(class="form-input-label") }}
+    {{ form.element.is_primary() }}
+
+{%- endmacro %}
+
+<!---------------------
+------- Source --------
+---------------------->
+
+{% macro source(form) -%}
+    <div class="form-card form-row">
+        <div class="form-col form-item">
+            {{ energy_component(form) }}
+
+            {{ form.element.price.label(class="form-input-label") }}
+            {{ form.element.price(class="form-input") }}
+
+        </div>
+        <div id="component" class="form-col form-item">
+            {{ source_component(form.element) }}
+        </div>
+        <div class="form-col col-center grow-one">
+            <!-- delete button -->
+            <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del" onclick="deleteListElement(this)">
+        </div>
+    </div>
+{%- endmacro %}
+
+{% macro source_component(component) -%}
+    {% if component.LABEL == 'generator' %}
+        {{ generator(component) }}
+    {% elif component.LABEL == 'grid' %}
+        {{ grid(component) }}
+    {% elif component.LABEL == 'pv' %}}
+        {{ pv(component) }}
+    {% endif %}
+{%- endmacro %}
+
+{% macro generator(form) -%}
+
+    <div id="{{ form.LABEL }}" class="form-col form-item">
+        {{ form.efficiency.label(class="form-input-label") }}
+        {{ form.efficiency(class="form-input", max=form.EFFICIENCY_MAX, min=form.EFFICIENCY_MIN) }}
+
+        {{ form.fuel_cost.label(class="form-input-label") }}
+        {{ form.fuel_cost(class="form-input") }}
+
+        {{ form.overheats.label(class="form-input-label") }}
+        {{ form.overheats(onChange="toggleOverheats(this)") }}
+
+        {% if form.overheats.data %}
+            {% set sty = "display: block;" %}
+        {% else %}
+            {% set sty = "display: none;" %}
+        {% endif %}
+
+
+        {{ form.overheating_time.label(class="form-input-label", style=sty) }}
+        {{ form.overheating_time(class="form-input", style=sty) }}
+
+        {{ form.cooldown_time.label(class="form-input-label", style=sty) }}
+        {{ form.cooldown_time(class="form-input", style=sty) }}
+    </div>
+
+{%- endmacro %}
+
+{% macro grid(form) -%}
+
+    <div id="{{ form.LABEL }}" class="form-col form-item">
+        {{ form.blackout_threshold.label(class="form-input-label") }}
+        {{ form.blackout_threshold(class="form-input") }}
+
+        {{ form.injection_price.label(class="form-input-label") }}
+        {{ form.injection_price(class="form-input") }}
+    </div>
+
+{%- endmacro %}
+
+{% macro pv(form) -%}
+    <div id="{{ form.LABEL }}" class="form-col form-item">
+    </div>
+{%- endmacro %}
+
+<!---------------------
+------ Storage --------
+---------------------->
+
+{% macro storage(form) -%}
+    <div class="form-card form-row">
+        <div class="form-col form-item">
+            {{ energy_component(form) }}
+
+            {{ form.element.capacity.label(class="form-input-label") }}
+            {{ form.element.capacity(class="form-input") }}
+        </div>
+        <div id="component" class="form-col form-item">
+            {{ storage_component(form.element) }}
+        </div>
+        <div class="form-col col-center grow-one">
+            <!-- delete button -->
+            <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del" onclick="deleteListElement(this)">
+        </div>
+    </div>
+{%- endmacro %}
+
+{% macro storage_component(component) -%}
+    {% if component.LABEL == 'battery' %}
+        {{ battery(component) }}
+    {% endif %}
+{%- endmacro %}
+
+
+{% macro battery(form) -%}
+
+    <div id="{{ form.LABEL }}" class="form-col form-item">
+        {{ form.battery_type.label(class="form-input-label") }}
+        {{ form.battery_type(class="form-input") }}
+
+        {{ form.battery_base_soc.label(class="form-input-label") }}
+        {{ form.battery_base_soc(class="form-input", max=form.SOC_MAX, min=form.SOC_MIN, onChange="onSliderChange(this)") }}
+
+        {{ form.battery_min_soc.label(class="form-input-label") }}
+        {{ form.battery_min_soc(class="form-input", max=form.SOC_MAX, min=form.SOC_MIN, onChange="onSliderChange(this)") }}
+
+        {{ form.battery_max_soc.label(class="form-input-label") }}
+        {{ form.battery_max_soc(class="form-input", max=form.SOC_MAX, min=form.SOC_MIN, onChange="onSliderChange(this)") }}
+    </div>
+
+{%- endmacro %}
+
+
+<!---------------------
+---- Consumption ------
+---------------------->
+
+
+{% macro consumption(form) -%}
+    <div class="form-card form-row">
+        <div class="form-col form-item">
+            {{ energy_component(form) }}
+
+            {{ form.element.is_critical.label(class="form-input-label") }}
+            {{ form.element.is_critical() }}
+        </div>
+        <div id="component" class="form-col form-item">
+            {{ consumption_component(form.element) }}
+        </div>
+        <div class="form-col col-center grow-one">
+            <!-- delete button -->
+            <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del" onclick="deleteListElement(this)">
+        </div>
+    </div>
+{%- endmacro %}
+
+{% macro consumption_component(component) -%}
+    <!-- Insert subtypes with specific fields -->
+{%- endmacro %}

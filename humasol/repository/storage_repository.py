@@ -51,6 +51,23 @@ def _save_project_data_to_file(
         json.dump(data, data_file)
 
 
+def delete_project(project: model.Project) -> None:
+    """Delete project from the database.
+
+    Parameters
+    __________
+    project     -- Project to be deleted
+    """
+    try:
+        session = db.session
+        # pylint: disable=no-member
+        session.delete(project)
+        session.commit()
+        # pylint: enable=no-member
+    except sqlalchemy.exc.IntegrityError as exc:
+        raise exceptions.IntegrityException(str(exc)) from exc
+
+
 def get_object_by_attributes(
     cls: type[T], arguments: dict[str, ty.Any], disjunction: bool = True
 ) -> list[T]:

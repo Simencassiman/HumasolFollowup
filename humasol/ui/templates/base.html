@@ -36,6 +36,7 @@
                         </li>
                     {% endif %}
                     {% if user_authenticated %}
+                        <li><a href="{{ url_for('gui.view_dashboard') }}">Dashboard</a></li>
                         <li><a href="{{ url_for('gui.logout') }}">Logout</a></li>
                     {% else %}
                         <li><a href="{{ url_for('gui.view_login') }}">Login</a></li>
@@ -44,14 +45,40 @@
             </nav>
             {%- endblock navbar %}
         </header>
-        <div class="loader">
-
+        <div class="message-container">
+            {% for msg in get_flashed_messages() %}
+                {{ utils.message(msg, loop.index) }}
+            {% endfor %}
         </div>
         <main id="main-content" class="content-section container">
             {% block content -%}
             {%- endblock content %}
         </main>
+        <div id="loader" class="loader hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" class="loader-canvas" viewBox="0 0 40 40">
+                <path id="loader-outer" class="loader-path loader-path__outer"
+                   d="M 14.869697850114969,34.09538931178862 A 15,15 0 0 0 30.606601717798213,9.393398282201789" />
+                <path id="loader-middle" class="loader-path loader-path__middle"
+                   d="M 23.420201433256683,10.603073792140915 A 10,10 0 1 0 20.0,30.0" />
+                <path id="loader-inner" class="loader-path loader-path__inner"
+                   d="M 20.0,15.0 A 5,5 0 1 0 25.0,20.0" />
+            </svg>
+            <!--
+            Code to draw an arc
+            def p2c(cx, cy, r, a):
+                 arad = (a - 90) *np.pi/180
+                 return cx + np.cos(arad) * r, cy + np.sin(arad) * r
 
+            def arc(x, y, r, a_start, a_end):
+                 s = p2c(x, y, r, a_end)
+                 e = p2c(x, y, r, a_start)
+                 larg_arc = 0 if (a_end - a_start <= 180) else 1
+                 return f'm {s[0]},{s[1]} a {r},{r} 0 {larg_arc} 0 {e[0]},{e[1]}'
+            -->
+        </div>
+
+        <script type="text/javascript" src="{{ url_for('static', filename='scripts/base.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='scripts/utils.js') }}"></script>
         {% block scripts %}
         {%- endblock scripts %}
 

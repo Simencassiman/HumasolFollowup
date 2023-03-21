@@ -44,12 +44,22 @@ users_role = db.Table(
 class Role(Enum):
     """Enumeration of valid roles defined by Humasol."""
 
-    ADMIN = "admin"
-    HUMASOL_FOLLOWUP = "humasol_followup"
-    HUMASOL_PR = "humasol_pr"
-    HUMASOL_MEMBER = "humasol_member"
-    HUMASOL_STUDENT = "humasol_student"
-    PARTNER = "partner"
+    ADMIN = "Admin"
+    HUMASOL_FOLLOWUP = "Humasol Follow-up"
+    HUMASOL_PR = "Humasol PR"
+    HUMASOL_MEMBER = "Humasol Member"
+    HUMASOL_STUDENT = "Humasol Student"
+    PARTNER = "Partner"
+
+    @staticmethod
+    def all() -> tuple[Role, ...]:
+        """Return all values of this enum."""
+        return tuple(Role.__members__.values())
+
+    @staticmethod
+    def get(name: str) -> Role:
+        """Return enum element from name."""
+        return Role.__members__[name.upper()]
 
     @staticmethod
     def humasol() -> tuple[Role, ...]:
@@ -65,11 +75,6 @@ class Role(Enum):
     def humasol_members() -> tuple[Role, ...]:
         """Return a list of all roles working for Humasol."""
         return Role.HUMASOL_FOLLOWUP, Role.HUMASOL_PR, Role.HUMASOL_MEMBER
-
-    @staticmethod
-    def all() -> tuple[Role, ...]:
-        """Return all values of this enum."""
-        return tuple(Role.__members__.values())
 
     # pylint doesn't recognize enum subclasses (yet)
     # pylint: disable=no-member
@@ -99,8 +104,11 @@ class User(UserMixin, model.BaseModel):
     """Webapp user dataclass used for authentication purposes."""
 
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True)
-    password = db.Column(db.String(255))
+    # TODO: update database
+    # first_name = db.Column(db.String(255), nullable=False)
+    # last_name = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     active = db.Column(db.Boolean())
     confirmed_at = db.Column(db.DateTime())
     fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False)

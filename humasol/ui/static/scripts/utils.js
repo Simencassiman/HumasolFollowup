@@ -35,20 +35,26 @@ function deleteElement(element, depth=0) {
     // Get a reference to the card that contains the clicked cross and remove it
     // Also get a reference to the list containing it
     let card = $(element)
-    while(!(card.attr('id')
-        && card.attr('id').match(/([a-z]+-)+[0-9]+(-[a-z\-0-9]+)*/i)
-    )) {
-        card = card.parent()
+    let regex = /([a-z]+-)+[0-9]+(-[a-z\-0-9]+)*/i
+    if (!(card.attr('id') && card.attr('id').match(regex))) {
+        let cards = card.parents().filter(
+            (i, e) => $(e).attr('id') && $(e).attr('id').match(regex)
+        )
+
+        if (cards.length == 0) {
+            return
+        }
+        card = $(cards.get(0))
     }
 
     let list = card.parent();
     card.remove()
     let listId = '#' + list.attr('id');
 
-    // Reactivate the button if it had been deactivated
-    toggleButton(listId);
     // Renumber the element in the list so the form parser will work
     renumberListElements(listId, (n) => { return isNumeric(n) }, depth);
+
+    return listId
 }
 
 function getIndex(item) {

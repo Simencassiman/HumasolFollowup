@@ -2,11 +2,11 @@
 
 # Python libraries
 import datetime
-from typing import Any
+import typing as ty
 
-from flask import Flask, after_this_request, session
+from flask import Flask, after_this_request, request, session
 from flask.sessions import SessionMixin
-from flask_login import current_user
+from flask_login import COOKIE_NAME, current_user
 from flask_migrate import Migrate
 from flask_security import (
     Security,
@@ -25,6 +25,7 @@ from humasol.config import config as cf
 from humasol.model import model_authorization as ma
 from humasol.model import model_ops
 from humasol.repository import db
+from humasol.ui.app_assistant import AppAssistant
 from humasol.ui.view import GUI
 
 
@@ -47,8 +48,9 @@ class HumasolApp(Flask):
         super().__init__(__name__, *args, **kwargs)
 
         # TODO: create objects it depends on
+        self.assistant = AppAssistant()
         self._migrate = None
-        self._current_user = LocalProxy[model.User](lambda: current_user)
+        self._current_user = current_user
         self._session: LocalProxy[SessionMixin] = LocalProxy(lambda: session)
 
         self._setup()
@@ -115,18 +117,18 @@ class HumasolApp(Flask):
 
     def _setup_security(self) -> None:
         """Set up required security for this app."""
-        user_datastore = SQLAlchemyUserDatastore(
+        self.user_datastore = SQLAlchemyUserDatastore(
             db, model.User, model.UserRole
         )
         self.security = Security(
-            self, user_datastore, register_blueprint=False
+            self, self.user_datastore, register_blueprint=False
         )
         # See if this is necessary or not for this use case
         # pylint: disable=protected-access
         self.context_processor(core._context_processor)
         # pylint: enable=protected-access
 
-        self._create_admin(user_datastore)
+        self._create_admin(self.user_datastore)
 
     def archive_project(self, project_id: int) -> None:
         """Mark an existing project as archived.
@@ -139,7 +141,43 @@ class HumasolApp(Flask):
         project_id  -- Identifier of the project to archive
         """
 
-    def create_project(self, parameters: dict[str, Any]) -> int:
+    def change_user_password(self, user: model.User, password: str) -> bool:
+        """Change the specified user's password.
+
+        MIT License
+
+        Copyright (C) 2012-2021 by Matthew Wright
+        Copyright (C) 2019-2021 by Chris Wagner
+
+        Parameters
+        __________
+        user        -- User whose password to change
+        password    -- The unhashed new password
+        notify      -- if True send notification (if configured) to user
+        """
+        if not password:
+            return False
+
+        after_this_request(sec_util.view_commit)
+        user.password = sec_util.hash_password(password)
+        # Change uniquifier - this will cause ALL sessions to be invalidated.
+        self.user_datastore.set_uniquifier(user)
+        self.user_datastore.put(user)
+
+        # re-login user - this will update session, optional remember etc.
+        remember_cookie_name = self.config.get(
+            "REMEMBER_COOKIE_NAME", COOKIE_NAME
+        )
+        has_remember_cookie = (
+            remember_cookie_name in request.cookies
+            and session.get("remember") != "clear"
+        )
+
+        login_user(user, remember=has_remember_cookie, authn_via=["change"])
+
+        return True
+
+    def create_project(self, parameters: dict[str, ty.Any]) -> int:
         """Create a new project in the system.
 
         Parameters
@@ -164,12 +202,10 @@ class HumasolApp(Flask):
         parameters["creator"] = self.get_user()
         parameters["creation_date"] = datetime.date.today()
 
-        del parameters["data_source"]
-
+        success = False
         try:
             project = model_ops.create_project(parameters)
             success, _ = model_ops.save_project(project)
-            success = False
 
         except (
             exceptions.IllegalArgumentException,
@@ -191,7 +227,7 @@ class HumasolApp(Flask):
 
         return project.id if success else -1
 
-    def edit_project(self, parameters: dict[str, Any]) -> None:
+    def edit_project(self, parameters: dict[str, ty.Any]) -> None:
         """Edit an existing project in the system.
 
         Parameters
@@ -221,17 +257,19 @@ class HumasolApp(Flask):
         Return the retrieved token as a string.
         """
 
-    def get_dashboard(self, user: model.User) -> dict[str, Any]:
+    def get_dashboard(self) -> ty.Optional[dict[str, ty.Any]]:
         """Retrieve dashboard information for the specified user.
 
-        Parameters
-        __________
-        user    -- User currently in session
+        Is applied for the user currently logged in.
 
         Returns
         _______
         Return dictionary containing all relevant information.
         """
+        if not self.get_user():
+            return None
+
+        return self.assistant.get_dashboard(self.get_user())
 
     def get_project(self, project_id: int) -> model.Project:
         """Retrieve the project matching the project identifier.
@@ -258,13 +296,17 @@ class HumasolApp(Flask):
         # TODO: catch errors and solve or wrap
         return model_ops.get_projects()
 
+    # pylint: disable=protected-access
+
     def get_session(self) -> Session:
         """Return this apps current session."""
-        return self._session
+        return self._session._get_current_object()
 
     def get_user(self) -> model.User:
         """Return currently logged in user."""
-        return self._current_user
+        return self._current_user._get_current_object()
+
+    # pylint: enable=protected-access
 
     def login(self, form) -> bool:
         """Authenticate the user with provided credentials.
@@ -300,17 +342,60 @@ class HumasolApp(Flask):
         return True
 
     def register_user(
-        self, username: str, password: str, email: str, role: str
-    ) -> None:
+        self, email: str, password: str, roles: list[str]
+    ) -> model.User:
         """Register a new user in the system.
 
         Parameters
         __________
-        username    -- Unique username for the new user
         password    -- New password for the user
         email       -- Email of the person behind the user
-        role        -- UserRole of the user w.r.t. the system and Humasol
+        roles       -- Role name of the user w.r.t. the system and Humasol
         """
+        after_this_request(sec_util.view_commit)
+        password = sec_util.hash_password(password)
+        user_kwargs = {
+            "email": email,
+            "password": password,
+            "roles": [
+                self.user_datastore.create_role(name=ma.get_role(r))
+                for r in roles
+            ],
+            "active": True,
+            "confirmed_at": datetime.datetime.now(),
+        }
+
+        user = self.user_datastore.create_user(**user_kwargs)
+
+        return user
+
+    def remove_project(self, project_id: int) -> bool:
+        """Remove the project from the database.
+
+        Parameters
+        __________
+        project_id  -- ID of the project to be deleted
+        """
+        project = self.get_project(project_id)
+
+        if not project:
+            return False
+
+        can_edit = (
+            set((user := self.get_user()).roles).intersection(
+                {ma.get_role_admin(), ma.get_role_humasol_followup()}
+            )
+            or user.id == project.creator.id
+        )
+        if not can_edit:
+            return False
+
+        try:
+            model_ops.delete_project(project)
+        except exceptions.ModelException:
+            return False
+
+        return True
 
     def search(self, value: str) -> list[model.Project]:
         """Search the projects database for attributes matching the value.

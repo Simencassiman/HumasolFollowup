@@ -3,6 +3,8 @@
 {% macro get(form) -%}
     {% if form.category == 'ENERGY' %}
         {{ energy(form.subform) }}
+    {% else %}
+        {{ default() }}
     {% endif %}
 {%- endmacro %}
 
@@ -46,7 +48,7 @@
                 Add
             </button>
         </div>
-        <div id="energy-consumptions">
+        <div id="energy-loads">
             {% for l in form.loads %}
                 {{ energy_items.consumption(l) }}
             {% endfor %}

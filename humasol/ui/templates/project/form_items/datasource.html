@@ -1,0 +1,50 @@
+<div class="form-row">
+    <div class="form-col grow-one">
+        <div class="form-row">
+            <div class="form-col form-item grow-one">
+                {{ form.data_source.source.label(class="form-input-label") }}
+                {{ form.data_source.source(class="form-input") }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-col form-item grow-one">
+                {{ form.data_source.username.label(class="form-input-label") }}
+                {{ form.data_source.username(class="form-input") }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-col form-item grow-one">
+                {{ form.data_source.password.label(class="form-input-label") }}
+                {{ form.data_source.password(class="form-input") }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-col form-item grow-one">
+                <button type="button" class="button button-secondary" onclick="">
+                    Get Token
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-col grow-one">
+        <div class="form-row">
+            <div class="form-col form-item grow-one">
+                {{ form.data_source.api_manager.label(class="form-input-label") }}
+                {{ form.data_source.api_manager(id="api-manager", class="form-input", disabled="") }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-col form-item grow-one">
+                {{ form.data_source.data_manager.label(class="form-input-label") }}
+                {{ form.data_source.data_manager(id="data-manager", class="form-input", disabled="") }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-col form-item grow-one">
+                {{ form.data_source.report_manager.label(class="form-input-label") }}
+                {{ form.data_source.report_manager(id="report-manager", class="form-input", disabled="") }}
+            </div>
+        </div>
+    </div>
+</div>

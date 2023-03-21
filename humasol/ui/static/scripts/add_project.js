@@ -19,6 +19,7 @@ function projectSpecifics(category) {
         }
     }
 
+    // Set project specifics content
     if (selected in templates_specifics) {
         setProjectSpecifics(templates_specifics[selected]['base']);
 
@@ -32,6 +33,9 @@ function projectSpecifics(category) {
     } else {
         setProjectSpecifics(templates_specifics['default']['base']);
     }
+
+    // Adjust options for script pipline managers
+    updateManagers(selected)
 }
 
 function selectPartnerType(selector, type) {
@@ -66,6 +70,29 @@ function setProjectSpecifics(content) {
     }
 
     ps.html(content)
+}
+
+function updateManager(category, manager) {
+    if (manager.attr('disabled')) {
+        manager.removeAttr('disabled')
+    }
+
+    manager.children().each((idx, item) => {
+        item = $(item)
+        if (item.attr('label').toUpperCase() == category.toUpperCase()
+                && item.attr('disabled')) {
+            item.removeAttr('disabled')
+        } else if (item.attr('label').toUpperCase() != category.toUpperCase()
+                && !item.attr('disabled')) {
+            item.attr('disabled', '')
+        }
+    })
+}
+
+function updateManagers(category) {
+    updateManager(category, $('#api-manager'))
+    updateManager(category, $('#data-manager'))
+    updateManager(category, $('#report-manager'))
 }
 
 
@@ -151,12 +178,21 @@ function addTask() {
 /******************
  Field Lists
 *******************/
+
+function deleteListElement(element, depth=0) {
+    let listId = deleteElement(element, depth)
+
+    // Reactivate the button if it had been deactivated
+    toggleButton(listId);
+}
 function toggleButton(listId, max_entries=MAX_ENTRIES) {
     // Create ID reference to the button in question
     // Buttons corresponding to a list with ID lid are named lid-button
     let list = $(listId)
     let buttonId = listId + '-button' // listId includes # for jquery
     let button = $(buttonId)
+
+    if(!button) {return}
 
     if (list.children().length >= max_entries && !button.hasClass("hidden")) {
         button.addClass("hidden")
@@ -165,7 +201,6 @@ function toggleButton(listId, max_entries=MAX_ENTRIES) {
         button.removeClass("hidden")
     }
 }
-
 
 /**************
   Follow-up

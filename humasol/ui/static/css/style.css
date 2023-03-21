@@ -1,11 +1,41 @@
+/*
+File organization:
+
+1. Variable declaration
+2. Base style declaration
+3. General styles
+4. Site header
+    4.1 Main header
+    4.2 Navigation
+5. Loader style
+6. Page header
+7. Project list
+8. Project page
+9. Project form
+10. Dashboard
+11. Utilities
+
+
+ */
+
+
+/************************
+ Variable declaration
+*************************/
 
 :root {
-    --humasol-orange: #ff8200;
+    --humasol-orange: #e49730;
     --humasol-brown: #863c14;
     --humasol-yellow: #00000000;
     --humasol-meat: #eca47c;
+    --humasol-green: #83ec7c;
     --border-grey: #ccc;
 }
+
+
+/************************
+ Base styles
+*************************/
 
 *,
 *::before,
@@ -16,6 +46,11 @@
     accent-color: var(--humasol-brown);
     margin: 0px;
 }
+
+
+/************************
+ General styles
+*************************/
 
 html {
     background-color: #f7f7f7;
@@ -39,6 +74,15 @@ a {
   color: inherit;
   text-decoration: none; /* no underline */
 }
+
+a:hover {
+    color: var(--humasol-orange);
+}
+
+
+/************************
+ Site header
+*************************/
 
 .main-header {
     position: -webkit-sticky; /* Safari */
@@ -84,6 +128,65 @@ a {
 }
 
 
+/************************
+ Loader style
+*************************/
+
+.loader {
+    position: absolute;
+    z-index: 999;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.loader-canvas {
+    width: 10rem;
+    height: 10rem;
+}
+
+.loader-path {
+    fill: none;
+    stroke-width:2.11667;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    stroke-miterlimit:4;
+    stroke-dasharray:none;
+    stroke-opacity:1;
+    transform-origin: 50% 50%;
+    animation: rotation var(--duration, 1s) infinite linear;
+    animation-direction: var(--orientation, normal);
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
+}
+
+.loader-path__outer {
+    stroke:#ff8200;
+    --duration: 1.5s;
+}
+
+.loader-path__middle {
+    stroke:#eca47c;
+    --duration: 1.25s;
+    --orientation: reverse;
+}
+
+.loader-path__inner {
+    stroke:#863c14;
+}
+
+
+
+/************************
+ Page header
+*************************/
 
 .title-light {
     color: #fff;
@@ -147,7 +250,15 @@ a.nav {
     align-items: center;
     padding: 10px;
     border-radius: 2px;
-    background-color: var(--humasol-meat);
+    background-color: var(--message-bg, var(--humasol-meat));
+}
+
+.message-success {
+    --message-bg: var(--humasol-green);
+}
+
+.message-positive {
+    --message-bg: var(--humasol-meat);
 }
 
 .message > div:first-child {
@@ -473,9 +584,9 @@ a.nav {
 }
 
 
-/****************
-  Form formatting
-*****************/
+/*************************
+  Project form formatting
+**************************/
 
 .form-section {
     background-color: #fafafa;
@@ -581,54 +692,6 @@ a.nav {
     font-weight: normal;
 }
 
-.row-center {
-  align-items: center;
-}
-
-.row-end {
-  justify-content: flex-end;
-}
-
-.col-center {
-  align-items: center;
-}
-
-.col-bottom {
-  justify-content: flex-end;
-}
-
-.grow-one {
-    flex-grow: 1;
-}
-
-.grow-two {
-    flex-grow: 2;
-}
-
-.grow-three {
-  flex-grow: 3;
-}
-
-.grow-four {
-  flex-grow: 4;
-}
-
-.grow-five {
-  flex-grow: 5;
-}
-
-.grow-six {
-  flex-grow: 6;
-}
-
-.grow-seven {
-  flex-grow: 7;
-}
-
-.grow-eight {
-  flex-grow: 8;
-}
-
 .form-col.energy-component {
     width: 280px;
 }
@@ -729,18 +792,84 @@ a.nav {
 }
 
 
-/**************
-* Miscellaneous
-***************/
-
-/*
-To initially hide content
-Important to keep this at the bottom so it overrides other classes!
-*/
-.hidden {
-  display: none;
+/*****************
+ Dashboard
+******************/
+.dash-content {
+    display: flex;
+    flex-direction: row;
+    margin-top: 2.5rem;
 }
 
+.sidebar {
+    height:100%;
+    width:200px;
+    display:flex;
+    flex-direction: column;
+    padding:8px 16px;
+    text-align:left;
+    white-space:normal;
+}
+
+.sidebar-item{
+    width:100%;
+    padding:8px 16px;
+    text-align:left;
+    white-space:normal;
+    border: none;
+    background-color: inherit;
+}
+
+.sidebar-item:hover {
+    color: var(--humasol-orange);
+}
+
+.sidebar-item__selected {
+    color: var(--humasol-orange);
+}
+
+.dash-panel{
+    flex-grow: 1;
+    padding:16px;
+}
+
+.dash-panel__container {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    animation: animateleft 0.4s;
+}
+
+.dash-panel__header {
+    margin-bottom: 1rem;
+}
+
+.dash-panel__subheader {
+    font-weight: bold;
+    font-size: 1em;
+}
+
+.dash-panel__paragraph-header {
+    font-weight: normal;
+    font-size: 1em;
+}
+
+.dash-panel__content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@keyframes animateleft {
+    from {
+        left: -50px;
+        opacity: 0;
+    }
+    to {
+        left: 0;
+        opacity: 1;
+    }
+}
 
 /**************
 * Select multi
@@ -888,14 +1017,81 @@ Important to keep this at the bottom so it overrides other classes!
     display: block;
 }
 
-.hidden {
-    display: none;
-}
-
 .mult-select-tag .shadow  {
     box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 
 .mult-select-tag .rounded {
     border-radius: .375rem;
+}
+
+
+/**************
+* Miscellaneous
+***************/
+
+/*
+To initially hide content
+Important to keep this at the bottom so it overrides other classes!
+*/
+.flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.row-center {
+  align-items: center;
+}
+
+.row-end {
+  justify-content: flex-end;
+}
+
+.col-center {
+  align-items: center;
+}
+
+.col-bottom {
+  justify-content: flex-end;
+}
+
+.grow-one {
+    flex-grow: 1;
+}
+
+.grow-two {
+    flex-grow: 2;
+}
+
+.grow-three {
+  flex-grow: 3;
+}
+
+.grow-four {
+  flex-grow: 4;
+}
+
+.grow-five {
+  flex-grow: 5;
+}
+
+.grow-six {
+  flex-grow: 6;
+}
+
+.grow-seven {
+  flex-grow: 7;
+}
+
+.grow-eight {
+  flex-grow: 8;
+}
+
+.hidden {
+  display: none;
 }

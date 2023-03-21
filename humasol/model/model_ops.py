@@ -5,6 +5,8 @@ All functions must be called from within an application context.
 # Python Libraries
 import typing as ty
 
+import sqlalchemy
+
 # Local modules
 from humasol import exceptions, model
 from humasol import repository as repo
@@ -181,11 +183,17 @@ def create_project(parameters: dict[str, ty.Any]) -> model.Project:
     return project
 
 
-# pylint: enable=no-member
+def delete_project(project: model.Project) -> None:
+    """Delete the provided project from the database.
+
+    Parameters
+    __________
+    project     -- Project to be deleted
+    """
+    # TODO: remove any additional objects that are no longer referenced
+    repo.delete_project(project)
 
 
-# Pylint doesn't seem to detect inner class
-# pylint: disable=no-member
 def edit_project(
     project: model.Project, new_parameters: model.Project.ProjectArgs
 ) -> model.Project:
@@ -204,6 +212,76 @@ def edit_project(
 
 
 # pylint: enable=no-member
+
+
+def get_my_associated_projects(user: model.User) -> list[model.Project]:
+    """Retrieve all projects to which the user is associated.
+
+    A user is associated if they are listed under the people who collaborated.
+    """
+    return model.Project.query.filter(
+        sqlalchemy.or_(
+            model.Project.students.any(model.Student.email == user.email),
+            model.Project.supervisors.any(
+                model.Supervisor.email == user.email
+            ),
+            model.Project.partners.any(model.Partner.email == user.email),
+        )
+    ).all()
+
+
+def get_my_projects(user: model.User) -> list[model.Project]:
+    """Retrieve all projects created by the provided user.
+
+    Parameters
+    __________
+    user    -- Creator of the projects to be retrieved
+    """
+    return repo.get_object_by_attributes(
+        model.Project, {"creator_id": user.id}  # type: ignore
+    )
+
+
+def get_my_subscriptions(user: model.User) -> list[model.Project]:
+    """Retrieve projects to which the user is subscribed."""
+    return model.Project.query.filter(
+        model.Project.id.in_(
+            model.Project.query.with_entities(model.Project.id)
+            .filter(
+                model.Project.subscriptions.any(
+                    model.Subscription.id.in_(
+                        model.Subscription.query.with_entities(
+                            model.Subscription.id
+                        )
+                        .join(model.Person)
+                        .filter(model.Person.email == user.email)
+                        .scalar_subquery()
+                    )
+                )
+            )
+            .scalar_subquery()
+        )
+    ).all()
+
+
+def get_my_tasks(user: model.User) -> list[model.Project]:
+    """Retrieve all projects for which the user has a task."""
+    return model.Project.query.filter(
+        model.Project.id.in_(
+            model.Project.query.with_entities(model.Project.id)
+            .filter(
+                model.Project.tasks.any(
+                    model.Task.id.in_(
+                        model.Task.query.with_entities(model.Task.id)
+                        .join(model.Person)
+                        .filter(model.Person.email == user.email)
+                        .scalar_subquery()
+                    )
+                )
+            )
+            .scalar_subquery()
+        )
+    ).all()
 
 
 def get_project(project_id: int) -> model.Project:
@@ -231,6 +309,16 @@ def get_projects() -> list[model.Project]:
     Unsorted list of all projects.
     """
     return model.Project.query.all()
+
+
+def get_users() -> list[model.User]:
+    """Retrieve all users from the database.
+
+    Returns
+    _______
+    List of users
+    """
+    return model.User.query.all()
 
 
 def register_user(email: str, password: str, role: model.Role) -> model.User:

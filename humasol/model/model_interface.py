@@ -6,6 +6,17 @@
 from humasol import model
 
 
+def get_api_managers() -> dict[str, set[str]]:
+    """Provide defined API manager classes.
+
+    Returns
+    _______
+    Dictionary indexed by category where the values are sets of class names
+    for managers valid for that category.
+    """
+    return {k.category_name: v for k, v in model.script.API_MANAGERS.items()}
+
+
 def get_battery_label() -> str:
     """Provide label of the Battery class."""
     return model.Battery.LABEL
@@ -37,6 +48,17 @@ def get_category_energy() -> str:
 def get_consumption_component_label() -> str:
     """Provide energy consumption component label."""
     return model.ConsumptionComponent.LABEL
+
+
+def get_data_managers() -> dict[str, set[str]]:
+    """Provide defined data manager classes.
+
+    Returns
+    _______
+    Dictionary indexed by category where the values are sets of class names
+    for managers valid for that category.
+    """
+    return {k.category_name: v for k, v in model.script.DATA_MANAGERS.items()}
 
 
 def get_generator_label() -> str:
@@ -76,6 +98,19 @@ def get_project_max_students() -> int:
 def get_pv_label() -> str:
     """Provide string label of the PV project component class."""
     return model.PV.LABEL
+
+
+def get_report_managers() -> dict[str, set[str]]:
+    """Provide defined report manager classes.
+
+    Returns
+    _______
+    Dictionary indexed by category where the values are sets of class names
+    for managers valid for that category.
+    """
+    return {
+        k.category_name: v for k, v in model.script.REPORT_MANAGERS.items()
+    }
 
 
 def get_sdgs() -> tuple[tuple[str, str], ...]:

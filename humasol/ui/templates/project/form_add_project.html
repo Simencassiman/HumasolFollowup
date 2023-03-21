@@ -13,12 +13,6 @@
         <h1 class="page-title">Add Project</h1>
     </div>
 
-    <div class="message-container">
-        {% for msg in get_flashed_messages() %}
-            {{ utils.message(msg) }}
-        {% endfor %}
-    </div>
-
     <form action="save-project" method="POST" >
         {{ form.hidden_tag() }}
 
@@ -177,42 +171,7 @@
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-col grow-one">
-                    <div class="form-row">
-                        <div class="form-col form-item grow-one">
-                            {{ form.data_source.source.label(class="form-input-label") }}
-                            {{ form.data_source.source(class="form-input") }}
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-col form-item grow-one">
-                            {{ form.data_source.api_manager.label(class="form-input-label") }}
-                            {{ form.data_source.api_manager(class="form-input") }}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-col grow-one">
-                    <div class="form-row">
-                        <div class="form-col form-item grow-one">
-                            {{ form.data_source.username.label(class="form-input-label") }}
-                            {{ form.data_source.username(class="form-input") }}
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-col form-item grow-one">
-                            {{ form.data_source.password.label(class="form-input-label") }}
-                            {{ form.data_source.password(class="form-input") }}
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-col form-item grow-one">
-                            <!--  -->
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {% include 'project/form_items/datasource.html' %}
 
             <div class="form-row">
                 <div class="form-col grow-one form-item">
@@ -292,9 +251,6 @@
     <script type="text/javascript" src="{{ url_for('static', filename='scripts/add_project.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='scripts/utils.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='scripts/select_multiple.js') }}"></script>
-    <script type="text/javascript">
-        new MultiSelectTag('sdgs')  // id
-    </script>
     <script type="text/javascript" defer>
 
         /*
@@ -349,7 +305,29 @@
             'battery': {{ blanks.wrap(energy.battery(_forms['energy']['BatteryForm'])) }},
             'consumption': {{ blanks.wrap(energy.consumption(unwrap(form.specifics.energy.loads)))}}
         }
+    </script>
+    <script type="text/javascript">
+        /*
+        Format on load
+        */
 
+        // SDG multiselect
+        new MultiSelectTag('#sdgs')  // id
+
+        // Default student cards
         renumberListElements('#students', (n) => { return n == 'x' });
+
+        {% if form.category.data %}
+            selected = '{{ form.category.data }}'
+            if ('js' in templates_specifics[selected]) {
+                addScript(
+                    selected.toLowerCase() + SCRIPT_SUFFIX,
+                    templates_specifics[selected]['js']
+                )
+            }
+
+            updateManagers('{{ form.category.data }}')
+        {% endif %}
+
     </script>
 {% endblock %}

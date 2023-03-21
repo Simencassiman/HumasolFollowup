@@ -2,9 +2,9 @@
   `{{ str|trim }}`
 {%- endmacro %}
 
-{% macro message(msg) -%}
+{% macro message(msg, index) -%}
 
-    <div class="message">
+    <div id="messages-{{ index }}" class="message">
         <div>{{ msg }}</div>
         <div>
             <!-- delete button -->

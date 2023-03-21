@@ -49,4 +49,9 @@ from .project import (  # noqa
     ProjectFactory,
 )
 
+# pylint: disable=wrong-import-order
+from humasol import script  # noqa
+
+# pylint: enable=wrong-import-order
+
 Model = ProjectElement | Project

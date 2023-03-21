@@ -39,7 +39,7 @@
         {% if deletable %}
             <div class="form-col col-center grow-one">
                 <!-- delete button -->
-                <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del" onclick="deleteElement(this)">
+                <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del" onclick="deleteListElement(this)">
             </div>
         {% endif %}
     </div>
@@ -70,7 +70,7 @@
             <div class="form-col col-center grow-one">
                 <!-- delete button -->
                 <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del"
-                    onclick="deleteElement(this)">
+                    onclick="deleteListElement(this)">
             </div>
         {% endif %}
     </div>
@@ -129,7 +129,7 @@
             <div class="form-col col-center grow-one">
                 <!-- delete button -->
                 <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del"
-                    onclick="deleteElement(this)">
+                    onclick="deleteListElement(this)">
             </div>
         {% endif %}
     </div>
@@ -154,7 +154,7 @@
             </div>
 
             <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-period-del"
-                 onclick="deleteElement(this, 1)">
+                 onclick="deleteListElement(this, 1)">
 
         </div>
     </div>
@@ -175,7 +175,7 @@
                 <div class="form-col col-center grow-one">
                     <!-- delete button -->
                     <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del"
-                         onclick="deleteElement(this, levels=4)">
+                         onclick="deleteListElement(this, levels=4)">
                 </div>
             </div>
 
@@ -217,7 +217,7 @@
                 <div class="form-col col-center grow-one">
                     <!-- delete button -->
                     <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del"
-                         onclick="deleteElement(this)">
+                         onclick="deleteListElement(this)">
                 </div>
             </div>
 

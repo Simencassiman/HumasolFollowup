@@ -1,6 +1,9 @@
 <div class="page-header">
     <h1 class="page-title">{{ project.name }}</h1>
-    <!--<a class="nav button button-secondary" href="">Edit</a>-->
+    {% if editable %}
+        <!--<a class="nav button button-secondary" href="">Edit</a>-->
+        <a class="nav button button-secondary" href="{{url_for('gui.remove_project')}}?id={{ project.id }}">Delete</a>
+    {% endif %}
 </div>
 
 <div class="project-content">

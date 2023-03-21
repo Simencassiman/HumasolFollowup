@@ -64,7 +64,7 @@ class PersonForm(forms.ProjectElementForm):
         return {
             "person_name": pers.name,
             "email": pers.email,
-            "phone": pers.phone,  # if pers.phone is not None else ''
+            "phone": pers.phone,
         }
 
     def get_data(self) -> dict[str, Any]:
@@ -560,6 +560,19 @@ class DataSourceForm(forms.HumasolSubform):
     # validation should not fail if not provided
     _category: Optional[str] = None
 
+    @staticmethod
+    def _format_managers(
+        managers: dict[str, set[str]]
+    ) -> dict[str, tuple[str, ...]]:
+        """Format manager choices for a select field with groups.
+
+        Defined at the top so that it can be used for the variables below.
+        """
+        return {
+            k.capitalize(): tuple(v)
+            for k, v in (managers | {"": {"---"}}).items()
+        }
+
     source = StringField("Data source address")
     username = StringField("Username")
     password = PasswordField("Password")
@@ -568,13 +581,20 @@ class DataSourceForm(forms.HumasolSubform):
     #  (build in check in API if token retrieval has been written,
     #  only activate if it exists)
     token = HiddenField("Token")
-    # TODO: Add correct API managers dynamically on category selection
-    # api_manager =
-    # SelectField("Data API manager", choices=[('', '---')]) VictronAPI
     api_manager = SelectField(
         "Data API manager",
-        choices=[("VictronAPI", "Victron Energy")],
-        default="VictronAPI",
+        choices=_format_managers(model_interface.get_api_managers()),
+        default="---",
+    )
+    data_manager = SelectField(
+        "Data manager",
+        choices=_format_managers(model_interface.get_data_managers()),
+        default="---",
+    )
+    report_manager = SelectField(
+        "Report manager",
+        choices=_format_managers(model_interface.get_report_managers()),
+        default="---",
     )
 
     @staticmethod

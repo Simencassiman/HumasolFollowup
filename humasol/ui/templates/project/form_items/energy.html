@@ -1,3 +1,5 @@
+<!--suppress XmlDuplicatedId -->
+
 <!---------------------
 ------ General --------
 ---------------------->
@@ -20,7 +22,6 @@
 ---------------------->
 
 {% macro source(form) -%}
-    <!--suppress XmlDuplicatedId -->
     <div class="form-card form-row">
         <div class="form-col form-item">
             {{ energy_component(form) }}
@@ -34,7 +35,7 @@
         </div>
         <div class="form-col col-center grow-one">
             <!-- delete button -->
-            <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del" onclick="deleteElement(this)">
+            <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del" onclick="deleteListElement(this)">
         </div>
     </div>
 {%- endmacro %}
@@ -99,7 +100,6 @@
 ---------------------->
 
 {% macro storage(form) -%}
-    <!--suppress XmlDuplicatedId -->
     <div class="form-card form-row">
         <div class="form-col form-item">
             {{ energy_component(form) }}
@@ -112,7 +112,7 @@
         </div>
         <div class="form-col col-center grow-one">
             <!-- delete button -->
-            <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del" onclick="deleteElement(this)">
+            <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del" onclick="deleteListElement(this)">
         </div>
     </div>
 {%- endmacro %}
@@ -149,7 +149,6 @@
 
 
 {% macro consumption(form) -%}
-    <!--suppress XmlDuplicatedId -->
     <div class="form-card form-row">
         <div class="form-col form-item">
             {{ energy_component(form) }}
@@ -162,7 +161,7 @@
         </div>
         <div class="form-col col-center grow-one">
             <!-- delete button -->
-            <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del" onclick="deleteElement(this)">
+            <img src="{{ url_for('static', filename='img/cross_icon.png') }}" class="form-item form-del" onclick="deleteListElement(this)">
         </div>
     </div>
 {%- endmacro %}

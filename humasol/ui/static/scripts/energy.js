@@ -2,26 +2,26 @@ const LABEL = 'ENERGY'
 const PREFIX = 'specifics-energy'
 
 function addEnergySource() {
-    console.log("Add source")
     addElementToList(
         '#energy-sources',
-        insertPrefix(templates_specifics[LABEL]['source'], PREFIX + '-sources-x')
+        templates_specifics[LABEL]['source'],
+        PREFIX + '-sources-x'
     );
 }
 
 function addEnergyStorage() {
-    console.log("Add storage")
     addElementToList(
         '#energy-storages',
-        insertPrefix(templates_specifics[LABEL]['storage'], PREFIX + '-storage-x')
+        templates_specifics[LABEL]['storage'],
+        PREFIX + '-storage-x'
     );
 }
 
 function addEnergyLoad() {
-    console.log("Add load")
     addElementToList(
-        '#energy-consumptions',
-        insertPrefix(templates_specifics[LABEL]['consumption'], PREFIX + '-consumptions-x')
+        '#energy-loads',
+        templates_specifics[LABEL]['consumption'],
+        PREFIX + '-loads-x'
     );
 }
 
@@ -52,7 +52,7 @@ function selectComponentType(selector, type) {
     } else {
         component.append(
             insertPrefix(
-                templates_specifics[LABEL][type],
+                $(templates_specifics[LABEL][type]),
                 PREFIX + '-sources-x'
             )
         )

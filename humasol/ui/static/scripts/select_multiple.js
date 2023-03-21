@@ -40,7 +40,8 @@ function MultiSelectTag (el, customs = {shadow: false, rounded:true}) {
     init()
 
     function init() {
-        element = document.getElementById(el)
+        // element = document.getElementById(el)
+        element = $(el).get(0)
         createElements()
         initOptions()
         enableItemSelection()

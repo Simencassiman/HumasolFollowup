@@ -16,6 +16,7 @@ from .base import (  # noqa
     ProjectElementWrapper,
 )
 
+from . import security  # noqa
 from . import energy  # noqa
 from . import general  # noqa
 

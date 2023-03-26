@@ -171,7 +171,6 @@ class GUI(Blueprint):
                 project_id = self.app.create_project(form.get_data())
 
                 if project_id is not None and project_id >= 0:  # Success
-                    print(project_id)
                     self.app.get_session()["id"] = project_id
 
                     return redirect(url_for("gui.view_project"))

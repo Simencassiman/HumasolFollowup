@@ -22,7 +22,7 @@
 ---------------------->
 
 {% macro source(form) -%}
-    <div class="form-card form-row">
+    <div id="energy-sources-x" class="form-card form-row">
         <div class="form-col form-item">
             {{ energy_component(form) }}
 
@@ -100,7 +100,7 @@
 ---------------------->
 
 {% macro storage(form) -%}
-    <div class="form-card form-row">
+    <div id="energy-storages-x" class="form-card form-row">
         <div class="form-col form-item">
             {{ energy_component(form) }}
 
@@ -149,7 +149,7 @@
 
 
 {% macro consumption(form) -%}
-    <div class="form-card form-row">
+    <div id="energy-loads-x" class="form-card form-row">
         <div class="form-col form-item">
             {{ energy_component(form) }}
 

@@ -153,7 +153,9 @@ def save_project(project: model.Project) -> None:
 
         # Save to db
         # pylint: disable=no-member
-        session.merge(project)
+        new_project = session.merge(project)
+        session.flush()
+        project.id = new_project.id
         session.commit()
         # pylint: enable=no-member
     except sqlalchemy.exc.IntegrityError as exc:

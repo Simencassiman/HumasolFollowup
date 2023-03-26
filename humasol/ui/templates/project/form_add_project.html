@@ -159,7 +159,7 @@
                     <div class="form-row">
                         <div id="tasks" class="form-col grow-one">
                             {% for task in form.tasks %}
-                                {% include 'project/form_items/task.html' %}
+                                {{ blanks.task(task) }}
                             {% endfor %}
                         </div>
                     </div>
@@ -214,8 +214,8 @@
                     </div>
                     <div class="form-row">
                         <div id="subscriptions" class="form-col grow-one">
-                            {% for subscription in form.subscriptions %}
-                                {% include 'project/form_items/subscription.html' %}
+                            {% for sub in form.subscriptions %}
+                                {{ blanks.subscription(sub) }}
                             {% endfor %}
                         </div>
                     </div>

@@ -142,7 +142,8 @@ class GeneratorForm(SourceComponentForm):
         in the form fields.
         """
         return {
-            "efficiency": self.efficiency.data,
+            **super().get_data(),
+            "efficiency": float(self.efficiency.data) / 100,
             "fuel_cost": self.fuel_cost.data,
             "overheats": self.overheats.data,
             "overheating_time": self.overheating_time.data,
@@ -151,7 +152,8 @@ class GeneratorForm(SourceComponentForm):
 
     def validate_efficiency(self, efficiency) -> None:
         """Validate form input for generator efficiency."""
-        if not model_val.is_legal_generator_efficiency(efficiency.data):
+        eff = float(efficiency.data) / 100
+        if not model_val.is_legal_generator_efficiency(eff):
             raise ValidationError("Invalid generator efficiency.")
 
     def validate_fuel_cost(self, cost) -> None:

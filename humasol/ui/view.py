@@ -170,8 +170,9 @@ class GUI(Blueprint):
 
                 project_id = self.app.create_project(form.get_data())
 
-                if project_id >= 0:  # Success
-                    self.app.get_session()["project_id"] = project_id
+                if project_id is not None and project_id >= 0:  # Success
+                    print(project_id)
+                    self.app.get_session()["id"] = project_id
 
                     return redirect(url_for("gui.view_project"))
 
@@ -426,7 +427,7 @@ class GUI(Blueprint):
         }
 
     @roles_accepted(*ROLES_ADD_PROJECT)
-    def remove_project(self) -> Response:
+    def remove_project(self) -> HtmlPage | Response:
         """Remove a project.
 
         Parameters
@@ -444,7 +445,7 @@ class GUI(Blueprint):
         else:
             flash("Deletion was unsuccessful")
 
-        return redirect(url_for("gui.view_projects"), code=200)
+        return self.view_projects()
 
     @roles_accepted(*ROLES_SEARCH_PROJECT)
     def search_project(self, value: str) -> HtmlPage:
@@ -554,8 +555,14 @@ class GUI(Blueprint):
         Return an empty HTML project page that will fetch the data while
         loading.
         """
-        if not (p_id := request.args.get("id", None)):
+        if not (
+            p_id := (
+                request.args.get("id", None)
+                or self.app.get_session().get("id", None)
+            )
+        ):
             # TODO: raise exception instead
+            print("Redirecting")
             return redirect(url_for("gui.view_projects"))
 
         project_id = int(p_id)

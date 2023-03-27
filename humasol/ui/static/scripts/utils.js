@@ -1,5 +1,6 @@
 SEPARATOR = '-'
 
+
 function addElementToList(listId, element, prefix=null, depth=0) {
     if (prefix) {
         // Add prefix to all labels and input items
@@ -31,6 +32,20 @@ function scriptLoaded() {
   console.log("Script is ready to rock and roll!");
 }
 
+/**
+ * Deletes a card element containing the clicked element from its parent list.
+ * The function assumes that the card to be deleted has and ID attribute and
+ * that it is of the form [prefix-]listId-X, where x is the n
+ *
+ * @effect renumbers the list items in the parent list after the selected
+ * element is deleted
+ *
+ * @param element clicked element that called this function
+ * @param depth list depth, i.e. if it is a nested list and how many levels
+ * precede it
+ *
+ * @return ID of the parent list from which the card has been deleted
+ */
 function deleteElement(element, depth=0) {
     // Get a reference to the card that contains the clicked cross and remove it
     // Also get a reference to the list containing it

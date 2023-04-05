@@ -67,8 +67,6 @@ class Address(model.BaseModel, model.ProjectElement):
 
     # End database definitions #
 
-    # TODO: Add setters
-
     def __init__(
         self,
         place: str,
@@ -638,41 +636,18 @@ class DataSource(model.BaseModel, model.ProjectElement):
         """Check whether the provided user is a legal user string."""
         return user is None or isinstance(user, str)
 
-    # TODO: convert to python setter
-    def set_source(self, source: str) -> None:
-        """Set the source for this data source."""
-        if not self.is_legal_source(source):
-            raise ValueError("Argument 'source' should be a non-empty string")
-
-        self.source = source
-
-    # TODO: convert to python setter
     def set_user(self, user: str) -> None:
         """Set the user for this data source."""
-        if not self.is_legal_user(user):
-            raise ValueError("Argument 'user' should be of type str or None")
-
         self.user = encrypt(user) if user is not None else user
 
-    # TODO: convert to python setter
     def set_password(self, password: str) -> None:
         """Set the password for this data source."""
-        if not self.is_legal_password(password):
-            raise ValueError(
-                "Argument 'password' should be of type str or None"
-            )
-
         self.password = encrypt(password) if password is not None else password
 
-    # TODO: convert to python setter
     def set_token(self, token: str) -> None:
         """Set the token for this data source."""
-        if not self.is_legal_token(token):
-            raise ValueError("Argument 'token' should be of type str or None")
-
         self.token = encrypt(token) if token is not None else token
 
-    # TODO: create individual python setters
     def set_managers(
         self,
         *,

@@ -13,6 +13,10 @@ class IllegalArgumentException(ModelException):
     """Exception raised when invalid parameters are passed to a model."""
 
 
+class IllegalOperationException(ModelException):
+    """Exception raised when an illegal operation is performed on a model."""
+
+
 class MissingArgumentException(ModelException):
     """Raised when a required argument is not found in the parameters."""
 

@@ -35,7 +35,8 @@ function scriptLoaded() {
 /**
  * Deletes a card element containing the clicked element from its parent list.
  * The function assumes that the card to be deleted has and ID attribute and
- * that it is of the form [prefix-]listId-X, where x is the n
+ * that it is of the form [prefix-]listId-X, where x is the number indicating
+ * the position in the list (zero indexed).
  *
  * @effect renumbers the list items in the parent list after the selected
  * element is deleted

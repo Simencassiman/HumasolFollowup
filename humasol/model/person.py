@@ -39,8 +39,6 @@ from sqlalchemy.ext.declarative import declared_attr
 from humasol import exceptions, model
 from humasol.repository import db
 
-# TODO: add python setters to check new assignments
-
 
 class Person(model.BaseModel, model.ProjectElement):
     """Abstract base class for a person working for/with Humasol.
@@ -434,7 +432,7 @@ class Supervisor(Person):
         function -- Supervising function (e.g., coach)
         phone    -- Phone number of the supervisor. Including country code
         """
-        if not Supervisor.is_valid_function(function):
+        if not Supervisor.is_legal_function(function):
             raise exceptions.IllegalArgumentException(
                 "Parameter 'function' should not be None and of type "
                 "str. There should be at least two letters."
@@ -444,7 +442,7 @@ class Supervisor(Person):
         self.function = function
 
     @staticmethod
-    def is_valid_function(function: str) -> bool:
+    def is_legal_function(function: str) -> bool:
         """Check whether the provided function has valid content."""
         if not isinstance(function, str):
             return False
@@ -460,7 +458,7 @@ class Supervisor(Person):
         _______
         Return reference to self.
         """
-        if "function" in params and not self.is_valid_function(
+        if "function" in params and not self.is_legal_function(
             params["function"]
         ):
             raise ValueError(
@@ -718,22 +716,6 @@ class Organization(model.BaseModel, model.ProjectElement):
         # TODO: add whitespaces and Ü type characters
         return re.match(r"[A-Z]+", name.upper()) is not None
 
-    # TODO: convert to python setter
-    def set_name(self, name: str) -> None:
-        """Set the name of this organisation."""
-        if not self.is_legal_name(name):
-            raise ValueError("Illegal 'name' for an organization")
-
-        self.name = name
-
-    # TODO: convert to python setter
-    def set_logo(self, logo: str) -> None:
-        """Set the logo of this organisation."""
-        if not self.is_legal_logo(logo):
-            raise ValueError("Illegal logo path for an organization")
-
-        self.logo = logo
-
     def update(self, **params: Any) -> Organization:
         """Update this instance with the provided new parameters.
 
@@ -851,14 +833,6 @@ class SouthernPartner(Organization):
             isinstance(country, str)
             and re.fullmatch(r"^[A-Z][A-Z\s.,]*", country.upper()) is not None
         )
-
-    # TODO: implement as python setter
-    def set_country(self, country: str) -> None:
-        """Set the country for this organisation."""
-        if not self.is_legal_country(country):
-            raise ValueError("Illegal country for an organization")
-
-        self.country = country
 
     def update(self, **params: Any) -> Organization:
         """Update this instance with the provided new parameters.

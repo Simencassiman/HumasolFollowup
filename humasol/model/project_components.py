@@ -119,7 +119,7 @@ class EnergyProjectComponent(ProjectComponent):
                 "Parameter 'power' should be a non-negative float"
             )
 
-        if not EnergyProjectComponent.is_legal_primary_flag(is_primary):
+        if not EnergyProjectComponent.is_legal_is_primary(is_primary):
             raise exceptions.IllegalArgumentException(
                 "Parameter 'is_primary' should be of type bool"
             )
@@ -143,7 +143,7 @@ class EnergyProjectComponent(ProjectComponent):
         return isinstance(power, (float, int)) and power >= 0
 
     @staticmethod
-    def is_legal_primary_flag(flag: bool) -> bool:
+    def is_legal_is_primary(flag: bool) -> bool:
         """Check whether this is a legal flag."""
         return isinstance(flag, bool)
 
@@ -168,9 +168,7 @@ class EnergyProjectComponent(ProjectComponent):
 
         if (
             primary_present := "is_primary" in params
-        ) and EnergyProjectComponent.is_legal_primary_flag(
-            params["is_primary"]
-        ):
+        ) and EnergyProjectComponent.is_legal_is_primary(params["is_primary"]):
             raise ValueError("Parameter 'is_primary' should be of type bool")
 
         if power_present:
@@ -329,28 +327,6 @@ class Grid(SourceComponent):
         """
         return cost is None or isinstance(cost, (float, int))
 
-    # TODO: convert to python setter
-    def set_blackout_threshold(self, threshold: float) -> None:
-        """Set the blackout threshold for this grid."""
-        if not self.is_legal_blackout_threshold(threshold):
-            raise ValueError(
-                "Argument 'blackout_threshold' has an illegal "
-                "value. Should be a non-negative float"
-            )
-
-        self.blackout_threshold = threshold
-
-    # TODO: convert to python setter
-    def set_injection_cost(self, cost: float) -> None:
-        """Set the injection cost (€/kWh) for this grid."""
-        if not self.is_lega_injection_price(cost):
-            raise ValueError(
-                "Argument 'injection_price' has an illegal value. "
-                "Costs should be a float"
-            )
-
-        self.injection_price = cost
-
     def update(self, params: dict[str, ty.Any]) -> Grid:
         """Update this instance with the provided new parameters.
 
@@ -477,7 +453,7 @@ class Generator(SourceComponent):
                 "Parameter 'fuel_cost' should be a non-negative float"
             )
 
-        if not Generator.is_legal_overheats_flag(overheats):
+        if not Generator.is_legal_overheats(overheats):
             raise exceptions.IllegalArgumentException(
                 "Parameter 'overheats' should be of type bool"
             )
@@ -537,47 +513,23 @@ class Generator(SourceComponent):
         return time is None or (isinstance(time, (float, int)) and time >= 0)
 
     @staticmethod
-    def is_legal_overheats_flag(flag: bool) -> bool:
+    def is_legal_overheats(flag: bool) -> bool:
         """Check whether the provide flag is a legal flag."""
         return isinstance(flag, bool)
 
-    # TODO: Convert to python setter
-    def set_fuel_cost(self, cost: float) -> None:
-        """Set the fuel cost for this generator."""
-        if not self.is_legal_fuel_cost(cost):
-            raise ValueError(
-                "Argument 'fuel_cost' has an illegal value. Cost should be "
-                "a non-negative float"
-            )
+    def is_valid_overheats(self, flag: bool) -> bool:
+        """Check weather the flag is valid for the generator object.
 
-        self.fuel_cost = cost
-
-    # TODO: Convert to python setter
-    def set_overheats(self, overheats: bool) -> None:
-        """Set whether this generator overheats."""
-        if not self.is_legal_overheats_flag(overheats):
-            raise ValueError("Argument 'overheats' should be of type bool")
-
-        if not overheats:
-            self.cooldown_time = None
-
-        self.overheats = overheats
-
-    # TODO: Convert to python setter
-    def set_cooldown_time(self, time: float) -> None:
-        """Set the time required to cool down after overheating."""
-        if not self.is_legal_cooldown_time(time):
-            raise ValueError(
-                "Argument 'cooldown_time' has an illegal value. Should be "
-                "a non-negative float"
-            )
-        if not self.overheats and time is not None:
-            raise ValueError(
-                "Argument 'cooldown_time' has an illegal value. If the "
-                "generator does not overheat it should be None"
-            )
-
-        self.cooldown_time = time
+        If the generator can overheat, the times have to be specified before.
+        The flag should control all the logic, so if it is false, then the
+        times don't matter. If it is true, then the times do matter, and so
+        they must already be specified to avoid an inconsistent state.
+        """
+        return (
+            not flag
+            or self.cooldown_time is not None
+            and self.overheating_time is not None
+        )
 
     def update(self, params: dict[str, ty.Any]) -> Generator:
         """Update this instance with the provided new parameters.
@@ -604,7 +556,7 @@ class Generator(SourceComponent):
 
         if (
             overheats_present := "overheats" in params
-        ) and not Generator.is_legal_overheats_flag(params["overheats"]):
+        ) and not Generator.is_legal_overheats(params["overheats"]):
             pass
 
         if (
@@ -794,7 +746,7 @@ class Battery(StorageComponent):
         max_soc     -- Maximally allowed state of charge
         kwargs      -- Parameters for the superclasses
         """
-        if not Battery.is_legal_type(battery_type):
+        if not Battery.is_legal_battery_type(battery_type):
             raise exceptions.IllegalArgumentException(
                 "Parameter 'battery_type' should not be None and of "
                 "type BatteryType"
@@ -854,6 +806,11 @@ class Battery(StorageComponent):
         return Battery._is_legal_soc(soc)
 
     @staticmethod
+    def is_legal_battery_type(battery_type: BatteryType) -> bool:
+        """Check whether the provided type is a legal battery type."""
+        return isinstance(battery_type, Battery.BatteryType)
+
+    @staticmethod
     def is_legal_max_soc(soc: float) -> bool:
         """Check if the provided soc is a legal maximal state of charge."""
         return Battery._is_legal_soc(soc)
@@ -863,55 +820,27 @@ class Battery(StorageComponent):
         """Check if the provided soc is a legal minimal state of charge."""
         return Battery._is_legal_soc(soc)
 
-    @staticmethod
-    def is_legal_type(battery_type: BatteryType) -> bool:
-        """Check whether the provided type is a legal battery type."""
-        return isinstance(battery_type, Battery.BatteryType)
+    def is_valid_base_soc(self, soc: bool) -> bool:
+        """Check that the base SOC is between the min and max SOC."""
+        return (
+            self.is_legal_base_soc(soc) and self.min_soc <= soc <= self.max_soc
+        )
 
-    # TODO: convert to python setter
-    def set_base_soc(self, soc: float) -> None:
-        """Set the base state of charge of this battery."""
-        if not self.is_legal_base_soc(soc):
-            raise ValueError(
-                "Argument 'base_soc' should be a float in "
-                "the range [min_soc,1]"
-            )
-        if soc < self.min_soc:
-            raise ValueError(
-                "Argument 'base_soc' should be a float in the "
-                "range [min_soc,1]"
-            )
+    def is_valid_max_soc(self, soc: float) -> bool:
+        """Check that the max SOC is above both the min and base SOC."""
+        return (
+            self.is_legal_max_soc(soc)
+            and soc >= self.min_soc
+            and soc >= self.base_soc
+        )
 
-        self.base_soc = soc
-
-    # TODO: convert to python setter
-    def set_min_soc(self, soc: float) -> None:
-        """Set minimally allowed state of charge of this battery."""
-        if not self.is_legal_min_soc(soc):
-            raise ValueError(
-                "Argument 'min_soc' should be a float in the "
-                "range [0,base_soc]"
-            )
-        if soc > self.base_soc:
-            raise ValueError(
-                "Argument 'min_soc' should be a float in the "
-                "range [0,base_soc]"
-            )
-
-        self.min_soc = soc
-
-    # TODO: add setter for max_soc
-
-    # TODO: convert to python setter
-    def set_type(self, b_type: BatteryType) -> None:
-        """Set the battery_type of this battery."""
-        if not self.is_legal_type(b_type):
-            raise ValueError(
-                "Parameter 'battery_type' should not be None and of "
-                "type BatteryType"
-            )
-
-        self.battery_type = b_type
+    def is_valid_min_soc(self, soc: float) -> bool:
+        """Check that the min SOC is below both the base and max SOC."""
+        return (
+            self.is_legal_min_soc(soc)
+            and soc <= self.base_soc
+            and soc <= self.max_soc
+        )
 
     def update(self, params: dict[str, ty.Any]) -> Battery:
         """Update this instance with the provided new parameters.
@@ -948,7 +877,7 @@ class Battery(StorageComponent):
 
         if (
             type_present := "battery_type" in params
-        ) and not Battery.is_legal_type(params["battery_type"]):
+        ) and not Battery.is_legal_battery_type(params["battery_type"]):
             raise ValueError(
                 "Parameter 'battery_type' should not be None and of "
                 "type BatteryType"
@@ -1024,7 +953,7 @@ class ConsumptionComponent(EnergyProjectComponent):
         is_critical -- Flag indicating whether this element's power should be
                         prioritized
         """
-        if not ConsumptionComponent.is_legal_critical_flag(is_critical):
+        if not ConsumptionComponent.is_legal_is_critical(is_critical):
             raise exceptions.IllegalArgumentException(
                 "Parameter 'is_critical' should be of type bool"
             )
@@ -1034,7 +963,7 @@ class ConsumptionComponent(EnergyProjectComponent):
         self.is_critical = is_critical
 
     @staticmethod
-    def is_legal_critical_flag(flag: bool) -> bool:
+    def is_legal_is_critical(flag: bool) -> bool:
         """Check whether the provided flag is a legal flag."""
         return isinstance(flag, bool)
 
@@ -1052,7 +981,7 @@ class ConsumptionComponent(EnergyProjectComponent):
         """
         if (
             critical_present := "is_critical" in params
-        ) and not ConsumptionComponent.is_legal_critical_flag(
+        ) and not ConsumptionComponent.is_legal_is_critical(
             params["is_critical"]
         ):
             pass

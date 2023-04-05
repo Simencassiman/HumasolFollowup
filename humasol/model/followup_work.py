@@ -180,39 +180,16 @@ class FollowupJob(model.BaseModel, model.ProjectElement):
         """Check if the provided subscriber is a valid subscriber."""
         return isinstance(sub, person.Person)
 
-    # TODO: convert to python setter
-    def set_subscriber(self, subscriber: person.Person) -> None:
-        """Set the subscriber for this job."""
-        if not self.is_legal_subscriber(subscriber):
-            raise ValueError(
-                "Argument 'subscriber' should not be None and of a subclass "
-                "of Person"
+    def __setattr__(self, key, value) -> None:
+        """Set value of a given attribute.
+
+        Check that attribute is editable first.
+        """
+        if key in {"periods"}:
+            raise exceptions.IllegalOperationException(
+                f"Attribute {key} is not editable."
             )
-
-        self.subscriber = subscriber
-
-    # TODO: Add getter to avoid unauthorized list editing
-    # TODO: Convert to python setter
-    def set_periods(self, periods: List[Period]) -> None:
-        """Set the periods for this job."""
-        if not self.are_legal_periods(periods):
-            raise ValueError(
-                "Argument 'periods' should be a non-empty list containing "
-                "periods"
-            )
-
-        self.periods = periods
-
-    # TODO: Convert to python setter
-    def set_last_notification(self, last_notification: date) -> None:
-        """Set the last notification date for this job."""
-        if not self.is_legal_last_notification(last_notification):
-            raise ValueError(
-                "Argument 'last_notification' has an invalid value. "
-                "Last notification should be None or a date in the past."
-            )
-
-        self.last_notification = last_notification
+        super().__setattr__(key, value)
 
     def add_period(self, period: Period) -> None:
         """Add the provided period to the job's periods list."""
@@ -293,23 +270,6 @@ class FollowupJob(model.BaseModel, model.ProjectElement):
             )
 
         return self
-
-    # TODO: Move logic to individual python setters
-    def __setattr__(self, key, value):
-        """Control access to certain attributes."""
-        if key == "last_notification" and (
-            (value is None and self.last_notification is not None)
-            or (
-                self.last_notification is not None
-                and value < self.last_notification
-            )
-        ):
-            raise ValueError(f"Invalid value for last notification: {value}")
-
-        if key == "periods" and not self.are_legal_periods(value):
-            raise ValueError("Argument 'periods' contains invalid periods")
-
-        super().__setattr__(key, value)
 
     def __repr__(self) -> str:
         """Provide a string representation for this instance."""
@@ -429,28 +389,6 @@ class Task(FollowupJob):
             return False
 
         return re.fullmatch(r"^[A-Z][A-Z\s]*", name.upper()) is not None
-
-    # TODO: Convert to python setter
-    def set_name(self, name: str) -> None:
-        """Set the name of this task."""
-        if not self.is_legal_name(name):
-            raise ValueError(
-                "Argument 'name' should be a string containing only "
-                "letters (at least one) and white spaces"
-            )
-
-        self.name = name
-
-    # TODO: Convert to python setter
-    def set_function(self, function: str) -> None:
-        """Set the function of this task."""
-        if not self.is_legal_function(function):
-            raise ValueError(
-                "Argument 'function' should only contain letters "
-                "(at least one), white spaces, commas or periods"
-            )
-
-        self.function = function
 
     def update(self, **params: Any) -> FollowupJob:
         """Update this instance with the provided new parameters.
@@ -638,48 +576,6 @@ class Period(model.BaseModel, model.ProjectElement):
     def is_legal_unit(unit: Period.TimeUnit) -> bool:
         """Check whether the provided unit is a valid time unit."""
         return isinstance(unit, Period.TimeUnit)
-
-    # TODO: Convert to python setter
-    def set_period(self, period: int) -> None:
-        """Set the period interval for this instance."""
-        if not self.is_legal_interval(period):
-            raise ValueError(
-                "Argument 'period' has an invalid value. Only positive "
-                "integers are allowed"
-            )
-
-        self.interval = period
-
-    # TODO: Convert to python setter
-    def set_unit(self, unit: TimeUnit) -> None:
-        """Set the time unit of this period interval."""
-        if not self.is_legal_unit(unit):
-            raise ValueError(
-                "Argument 'unit' should not be None and of type "
-                "Period.TimeUnit"
-            )
-
-        self.unit = unit
-
-    # TODO: Convert to python setter
-    def set_start_date(self, start: date) -> None:
-        """Set the start date for this period."""
-        if not self.is_legal_start(start):
-            raise ValueError(
-                "Argument 'start_date' should not be None and of type "
-                "datetime.date"
-            )
-
-    # TODO: Convert to python setter
-    def set_end_date(self, end: date) -> None:
-        """Set the end date for this period."""
-        if not self.is_valid_end(end):
-            raise ValueError(
-                "Argument 'end_date' has invalid content. End date should be "
-                "after start date"
-            )
-
-        self.end = end
 
     def get_unit(self) -> str:
         """Provide the unit of this period as a string."""

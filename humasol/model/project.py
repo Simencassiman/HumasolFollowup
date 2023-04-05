@@ -14,10 +14,12 @@ ProjectFactory -- Class providing static methods for project creation.
 ProjectCategory -- Enum class providing the defined project categories and
                     matching classes.
 """
+
 # Python Libraries
 from __future__ import annotations
 
 import datetime
+import itertools
 import re
 import typing as ty
 from abc import abstractmethod
@@ -446,6 +448,34 @@ class Project(model.BaseModel):
     # pylint: enable=too-many-locals
     # pylint: enable=too-many-arguments
 
+    def __setattr__(self, key, value) -> None:
+        """Set the attribute of this object.
+
+        If the object has defined a guard of the form
+        is/are_legal/valid_{key}
+        then this guard will first be checked.
+
+        Parameters
+        __________
+        key: name of the attribute
+        value: new value for the attribute
+        """
+        for num, att in itertools.product(("is", "are"), ("legal", "valid")):
+            try:
+                if hasattr(
+                    self, guard := f"{num}_{att}_{key}"
+                ) and not getattr(self, guard)(value):
+                    raise exceptions.IllegalArgumentException(
+                        f"Illegal value for {key}."
+                    )
+            except AttributeError:
+                # In initialization could be that not all variables have been
+                # initialized. This should be foreseen, but to simplify things,
+                # just catch the exception...
+                ...
+
+        super().__setattr__(key, value)
+
     # Validators #
     @staticmethod
     def are_legal_extra_data(data: ty.Optional[dict[str, str]]) -> bool:
@@ -647,66 +677,7 @@ class Project(model.BaseModel):
         # TODO: strengthen check
         return isinstance(folder, str) and len(folder) > 0
 
-    # Setters #
-
-    # TODO: Convert to python setter
-    def set_name(self, name: str) -> None:
-        """Set the name of this project."""
-        if not self.is_legal_name(name):
-            raise ValueError(
-                "Argument 'name' has an illegal value. Should be a string "
-                "containing at least one letter"
-            )
-
-        self.name = name
-
-    # TODO: Convert to python setter
-    def set_date(self, date: datetime.date) -> None:
-        """Set the implementation date for this project."""
-        if not self.is_legal_implementation_date(date):
-            raise ValueError(
-                "Argument 'implementation_date' has an illegal value. "
-                "Should be a datetime.date and only projects up to "
-                "(and including) this year can be implemented"
-            )
-
-        self.implementation_date = date
-
-    # TODO: Convert to python setter
-    def set_description(self, description: str) -> None:
-        """Set the description for this project."""
-        if not self.is_legal_description(description):
-            raise ValueError(
-                "Argument 'description' has an illegal value. Should be a "
-                "string containing at least 1 letter"
-            )
-
-        self.description = description
-
-    # TODO: Convert to python setter
-    def set_location(self, location: model.project_elements.Location) -> None:
-        """Set the location for this project."""
-        if not self.is_legal_location(location):
-            raise ValueError(
-                "Argument 'location' should not be None and of type Location"
-            )
-
-        self.location = location
-
-    # TODO: Convert to python setter
-    def set_work_folder(self, work_folder: str) -> None:
-        """Set the work folder (preparation work) for this project."""
-        if not self.is_legal_work_folder(work_folder):
-            raise ValueError(
-                "Argument 'work_folder' has an illegal value. Should be a "
-                "non-empty string"
-            )
-
-        self.work_folder = work_folder
-
-    # TODO: Add python getter
     # TODO: Add addition and removal functions for SDG
-    # TODO: Convert to python setter
     def set_sdgs(self, sdgs: list[model.project_elements.SDG]) -> None:
         """Set the list of SDGs for this project."""
         if not self.are_legal_sdgs(sdgs):
@@ -718,57 +689,6 @@ class Project(model.BaseModel):
         self.sdgs = sdgs if sdgs else []
         self.sdgs_db = [model.project_elements.SdgDB(sdg) for sdg in self.sdgs]
 
-    # TODO: Convert to python setter
-    def set_contact_person(self, contact: model.person.Person) -> None:
-        """Set the contact person for this project."""
-        if not self.is_legal_contact_person(contact):
-            raise ValueError(
-                "Argument 'contact_person' should not be None and of type "
-                "Person"
-            )
-
-        self.contact_person = contact
-
-    # TODO: Add getter
-    # TODO: Add addition and removal methods
-    # TODO: Convert to python setter
-    def set_students(self, students: list[model.person.Student]) -> None:
-        """Set the students for this project."""
-        if not self.are_legal_students(students):
-            raise ValueError(
-                "Argument 'students' has an illegal value. Should be a "
-                "non-empty lists containing unique Students"
-            )
-
-        self.students = students
-
-    # TODO: Add getter
-    # TODO: Add addition and removal methods
-    # TODO: Convert to python setter
-    def set_supervisors(self, supers: list[model.person.Supervisor]) -> None:
-        """Set the supervisors for this project."""
-        if not self.are_legal_supervisors(supers):
-            raise ValueError(
-                "Argument 'supervisors' has an illegal value. Should be a "
-                "non-empty list containing unique Supervisors"
-            )
-
-        self.supervisors = supers
-
-    # TODO: Add getter
-    # TODO: Add addition and removal methods
-    # TODO: Convert to python setter
-    def set_partners(self, partners: list[model.person.Partner]) -> None:
-        """Set the partners for this project."""
-        if not self.are_legal_partners(partners):
-            raise ValueError(
-                "Argument 'partners' has an illegal value. It should be a "
-                "non-empty list containing unique Partners"
-            )
-
-        self.partners = partners
-
-    # TODO: Convert to python setter
     def set_data_source(
         self, source: ty.Optional[model.project_elements.DataSource]
     ) -> None:
@@ -786,7 +706,6 @@ class Project(model.BaseModel):
 
         self.data_source = source
 
-    # TODO: Convert to python setter
     def set_dashboard(self, dashboard: ty.Optional[str]) -> None:
         """Set the dashboard for this project."""
         if not self.is_legal_dashboard(dashboard):
@@ -801,7 +720,6 @@ class Project(model.BaseModel):
 
         self.dashboard = dashboard
 
-    # TODO: Convert to python setter
     def set_save_data(self, save: bool) -> None:
         """Set the save folder flag for this project."""
         if not self.is_legal_save_data_flag(save):
@@ -815,7 +733,6 @@ class Project(model.BaseModel):
 
         self.save_data = save
 
-    # TODO: Convert to python setter
     def set_project_data(self, folder: ty.Optional[str]) -> None:
         """Set URL to project folder folder."""
         if not self.is_legal_data_folder(folder):
@@ -825,7 +742,6 @@ class Project(model.BaseModel):
 
         self.project_data = folder
 
-    # TODO: Convert to python setter
     def set_extra_data(self, data: dict[str, str]) -> None:
         """Set the extra folder for this project.
 
@@ -838,33 +754,6 @@ class Project(model.BaseModel):
             )
 
         self.extra_data = data
-
-    # TODO: Add getter
-    # TODO: Add addition and removal methods
-    # TODO: Convert to python setter
-    def set_tasks(self, tasks: list[model.followup_work.Task]) -> None:
-        """Set the tasks for this project."""
-        if not self.are_legal_tasks(tasks):
-            raise ValueError("Provided tasks list is invalid")
-
-        self.tasks = tasks
-
-    # TODO: Add getter
-    # TODO: Add addition and removal methods
-    # TODO: Convert to python setter
-    def set_subscriptions(
-        self, subs: list[model.followup_work.Subscription]
-    ) -> None:
-        """Set the subscriptions for this project."""
-        if not self.are_legal_subscriptions(subs):
-            raise ValueError("Provided subscriptions list is invalid")
-
-        if self.data_source is None and len(subs) != 0:
-            raise ValueError(
-                "Cannot subscribe to a project without a source of folder"
-            )
-
-        self.subscriptions = subs
 
     # Other methods #
 

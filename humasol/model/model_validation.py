@@ -78,12 +78,14 @@ def is_legal_battery_min_soc(soc: float) -> bool:
 
 def is_legal_battery_type(b_type: str) -> bool:
     """Check whether the provided type is a legal battery type."""
-    return pc.Battery.is_legal_type(pc.Battery.BatteryType.from_str(b_type))
+    return pc.Battery.is_legal_battery_type(
+        pc.Battery.BatteryType.from_str(b_type)
+    )
 
 
 def is_legal_consumption_component_critical_flag(flag: bool) -> bool:
     """Check whether the provided flag is a legal critical flag."""
-    return pc.ConsumptionComponent.is_legal_critical_flag(flag)
+    return pc.ConsumptionComponent.is_legal_is_critical(flag)
 
 
 def is_legal_coordinates_latitude(latitude: float) -> bool:
@@ -123,7 +125,7 @@ def is_legal_energy_project_component_power(power: float) -> bool:
 
 def is_legal_energy_project_component_primary_flag(flag: bool) -> bool:
     """Check whether the provide flag is legal as a primary."""
-    return pc.EnergyProjectComponent.is_legal_primary_flag(flag)
+    return pc.EnergyProjectComponent.is_legal_is_primary(flag)
 
 
 def is_legal_energy_project_power(power: float) -> bool:
@@ -165,7 +167,7 @@ def is_legal_generator_overtheating_time(time: float) -> bool:
 
 def is_legal_generator_overheats_flag(flag: bool) -> bool:
     """Check whether the provided flag is a legal generator overheats flag."""
-    return pc.Generator.is_legal_overheats_flag(flag)
+    return pc.Generator.is_legal_overheats(flag)
 
 
 def is_legal_grid_blackout_threshold(threshold: Optional[float]) -> bool:
@@ -295,7 +297,7 @@ def is_legal_student_university(uni: str) -> bool:
 
 def is_legal_supervisor_function(function: str) -> bool:
     """Check whether the provided function is legal for a supervisor."""
-    return pn.Supervisor.is_valid_function(function)
+    return pn.Supervisor.is_legal_function(function)
 
 
 def is_legal_task_function(function: str) -> bool:

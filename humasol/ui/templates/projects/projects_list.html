@@ -9,7 +9,7 @@
 
             {% for project in ps %}
                 <div class="project">
-                    <a href="{{ url_for('gui.view_project') }}?id={{ project.id }}">
+                    <a href="{{ url_for('gui.projects.view_project') }}?id={{ project.id }}">
                         <div class="project-card">
                             <div class="col">
                                 <div class="row">

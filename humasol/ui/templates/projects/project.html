@@ -6,7 +6,7 @@ Project
 
 {% block scripts %}
 <script>
-    loadContent("{{ url_for('gui.get_project') }}?id={{ project_id }}", "#main-content")
+    loadContent("{{ url_for('gui.projects.get_project') }}?id={{ project_id }}", "#main-content")
 </script>
 <script type="text/javascript" src="{{ url_for('static', filename='scripts/project.js') }}" defer></script>
 {% endblock %}

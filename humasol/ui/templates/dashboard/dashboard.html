@@ -17,7 +17,7 @@ Dashboard
 
 {% block scripts %}
 <script>
-    loadContent("{{ url_for('gui.get_dashboard') }}", "#dash-content")
+    loadContent("{{ url_for('gui.dashboard.get_dashboard') }}", "#dash-content")
 </script>
 <script>
     function openLink(evt, tab) {

@@ -2,7 +2,7 @@
     <h1 class="page-title">{{ project.name }}</h1>
     {% if editable %}
         <!--<a class="nav button button-secondary" href="">Edit</a>-->
-        <a class="nav button button-secondary" href="{{url_for('gui.remove_project')}}?id={{ project.id }}">Delete</a>
+        <a class="nav button button-secondary" href="{{url_for('gui.projects.remove_project')}}?id={{ project.id }}">Delete</a>
     {% endif %}
 </div>
 

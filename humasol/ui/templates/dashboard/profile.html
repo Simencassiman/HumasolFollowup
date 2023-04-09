@@ -32,7 +32,7 @@
         {% else %}
             {% for project in my_projects %}
                 <div>
-                    <a href="{{ url_for('gui.view_project') }}?id={{ project.id }}">{{ project.name }}</a>
+                    <a href="{{ url_for('gui.projects.view_project') }}?id={{ project.id }}">{{ project.name }}</a>
                 </div>
             {% endfor %}
         {% endif %}
@@ -44,7 +44,7 @@
         {% else %}
             {% for project in connected_projects %}
                 <div>
-                    <a href="{{ url_for('gui.view_project') }}?id={{ project.id }}">{{ project.name }}</a>
+                    <a href="{{ url_for('gui.projects.view_project') }}?id={{ project.id }}">{{ project.name }}</a>
                 </div>
             {% endfor %}
         {% endif %}
@@ -56,7 +56,7 @@
         {% else %}
             {% for project in subscriptions %}
                 <div>
-                    <a href="{{ url_for('gui.view_project') }}?id={{ project.id }}">{{ project.name }}</a>
+                    <a href="{{ url_for('gui.projects.view_project') }}?id={{ project.id }}">{{ project.name }}</a>
                 </div>
             {% endfor %}
         {% endif %}
@@ -68,7 +68,7 @@
         {% else %}
             {% for project in tasks %}
                 <div>
-                    <a href="{{ url_for('gui.view_project') }}?id={{ project.id }}">{{ project.name }}</a>
+                    <a href="{{ url_for('gui.projects.view_project') }}?id={{ project.id }}">{{ project.name }}</a>
                 </div>
             {% endfor %}
         {% endif %}
@@ -76,7 +76,7 @@
     <script>
         let inputs = ["profile-csrf_token", "profile-password", "profile-new_password", "profile-new_password_confirm"];
         changeFormSubmit(
-            "{{ url_for('gui.change_password') }}",
+            "{{ url_for('gui.security.change_password') }}",
             "password-form",
             inputs,
             (data) => {

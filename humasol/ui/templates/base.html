@@ -23,23 +23,23 @@
     <body id="body" {% block body_attribs %}{% endblock body_attribs %}>
     {% block body -%}
         <header class="main-header">
-            <a href="{{ url_for('gui.view_projects') }}">
+            <a href="{{ url_for('gui.index') }}">
                 <img class="main-header-image" src="{{ url_for('static', filename='img/humasol_logo_light.png') }}">
             </a>
             {% block navbar %}
             <nav class="nav main-nav">
                 <ul>
-                    <li><a href="{{ url_for('gui.view_projects') }}">Projects</a></li>
+                    <li><a href="{{ url_for('gui.projects.view_projects') }}">Projects</a></li>
                     {% if can_add_project %}
                         <li>
-                            <a href="{{ url_for('gui.view_add_project') }}">Add Project</a>
+                            <a href="{{ url_for('gui.projects.view_add_project') }}">Add Project</a>
                         </li>
                     {% endif %}
                     {% if user_authenticated %}
-                        <li><a href="{{ url_for('gui.view_dashboard') }}">Dashboard</a></li>
-                        <li><a href="{{ url_for('gui.logout') }}">Logout</a></li>
+                        <li><a href="{{ url_for('gui.dashboard.view_dashboard') }}">Dashboard</a></li>
+                        <li><a href="{{ url_for('gui.security.logout') }}">Logout</a></li>
                     {% else %}
-                        <li><a href="{{ url_for('gui.view_login') }}">Login</a></li>
+                        <li><a href="{{ url_for('gui.security.view_login') }}">Login</a></li>
                     {% endif %}
                 </ul>
             </nav>

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
-{% import 'project/form_items/form_blank_items.html' as blanks %}
-{% import 'project/form_items/form_project_specifics.html' as project_specifics %}
-{% import 'project/form_items/energy.html' as energy %}
+{% import 'form_items/form_blank_items.html' as blanks %}
+{% import 'form_items/form_project_specifics.html' as project_specifics %}
+{% import 'form_items/energy.html' as energy %}
 
 {% block title %}
   Add Project
@@ -48,7 +48,7 @@
             </div>
 
             <div class="form-row">
-                {% include 'project/form_items/location.html' %}
+                {% include 'form_items/location.html' %}
             </div>
 
             <div class="form-row">
@@ -171,7 +171,7 @@
                 </div>
             </div>
 
-            {% include 'project/form_items/datasource.html' %}
+            {% include 'form_items/datasource.html' %}
 
             <div class="form-row">
                 <div class="form-col grow-one form-item">

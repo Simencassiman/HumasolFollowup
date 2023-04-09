@@ -29,7 +29,7 @@
         let inputs = ["users-csrf_token", "users-email", "users-password", "users-roles"];
         let types = ['input', 'input', 'input', 'select']
         changeFormSubmit(
-            "{{ url_for('gui.register_user') }}",
+            "{{ url_for('gui.security.register_user') }}",
             "register-form",
             inputs,
             (data) => {

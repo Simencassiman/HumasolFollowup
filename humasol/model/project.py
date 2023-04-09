@@ -1090,18 +1090,7 @@ class Project(model.BaseModel):
     @orm.reconstructor  # Function is called by the ORM on database load
     def init_on_load(self) -> None:
         """Prepare instance when it is loaded from the database."""
-        # Project doesn't know anything about files, do this from repository
-        # self._load_from_file()
         self.sdgs = [s.sdg for s in self.sdgs_db]
-        self.project_components = []
-        self.description = ""
-        self.extra_data = {}
-
-    def load_from_file(self, data: dict[str, ty.Any]) -> None:
-        """Prepare instance with folder from file."""
-        # TODO: add project components.
-        self.description = data["description"] if "description" in data else ""
-        self.extra_data = data["extra_data"] if "extra_data" in data else {}
 
     # Magic methods #
     def __repr__(self) -> str:
@@ -1205,28 +1194,6 @@ class EnergyProject(Project):
             self.set_power(params["power"])
 
         return self
-
-    def load_from_file(self, data: dict[str, ty.Any]) -> None:
-        """Populate this instance with information loaded from file."""
-        super().load_from_file(data)
-
-        if "components" not in data:
-            return
-
-        for comp, params in data["components"].items():
-            if comp == model.project_components.Battery.LABEL:
-                params[
-                    "battery_type"
-                ] = model.project_components.Battery.BatteryType.from_str(
-                    params["battery_type"]
-                )
-                self._add_component(model.project_components.Battery(**params))
-            elif comp == model.project_components.Grid.LABEL:
-                self._add_component(model.project_components.Grid(**params))
-            elif comp == model.project_components.Generator.LABEL:
-                self._add_component(
-                    model.project_components.Generator(**params)
-                )
 
     def __repr__(self) -> str:
         """Provide a string representation for this instance."""

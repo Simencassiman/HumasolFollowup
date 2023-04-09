@@ -1121,6 +1121,38 @@ class Project(model.BaseModel):
 # pylint: enable=too-many-public-methods
 
 
+class AgricultureProject(Project):
+    """Class representing projects developing an agricultural system."""
+
+    # Definitions for the database tables #
+    __mapper_args__ = {"polymorphic_identity": "AGRICULTURE"}
+
+    # End database definitions #
+
+    def __init__(self, **kwargs) -> None:
+        """Init project object."""
+        super().__init__(**kwargs)
+
+    def update(self, params: Project.ProjectArgs) -> Project:
+        """Update object attributes."""
+
+
+class ElectronicsDevelopmentProject(Project):
+    """Class representing projects developing electronics."""
+
+    # Definitions for the database tables #
+    __mapper_args__ = {"polymorphic_identity": "ELECTRONICS_DEVELOPMENT"}
+
+    # End database definitions #
+
+    def __init__(self, **kwargs) -> None:
+        """Init project object."""
+        super().__init__(**kwargs)
+
+    def update(self, params: Project.ProjectArgs) -> Project:
+        """Update object attributes."""
+
+
 class EnergyProject(Project):
     """Class representing projects installing an energy system."""
 
@@ -1205,6 +1237,38 @@ class EnergyProject(Project):
         )
 
 
+class WaterProject(Project):
+    """Class representing projects installing a water system."""
+
+    # Definitions for the database tables #
+    __mapper_args__ = {"polymorphic_identity": "WATER"}
+
+    # End database definitions #
+
+    def __init__(self, **kwargs) -> None:
+        """Init project object."""
+        super().__init__(**kwargs)
+
+    def update(self, params: Project.ProjectArgs) -> Project:
+        """Update object attributes."""
+
+
+class WasteManagementProject(Project):
+    """Class representing projects developing a waste management solution."""
+
+    # Definitions for the database tables #
+    __mapper_args__ = {"polymorphic_identity": "WASTE_MANAGEMENT"}
+
+    # End database definitions #
+
+    def __init__(self, **kwargs) -> None:
+        """Init project object."""
+        super().__init__(**kwargs)
+
+    def update(self, params: Project.ProjectArgs) -> Project:
+        """Update object attributes."""
+
+
 # -----------------------------
 # ----- Project factories -----
 # -----------------------------
@@ -1275,7 +1339,14 @@ class ProjectCategory(Enum):
     ENUM_VALUE = (category name, matching project class)
     """
 
+    AGRICULTURE = ("agriculture", AgricultureProject)
+    ELECTRONICS_DEVELOPMENT = (
+        "electronics development",
+        ElectronicsDevelopmentProject,
+    )
     ENERGY = ("energy", EnergyProject)
+    WATER = ("water", WaterProject)
+    WASTE_MANAGEMENT = ("waste management", WasteManagementProject)
 
     @staticmethod
     def categories() -> tuple[ProjectCategory, ...]:

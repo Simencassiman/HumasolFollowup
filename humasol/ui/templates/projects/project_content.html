@@ -141,117 +141,124 @@
             </div>
         </div>
     </div>
-    <div id="followup" class="project-section">
-        <h2>Project Follow-up</h2>
 
-        <div class="project-section">
-            <h3>Tasks</h3>
-            {% for task in project.tasks %}
-            <div class="followup-work">
-                <div class="task-info grow-two">
-                    <p>Task: {{ task.name }}</p>
-                    <p>Description: {{ task.function }}</p>
+    {% if has_followup %}
+        <div id="followup" class="project-section">
+            <h2>Project Follow-up</h2>
 
-                    <div>
-                        <p>
-                            Task
-                            {% if task.periods|length > 1 %}
-                            periods
-                            {% else %}
-                            period
-                            {% endif %}
-                        </p>
+            {% if project.tasks | length > 0 %}
+                <div class="project-section">
+                    <h3>Tasks</h3>
+                    {% for task in project.tasks %}
+                    <div class="followup-work">
+                        <div class="task-info grow-two">
+                            <p>Task: {{ task.name }}</p>
+                            <p>Description: {{ task.function }}</p>
 
-                        {% for period in task.periods %}
-                        <p>
-                            Every {{ period.interval }}
-                            {% if period.interval > 1 %}
-                            {{ period.get_unit() }}s,
-                            {% else %}
-                            {{ period.get_unit() }},
+                            <div>
+                                <p>
+                                    Task
+                                    {% if task.periods|length > 1 %}
+                                    periods
+                                    {% else %}
+                                    period
+                                    {% endif %}
+                                </p>
+
+                                {% for period in task.periods %}
+                                <p>
+                                    Every {{ period.interval }}
+                                    {% if period.interval > 1 %}
+                                    {{ period.get_unit() }}s,
+                                    {% else %}
+                                    {{ period.get_unit() }},
+                                    {% endif %}
+                                    from {{ period.start.strftime('%d-%m-%Y') }}
+                                    {% if period.end %}
+                                    until {{ period.end.strftime('%d-%m-%Y') }}
+                                    {% endif %}
+                                </p>
+                                {% endfor %}
+                            </div>
+
+                            <p>
+                                Last notified:
+                                {% if task.last_notification %}
+                                {{ task.last_notification }}
+                                {% else %}
+                                not yet notified
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="task-person grow-one">
+                            <img class="person-img" src="{{ url_for('static', filename='img/humasol_icon_light.png') }}">
+                            <p>{{ task.subscriber.name }}</p>
+                            <p>{{ task.subscriber.email }}</p>
+                            {% if task.subscriber.phone %}
+                            <p>{{ task.subscriber.phone }}</p>
                             {% endif %}
-                            from {{ period.start.strftime('%d-%m-%Y') }}
-                            {% if period.end %}
-                            until {{ period.end.strftime('%d-%m-%Y') }}
-                            {% endif %}
-                        </p>
-                        {% endfor %}
+                            <p>{{ task.subscriber.organization.name }}</p>
+                        </div>
                     </div>
-
-                    <p>
-                        Last notified:
-                        {% if task.last_notification %}
-                        {{ task.last_notification }}
-                        {% else %}
-                        not yet notified
-                        {% endif %}
-                    </p>
-                </div>
-                <div class="task-person grow-one">
-                    <img class="person-img" src="{{ url_for('static', filename='img/humasol_icon_light.png') }}">
-                    <p>{{ task.subscriber.name }}</p>
-                    <p>{{ task.subscriber.email }}</p>
-                    {% if task.subscriber.phone %}
-                    <p>{{ task.subscriber.phone }}</p>
-                    {% endif %}
-                    <p>{{ task.subscriber.organization.name }}</p>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        <div class="project-section">
-            <h3>Subscriptions</h3>
-            {% for sub in project.subscriptions %}
-            <div class="followup-work">
-                <div class="sub-img">
-                    <img class="person-img" src="{{ url_for('static', filename='img/humasol_icon_light.png') }}">
-                </div>
-
-                <div class="sub-info grow-one">
-                    <p>{{ sub.subscriber.name }}</p>
-                    <p>{{ sub.subscriber.email }}</p>
-                    {% if sub.subscriber.phone %}
-                    <p>{{ task.subscriber.phone }}</p>
-                    {% endif %}
-                    <p>{{ sub.subscriber.organization.name }}</p>
-                </div>
-
-                <div class="sub-info grow-one">
-                    <p>
-                        Subscription
-                        {% if sub.periods|length > 1 %}
-                        periods
-                        {% else %}
-                        period
-                        {% endif %}
-                    </p>
-                    {% for period in sub.periods %}
-                    <p>
-                        Every {{ period.interval }}
-                        {% if period.interval > 1 %}
-                        {{ period.get_unit() }}s,
-                        {% else %}
-                        {{ period.get_unit() }},
-                        {% endif %}
-                        from {{ period.start.strftime('%d-%m-%Y') }}
-                        {% if period.end %}
-                        until {{ period.end.strftime('%d-%m-%Y') }}
-                        {% endif %}
-                    </p>
                     {% endfor %}
-
-                    <p>
-                        Last notified:
-                        {% if sub.last_notification %}
-                        {{ sub.last_notification }}
-                        {% else %}
-                        not yet notified
-                        {% endif %}
-                    </p>
                 </div>
-            </div>
-            {% endfor %}
+            {% endif %}
+
+            {% if project.subscription | length > 0 %}
+                <div class="project-section">
+                    <h3>Subscriptions</h3>
+                    {% for sub in project.subscriptions %}
+                    <div class="followup-work">
+                        <div class="sub-img">
+                            <img class="person-img" src="{{ url_for('static', filename='img/humasol_icon_light.png') }}">
+                        </div>
+
+                        <div class="sub-info grow-one">
+                            <p>{{ sub.subscriber.name }}</p>
+                            <p>{{ sub.subscriber.email }}</p>
+                            {% if sub.subscriber.phone %}
+                            <p>{{ task.subscriber.phone }}</p>
+                            {% endif %}
+                            <p>{{ sub.subscriber.organization.name }}</p>
+                        </div>
+
+                        <div class="sub-info grow-one">
+                            <p>
+                                Subscription
+                                {% if sub.periods|length > 1 %}
+                                periods
+                                {% else %}
+                                period
+                                {% endif %}
+                            </p>
+                            {% for period in sub.periods %}
+                            <p>
+                                Every {{ period.interval }}
+                                {% if period.interval > 1 %}
+                                {{ period.get_unit() }}s,
+                                {% else %}
+                                {{ period.get_unit() }},
+                                {% endif %}
+                                from {{ period.start.strftime('%d-%m-%Y') }}
+                                {% if period.end %}
+                                until {{ period.end.strftime('%d-%m-%Y') }}
+                                {% endif %}
+                            </p>
+                            {% endfor %}
+
+                            <p>
+                                Last notified:
+                                {% if sub.last_notification %}
+                                {{ sub.last_notification }}
+                                {% else %}
+                                not yet notified
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
-    </div>
+    {% endif %}
 </div>

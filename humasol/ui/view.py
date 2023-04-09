@@ -423,7 +423,12 @@ class ProjectGUI(HumasolBlueprint):
             return redirect(url_for(f"gui.{self.NAME}.view_projects"))
 
         return render_template(
-            "project_content.html", project=project, editable=can_edit
+            "project_content.html",
+            project=project,
+            editable=can_edit,
+            has_followup=(
+                len(project.tasks) > 0 or len(project.subscriptions) > 0
+            ),
         )
 
     def get_projects(self) -> HtmlContent:

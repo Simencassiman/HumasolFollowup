@@ -1,22 +1,58 @@
 """Utility functions for the modules in the model package."""
 
 # Python Libraries
-from typing import Any, Callable, Dict, List, TypeVar
+import itertools
+import typing as ty
+
+# Local modules
+from humasol import exceptions
 
 # Generic type variables
-T = TypeVar("T")
-V = TypeVar("V")
+T = ty.TypeVar("T")
+V = ty.TypeVar("V")
+
+
+def check_guards(obj: ty.Any, key: str, value: ty.Any) -> None:
+    """Check all defined guards of the object for the provided key.
+
+    Check if all guards are valid for the given attribute value pair if any are
+    defined for the given object.
+
+    Guards are detected in the form of is/are_legal/valid_{key}.
+    E.g., for an attribute name, the guards could be is_legal_name or
+    is_valid_name. For an attribute names, the plural forms should be used
+    (though this is not enforced).
+
+    Parameters
+    __________
+    obj     -- Object on which to check the guards
+    key     -- Attribute for which to check the guards
+    value   -- Value with which to check the guards
+    """
+    for num, att in itertools.product(("is", "are"), ("legal", "valid")):
+        try:
+            if hasattr(obj, guard := f"{num}_{att}_{key}") and not getattr(
+                obj, guard
+            )(value):
+                raise exceptions.IllegalArgumentException(
+                    f"Illegal value for {key}."
+                )
+        except AttributeError:
+            # In initialization could be that not all variables have been
+            # initialized. This should be foreseen, but to simplify things,
+            # just catch the exception...
+            ...
 
 
 # pylint: disable=too-many-arguments
 def merge_update_list(
-    old: List[T],
-    new: List[Dict[str, Any]],
-    identifiers: List[V],
-    identifier_mapper: Callable[[T], V],
-    merge_mapper: Callable[[T, Dict[str, Any]], T],
-    constructor: Callable[[Dict[str, Any]], T],
-) -> List[T]:
+    old: list[T],
+    new: list[dict[str, ty.Any]],
+    identifiers: list[V],
+    identifier_mapper: ty.Callable[[T], V],
+    merge_mapper: ty.Callable[[T, dict[str, ty.Any]], T],
+    constructor: ty.Callable[[dict[str, ty.Any]], T],
+) -> list[T]:
     """Merge the old and new lists of objects.
 
     Update the old list with the new list of parameters. Remove if not

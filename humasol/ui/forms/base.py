@@ -17,6 +17,15 @@ class IHumasolForm(ABC):
     """Humasol form interface."""
 
     @abstractmethod
+    def from_object(self, obj: ty.Any) -> None:
+        """Fill the form from the object it represents.
+
+        Parameters
+        __________
+        obj     -- Object containing the information to fill in the form
+        """
+
+    @abstractmethod
     def get_data(self) -> dict[str, ty.Any]:
         """Return the data in the form fields.
 
@@ -123,6 +132,9 @@ class ProjectElementWrapper(ty.Generic[T]):
         def classes(self) -> tuple[type[S], ...]:
             """Return the wrapped classes."""
             return tuple(self._elements.values())
+
+        def from_object(self, obj: S) -> None:
+            """Fill in wrapper with object."""
 
         def get_data(self) -> dict[str, ty.Any]:
             """Return the data in the form fields.

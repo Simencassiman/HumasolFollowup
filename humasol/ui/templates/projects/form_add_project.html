@@ -13,7 +13,13 @@
         <h1 class="page-title">Add Project</h1>
     </div>
 
-    <form action="save-project" method="POST" >
+    {% if id %}
+        {% set action = url_for('gui.projects.add_project') + "?id=" + id|string  %}
+    {% else %}
+        {% set action = url_for('gui.projects.add_project') %}
+    {% endif %}
+
+    <form action="{{ action }}" method="POST" >
         {{ form.hidden_tag() }}
 
         <div id="project-general" class="form-section">

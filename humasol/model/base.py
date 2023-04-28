@@ -1,12 +1,16 @@
 """Base definitions for a model."""
 
 # Python Libraries
-import itertools
+from __future__ import annotations
+
+import abc
+import typing as ty
 
 from sqlalchemy.orm import DeclarativeMeta
 
 # Local modules
-from humasol import exceptions
+from humasol.model import utils
+from humasol.model.snapshot import Snapshot
 from humasol.repository import db
 
 BaseModel: DeclarativeMeta = db.Model
@@ -14,6 +18,15 @@ BaseModel: DeclarativeMeta = db.Model
 
 class ProjectElement:
     """Interface for any element related to a project."""
+
+    @abc.abstractmethod
+    @Snapshot.protect
+    def update(self, params: dict[str, ty.Any]) -> ProjectElement:
+        """Update element parameters.
+
+        Function in concrete class should be decorated with @Snapshot.protect
+        to roll back if any values were incorrect.
+        """
 
     def __setattr__(self, key, value) -> None:
         """Set the attribute of this object.
@@ -27,18 +40,5 @@ class ProjectElement:
         key: name of the attribute
         value: new value for the attribute
         """
-        for num, att in itertools.product(("is", "are"), ("legal", "valid")):
-            try:
-                if hasattr(
-                    self, guard := f"{num}_{att}_{key}"
-                ) and not getattr(self, guard)(value):
-                    raise exceptions.IllegalArgumentException(
-                        f"Illegal value for {key}."
-                    )
-            except AttributeError:
-                # In initialization could be that not all variables have been
-                # initialized. This should be foreseen, but to simplify things,
-                # just catch the exception...
-                ...
-
+        utils.check_guards(self, key, value)
         super().__setattr__(key, value)

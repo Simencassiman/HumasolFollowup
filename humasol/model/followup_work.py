@@ -17,9 +17,9 @@ from __future__ import annotations
 
 import datetime
 import re
+import typing as ty
 from datetime import date
 from enum import Enum, unique
-from typing import Any, Dict, List, Optional, Type, TypeVar
 
 from dateutil.relativedelta import relativedelta
 from flask_sqlalchemy import SQLAlchemy
@@ -29,6 +29,7 @@ from sqlalchemy.ext.declarative import declared_attr
 # Local modules
 from humasol import exceptions, model
 from humasol.model import person, utils
+from humasol.model.snapshot import Snapshot
 from humasol.repository import db
 
 
@@ -48,8 +49,8 @@ class FollowupJob(model.BaseModel, model.ProjectElement):
     last_notification -- Date on which the subscriber was last notified
     """
 
-    T = TypeVar("T")
-    V = TypeVar("V")
+    T = ty.TypeVar("T")
+    V = ty.TypeVar("V")
 
     # Definitions for the database tables
 
@@ -92,8 +93,8 @@ class FollowupJob(model.BaseModel, model.ProjectElement):
     def __init__(
         self,
         subscriber: person.Person,
-        periods: List[Period],
-        last_notification: Optional[date] = None,
+        periods: list[Period],
+        last_notification: ty.Optional[date] = None,
     ) -> None:
         """Instantiate this object.
 
@@ -134,7 +135,7 @@ class FollowupJob(model.BaseModel, model.ProjectElement):
         self.last_notification = last_notification
 
     @staticmethod
-    def are_legal_periods(periods: List[Period]) -> bool:
+    def are_legal_periods(periods: list[Period]) -> bool:
         """Check if the provided periods are valid periods."""
         if not isinstance(periods, list):
             return False
@@ -165,7 +166,9 @@ class FollowupJob(model.BaseModel, model.ProjectElement):
         return True
 
     @staticmethod
-    def is_legal_last_notification(last_notification: Optional[date]) -> bool:
+    def is_legal_last_notification(
+        last_notification: ty.Optional[date],
+    ) -> bool:
         """Check whether the provided date is valid for a last notification."""
         if last_notification is None:
             return True
@@ -179,27 +182,6 @@ class FollowupJob(model.BaseModel, model.ProjectElement):
     def is_legal_subscriber(sub: person.Person) -> bool:
         """Check if the provided subscriber is a valid subscriber."""
         return isinstance(sub, person.Person)
-
-    def __setattr__(self, key, value) -> None:
-        """Set value of a given attribute.
-
-        Check that attribute is editable first.
-        """
-        if key in {"periods"}:
-            raise exceptions.IllegalOperationException(
-                f"Attribute {key} is not editable."
-            )
-        super().__setattr__(key, value)
-
-    def add_period(self, period: Period) -> None:
-        """Add the provided period to the job's periods list."""
-        if not self.is_valid_period(period):
-            raise exceptions.IllegalArgumentException(
-                "Invalid period was provided. Make sure it doesn't "
-                "overlap with existing periods"
-            )
-
-        self.periods += [period]
 
     def clean_periods(self) -> None:
         """Remove any passed periods."""
@@ -218,15 +200,6 @@ class FollowupJob(model.BaseModel, model.ProjectElement):
         """
         return self.are_legal_periods(list(self.periods) + [period])
 
-    def remove_period(self, period: Period) -> None:
-        """Remove the given period from this job's periods list."""
-        if period in self.periods:
-            if len(self.periods) == 1:
-                raise exceptions.IllegalStateException(
-                    "Invalid operation. Cannot remove only period"
-                )
-            self.periods.remove(period)
-
     def should_notify(self) -> bool:
         """Indicate whether the subscriber should be notified.
 
@@ -244,7 +217,8 @@ class FollowupJob(model.BaseModel, model.ProjectElement):
             )
         )
 
-    def update(self, **params: Any) -> FollowupJob:
+    @Snapshot.protect
+    def update(self, params: dict[str, ty.Any]) -> FollowupJob:
         """Update this instance with the provided new parameters.
 
         Valid parameters are those passed to the __init__ method.
@@ -254,13 +228,13 @@ class FollowupJob(model.BaseModel, model.ProjectElement):
         Return reference to self.
         """
         if "last_notification" in params:
-            self.set_last_notification(params["last_notification"])
+            self.last_notification = params["last_notification"]
 
         if "subscriber" in params:
             self.subscriber.update(**params["subscriber"])
 
         if "periods" in params:
-            utils.merge_update_list(
+            self.periods = utils.merge_update_list(
                 self.periods,
                 params["periods"],
                 list(map(lambda d: d["start"], params["periods"])),
@@ -293,18 +267,6 @@ class Subscription(FollowupJob):
     __mapper_args__ = {"polymorphic_identity": "subscription"}
 
     # End database definitions
-
-    def __init__(
-        self,
-        subscriber: person.Person,
-        periods: List[Period],
-        last_notification: date = None,
-    ) -> None:
-        """Instantiate object of this class.
-
-        For arguments see FollowupWork.__init__.
-        """
-        super().__init__(subscriber, periods, last_notification)
 
     def __repr__(self) -> str:
         """Provide a string representation for this instance."""
@@ -341,7 +303,7 @@ class Task(FollowupJob):
     def __init__(
         self,
         subscriber: person.Person,
-        periods: List[Period],
+        periods: list[Period],
         name: str,
         function: str,
         last_notification: date = None,
@@ -374,6 +336,16 @@ class Task(FollowupJob):
 
     # pylint: enable=too-many-arguments
 
+    def __repr__(self) -> str:
+        """Provide a string representation for this instance."""
+        return (
+            f"Task("
+            f"{super().__repr__()}, "
+            f"name={self.name}, "
+            f"function={self.function}"
+            f")"
+        )
+
     @staticmethod
     def is_legal_function(function: str) -> bool:
         """Check whether the provided function contains valid characters."""
@@ -390,43 +362,21 @@ class Task(FollowupJob):
 
         return re.fullmatch(r"^[A-Z][A-Z\s]*", name.upper()) is not None
 
-    def update(self, **params: Any) -> FollowupJob:
+    @Snapshot.protect
+    def update(self, params: dict[str, ty.Any]) -> Task:
         """Update this instance with the provided new parameters.
 
         Valid parameters are those passed to the __init__ method.
         """
-        if "name" in params and not self.is_legal_name(params["name"]):
-            raise ValueError(
-                "Argument 'name' should be a string containing only "
-                "letters (at least one) and white spaces"
-            )
-        if "function" in params and not self.is_legal_function(
-            params["function"]
-        ):
-            raise ValueError(
-                "Argument 'function' should only contain letters "
-                "(at least one), white spaces, commas or periods"
-            )
-
-        super().update(**params)
+        super().update(params)
 
         if "name" in params:
-            self.set_name(params["name"])
+            self.name = params["name"]
 
         if "function" in params:
-            self.set_function(params["function"])
+            self.function = params["function"]
 
         return self
-
-    def __repr__(self) -> str:
-        """Provide a string representation for this instance."""
-        return (
-            f"Task("
-            f"{super().__repr__()}, "
-            f"name={self.name}, "
-            f"function={self.function}"
-            f")"
-        )
 
 
 class Period(model.BaseModel, model.ProjectElement):
@@ -500,7 +450,7 @@ class Period(model.BaseModel, model.ProjectElement):
         unit: TimeUnit,
         *,
         start: date,
-        end: Optional[date] = None,
+        end: ty.Optional[date] = None,
     ) -> None:
         """Instantiate object of this class.
 
@@ -545,8 +495,18 @@ class Period(model.BaseModel, model.ProjectElement):
         self.start = start
         self.end = end
 
+    def __repr__(self) -> str:
+        """Provide a string representation for this instance."""
+        return (
+            f"Period("
+            f"period={self.interval}, "
+            f"unit={repr(self.unit)}, "
+            f"start={repr(self.start)}, "
+            f"end={repr(self.end)})"
+        )
+
     @staticmethod
-    def are_legal_dates(start: date, end: Optional[date]) -> bool:
+    def are_legal_dates(start: date, end: ty.Optional[date]) -> bool:
         """Check whether the combination of dates is legal."""
         return (
             Period.is_legal_start(start)
@@ -555,7 +515,7 @@ class Period(model.BaseModel, model.ProjectElement):
         )
 
     @staticmethod
-    def is_legal_end(end: Optional[date]) -> bool:
+    def is_legal_end(end: ty.Optional[date]) -> bool:
         """Check whether the provided end date is valid for a period."""
         return end is None or isinstance(end, date)
 
@@ -615,7 +575,7 @@ class Period(model.BaseModel, model.ProjectElement):
         before_end = self.end is None or day <= self.end
         return after_start and before_end
 
-    def is_valid_end(self, end: Optional[date]) -> bool:
+    def is_valid_end(self, end: ty.Optional[date]) -> bool:
         """Check if the provided end date is legal for this instance."""
         if not self.is_legal_end(end):
             return False
@@ -671,7 +631,8 @@ class Period(model.BaseModel, model.ProjectElement):
 
         return False
 
-    def update(self, **params: Any) -> Period:
+    @Snapshot.protect
+    def update(self, params: dict[str, ty.Any]) -> Period:
         """Update this instance with the provided new parameters.
 
         Valid parameters are those passed to the __init__ method.
@@ -680,46 +641,24 @@ class Period(model.BaseModel, model.ProjectElement):
         _______
         Return reference to self.
         """
-        # TODO: Complete error messages
-        if "period" in params and not self.is_legal_interval(params["period"]):
-            raise ValueError
-        if "unit" in params and not self.is_legal_unit(params["unit"]):
-            raise ValueError
-        if "start_date" in params and not self.is_legal_start(
-            params["start_date"]
-        ):
-            raise ValueError
-        if "end_date" in params and (
-            not self.is_legal_end(params["end_date"]) or self.end is not None
-        ):
-            raise ValueError
-
-        if "period" in params:
-            self.set_period(params["period"])
+        if "interval" in params:
+            self.interval = params["interval"]
 
         if "unit" in params:
-            self.set_unit(params["unit"])
+            self.unit = params["unit"]
 
         if "start_date" in params:
-            self.set_start_date(params["start_date"])
+            self.start = params["start_date"]
 
         if "end_date" in params:
-            self.set_end_date(params["end_date"])
+            self.end = params["end_date"]
 
         return self
 
-    def __repr__(self) -> str:
-        """Provide a string representation for this instance."""
-        return (
-            f"Period("
-            f"period={self.interval}, "
-            f"unit={repr(self.unit)}, "
-            f"start={repr(self.start)}, "
-            f"end={repr(self.end)})"
-        )
 
-
-def filter_dict(params: dict[str, Any], keys: list[str]) -> dict[str, Any]:
+def filter_dict(
+    params: dict[str, ty.Any], keys: list[str]
+) -> dict[str, ty.Any]:
     """Filter the dictionary based on the provided keys.
 
     Parameters
@@ -734,10 +673,12 @@ def filter_dict(params: dict[str, Any], keys: list[str]) -> dict[str, Any]:
     return {key: params["subscriber"][key] for key in keys}
 
 
-T = TypeVar("T", bound=FollowupJob)
+T = ty.TypeVar("T", bound=FollowupJob)
 
 
-def construct_followup_work(constructor: Type[T], params: Dict[str, Any]) -> T:
+def construct_followup_work(
+    constructor: type[T], params: dict[str, ty.Any]
+) -> T:
     """Construct the appropriate follow-up work.
 
     Construct the correct class of followup work based on a factory method

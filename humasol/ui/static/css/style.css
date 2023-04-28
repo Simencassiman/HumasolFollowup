@@ -24,7 +24,7 @@ File organization:
 *************************/
 
 :root {
-    --humasol-orange: #e49730;
+    --humasol-orange: #f19104;
     --humasol-brown: #863c14;
     --humasol-yellow: #00000000;
     --humasol-meat: #eca47c;
@@ -168,18 +168,18 @@ a:hover {
 }
 
 .loader-path__outer {
-    stroke:#ff8200;
+    stroke:var(--humasol-orange);
     --duration: 1.5s;
 }
 
 .loader-path__middle {
-    stroke:#eca47c;
+    stroke:var(--humasol-meat);
     --duration: 1.25s;
     --orientation: reverse;
 }
 
 .loader-path__inner {
-    stroke:#863c14;
+    stroke:var(--humasol-brown);
 }
 
 
@@ -389,16 +389,8 @@ a.nav {
     margin: 5px;
 }
 
-.sdg-card:hover .circle {
+.sdg-card:hover .sdg-icon {
     transform: scale(1.05) translateY(-5%);
-}
-
-.circle {
-    margin: 5px;
-    width: 7rem;
-    height: 7rem;
-    border-radius: 50%;
-    transition: transform 200ms;
 }
 
 .sdg-name {
@@ -406,6 +398,30 @@ a.nav {
     padding: 2px;
     color: #fff;
 }
+
+.sdg-icon {
+    margin: 5px;
+    width: 7rem;
+    height: 7rem;
+    border-radius: 50%;
+    pointer-events: none;
+    transition: transform 200ms;
+}
+
+.sdg-circle {
+    fill:none;
+    stroke:var(--humasol-orange);
+    stroke-width:1.05833;
+    stroke-linecap:round;
+    stroke-miterlimit:4;
+    stroke-dasharray:none;
+}
+
+.sdg-drawing {
+    fill:var(--humasol-orange);
+    stroke:none;
+}
+
 
 .person-section {
     align-items: center;

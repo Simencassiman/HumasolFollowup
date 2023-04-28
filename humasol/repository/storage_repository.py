@@ -51,6 +51,20 @@ def _save_project_data_to_file(
         json.dump(data, data_file)
 
 
+def commit() -> None:
+    """Commit changes made to persisted objects."""
+    try:
+        # pylint: disable=no-member
+        db.session.commit()
+        # pylint: enable=no-member
+    except sqlalchemy.exc.IntegrityError as exc:
+        raise exceptions.IntegrityException(str(exc))
+    except sqlalchemy.exc.InvalidRequestError as exc:
+        raise exceptions.InvalidRequestException(str(exc)) from exc
+    except sqlalchemy.exc.SQLAlchemyError as exc:
+        raise exceptions.RepositoryException(str(exc)) from exc
+
+
 def delete_project(project: model.Project) -> None:
     """Delete project from the database.
 

@@ -14,7 +14,7 @@
 
     {% for user in users %}
     <div>
-        <p>{{ user.email }}, {{ user.roles[0].name.name }}</p>
+        <p>{{ user.email }}, {{ user.roles[0].name.content }}</p>
     </div>
     {% endfor %}
     <h2>Register User</h2>

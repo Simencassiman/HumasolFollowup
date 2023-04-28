@@ -31,6 +31,7 @@ from sqlalchemy.ext.declarative import declared_attr
 # Local modules
 # pylint: disable=cyclic-import
 from humasol import exceptions, model
+from humasol.model.snapshot import Snapshot
 
 # pylint: enable=cyclic-import
 from humasol.repository import db
@@ -83,6 +84,7 @@ class ProjectComponent(db.Model, model.ProjectElement):
         return self.__dict__ | {"label": self.LABEL}
 
     @abstractmethod
+    @Snapshot.protect
     def update(self, params: dict[str, ty.Any]) -> ProjectComponent:
         """Update this instance with the provided new parameters."""
 
@@ -147,6 +149,7 @@ class EnergyProjectComponent(ProjectComponent):
         """Check whether this is a legal flag."""
         return isinstance(flag, bool)
 
+    @Snapshot.protect
     def update(self, params: dict[str, ty.Any]) -> EnergyProjectComponent:
         """Update this instance with the provided new parameters.
 
@@ -159,21 +162,9 @@ class EnergyProjectComponent(ProjectComponent):
         _______
         Return reference to self
         """
-        if (
-            power_present := "power" in params
-        ) and not EnergyProjectComponent.is_legal_power(params["power"]):
-            raise ValueError(
-                "Parameter 'power' should be a non-negative float"
-            )
-
-        if (
-            primary_present := "is_primary" in params
-        ) and EnergyProjectComponent.is_legal_is_primary(params["is_primary"]):
-            raise ValueError("Parameter 'is_primary' should be of type bool")
-
-        if power_present:
+        if "power" in params:
             self.power = params["power"]
-        if primary_present:
+        if "is_primary" in params:
             self.is_primary = params["is_primary"]
 
         return self
@@ -227,6 +218,7 @@ class SourceComponent(EnergyProjectComponent):
         """Check whether the provided price is a legal energy cost."""
         return isinstance(price, (float, int)) and price >= 0
 
+    @Snapshot.protect
     def update(self, params: dict[str, ty.Any]) -> SourceComponent:
         """Update this instance with the provided new parameters.
 
@@ -239,16 +231,9 @@ class SourceComponent(EnergyProjectComponent):
         _______
         Return reference to self
         """
-        if (
-            price_present := "price" in params
-        ) and not SourceComponent.is_legal_price(params["price"]):
-            raise ValueError(
-                "Parameter 'price' should be a non-negative float."
-            )
-
         super().update(params)
 
-        if price_present:
+        if "price" in params:
             self.price = params["price"]
 
         return self
@@ -327,6 +312,7 @@ class Grid(SourceComponent):
         """
         return cost is None or isinstance(cost, (float, int))
 
+    @Snapshot.protect
     def update(self, params: dict[str, ty.Any]) -> Grid:
         """Update this instance with the provided new parameters.
 
@@ -339,29 +325,12 @@ class Grid(SourceComponent):
         _______
         Return reference to self
         """
-        if (
-            threshold_present := "blackout_threshold" in params
-        ) and not Grid.is_legal_blackout_threshold(
-            params["blackout_threshold"]
-        ):
-            raise ValueError(
-                "Parameter 'blackout_threshold' should be a non-negative "
-                "float or None"
-            )
-
-        if (
-            injection_present := "injection_price" in params
-        ) and not Grid.is_lega_injection_price(params["injection_price"]):
-            raise ValueError(
-                "Parameter 'injection_price' should be of type float or None"
-            )
-
         super().update(params)
 
-        if threshold_present:
+        if "blackout_threshold" in params:
             self.blackout_threshold = params["blackout_threshold"]
 
-        if injection_present:
+        if "injection_price" in params:
             self.injection_price = params["injection_price"]
 
         return self
@@ -531,6 +500,7 @@ class Generator(SourceComponent):
             and self.overheating_time is not None
         )
 
+    @Snapshot.protect
     def update(self, params: dict[str, ty.Any]) -> Generator:
         """Update this instance with the provided new parameters.
 
@@ -543,51 +513,26 @@ class Generator(SourceComponent):
         _______
         Return reference to self
         """
-        # Check input first
-        if (
-            efficiency_present := "efficiency" in params
-        ) and not Generator.is_legal_efficiency(params["efficiency"]):
-            pass
-
-        if (
-            fuel_present := "fuel_cost" in params
-        ) and not Generator.is_legal_fuel_cost(params["fuel_cost"]):
-            pass
-
-        if (
-            overheats_present := "overheats" in params
-        ) and not Generator.is_legal_overheats(params["overheats"]):
-            pass
-
-        if (
-            overheating_present := "overheating_time" in params
-        ) and not Generator.is_legal_overheating_time(
-            params["overheating_time"]
-        ):
-            pass
-
-        if (
-            cooldown_present := "cooldown_time" in params
-        ) and not Generator.is_legal_cooldown_time(params["cooldown_time"]):
-            pass
-
-        # Assign input
         super().update(params)
 
-        if efficiency_present:
+        if "efficiency" in params:
             self.efficiency = params["efficiency"]
 
-        if fuel_present:
+        if "fuel_cost" in params:
             self.fuel_cost = params["fuel_cost"]
 
-        if overheats_present:
-            self.overheats = params["overheats"]
-
-        if overheating_present:
+        if "overheating_time" in params:
             self.overheating_time = params["overheating_time"]
 
-        if cooldown_present:
+        if "cooldown_time" in params:
             self.cooldown_time = params["cooldown_time"]
+
+        if "overheats" in params:
+            self.overheats = params["overheats"]
+
+            if not self.overheats:
+                self.cooldown_time = None
+                self.overheating_time = None
 
         return self
 
@@ -640,6 +585,7 @@ class StorageComponent(EnergyProjectComponent):
         """Check whether the provided amount is a legal capacity."""
         return isinstance(capacity, (float, int)) and capacity >= 0
 
+    @Snapshot.protect
     def update(self, params: dict[str, ty.Any]) -> StorageComponent:
         """Update this instance with the provided new parameters.
 
@@ -652,16 +598,9 @@ class StorageComponent(EnergyProjectComponent):
         _______
         Return reference to self
         """
-        if (
-            capacity_present := "capacity" in params
-        ) and not StorageComponent.is_legal_capacity(params["capacity"]):
-            raise ValueError(
-                "Parameter 'capacity' should be a non-negative float"
-            )
-
         super().update(params)
 
-        if capacity_present:
+        if "capacity" in params:
             self.capacity = params["capacity"]
 
         return self
@@ -842,6 +781,7 @@ class Battery(StorageComponent):
             and soc <= self.max_soc
         )
 
+    @Snapshot.protect
     def update(self, params: dict[str, ty.Any]) -> Battery:
         """Update this instance with the provided new parameters.
 
@@ -854,49 +794,14 @@ class Battery(StorageComponent):
         _______
         Return reference to self.
         """
-        if (
-            base_present := "base_soc" in params
-        ) and not Battery.is_legal_base_soc(params["base_soc"]):
-            raise ValueError(
-                "Parameter 'base_soc' should be a float in the range [0,100]"
-            )
+        super().update(params)
 
-        if (
-            min_present := "min_soc" in params
-        ) and not Battery.is_legal_min_soc(params["min_soc"]):
-            raise ValueError(
-                "Parameter 'min_soc' should be a float in the range [0,100]"
-            )
-
-        if (
-            max_present := "max_soc" in params
-        ) and not Battery.is_legal_max_soc(params["max_soc"]):
-            raise ValueError(
-                "Parameter 'max_soc' should be a float in the range [0,100]"
-            )
-
-        if (
-            type_present := "battery_type" in params
-        ) and not Battery.is_legal_battery_type(params["battery_type"]):
-            raise ValueError(
-                "Parameter 'battery_type' should not be None and of "
-                "type BatteryType"
-            )
-
+        base_present = "base_soc" in params
+        min_present = "min_soc" in params
+        max_present = "max_soc" in params
         base_soc = params["base_soc"] if base_present else self.base_soc
         min_soc = params["min_soc"] if min_present else self.min_soc
         max_soc = params["max_soc"] if max_present else self.max_soc
-
-        if max_soc < min_soc:
-            raise ValueError("Parameter 'max_soc' cannot be below 'min_soc'")
-
-        if not min_soc <= base_soc <= max_soc:
-            raise ValueError(
-                "Parameter 'base_soc' should be in the range "
-                "[min_soc, max_soc]"
-            )
-
-        super().update(params)
 
         if base_present or min_present or max_present:
             # Allow to lower minimal state of charge before lowering base
@@ -909,16 +814,20 @@ class Battery(StorageComponent):
             # Consider: change from (50, 20) to (80, 70) is impossible when
             #     always setting minimal state of charge first, the setter
             #     won't allow to go above the base state of charge.
-            if base_soc < self.min_soc:
+            if min_soc < self.min_soc:
                 self.min_soc = min_soc
                 self.base_soc = base_soc
                 self.max_soc = max_soc
+            elif max_soc > self.max_soc:
+                self.max_soc = max_soc
+                self.base_soc = base_soc
+                self.min_soc = min_soc
             else:
-                self.max_soc = max_soc
                 self.base_soc = base_soc
                 self.min_soc = min_soc
+                self.max_soc = max_soc
 
-        if type_present:
+        if "battery_type" in params:
             self.battery_type = params["battery_type"]
 
         return self
@@ -967,6 +876,7 @@ class ConsumptionComponent(EnergyProjectComponent):
         """Check whether the provided flag is a legal flag."""
         return isinstance(flag, bool)
 
+    @Snapshot.protect
     def update(self, params: dict[str, ty.Any]) -> ConsumptionComponent:
         """Update this instance with the provided new parameters.
 
@@ -979,16 +889,9 @@ class ConsumptionComponent(EnergyProjectComponent):
         _______
         Return reference to self.
         """
-        if (
-            critical_present := "is_critical" in params
-        ) and not ConsumptionComponent.is_legal_is_critical(
-            params["is_critical"]
-        ):
-            pass
-
         super().update(params)
 
-        if critical_present:
+        if "is_critical" in params:
             self.is_critical = params["is_critical"]
 
         return self

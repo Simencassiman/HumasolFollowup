@@ -68,6 +68,7 @@ class HumasolBlueprint(Blueprint):
         """
         super().__init__(
             name,
+            __name__,
             *args,
             template_folder=(
                 template_folder
@@ -84,7 +85,6 @@ class HumasolBlueprint(Blueprint):
         """Bind route endpoints of the GUI."""
 
 
-# pylint: disable=too-many-public-methods
 class GUI(HumasolBlueprint):
     """Class containing the GUI functionality related to projects."""
 
@@ -104,7 +104,6 @@ class GUI(HumasolBlueprint):
         super().__init__(
             "gui",
             app,
-            __name__,
             template_folder=self.TEMPLATES_FOLDER,
             **kwargs,
         )
@@ -162,9 +161,6 @@ class GUI(HumasolBlueprint):
         return redirect(url_for("gui.projects.view_projects"))
 
 
-# pylint: enable=too-many-public-methods
-
-
 class DashboardGUI(HumasolBlueprint):
     """User interface for dashboard endpoints."""
 
@@ -175,9 +171,7 @@ class DashboardGUI(HumasolBlueprint):
 
     def __init__(self, app: HumasolApp, **kwargs: ty.Any) -> None:
         """Initialize dashboard blueprint."""
-        super().__init__(
-            self.NAME, app, __name__, template_folder=self.NAME, **kwargs
-        )
+        super().__init__(self.NAME, app, template_folder=self.NAME, **kwargs)
 
     def _bind_routes(self) -> None:
         """Bind the URL routes to the interface functions."""
@@ -254,9 +248,7 @@ class ProjectGUI(HumasolBlueprint):
 
     def __init__(self, app: HumasolApp, **kwargs: ty.Any) -> None:
         """Initialize projects blueprint."""
-        super().__init__(
-            self.NAME, app, __name__, template_folder=self.NAME, **kwargs
-        )
+        super().__init__(self.NAME, app, template_folder=self.NAME, **kwargs)
 
         self._forms = {
             n: {f.__name__: f() for f in fs}
@@ -286,8 +278,13 @@ class ProjectGUI(HumasolBlueprint):
             "/add-project", "view_add_project", self.view_add_project
         )
         self.add_url_rule(
+            "/edit-project", "view_edit_project", self.view_edit_project
+        )
+
+        self.add_url_rule(
             "/save-project", "add_project", self.add_project, methods=["POST"]
         )
+
         self.add_url_rule(
             "/remove-project",
             "remove_project",
@@ -318,6 +315,10 @@ class ProjectGUI(HumasolBlueprint):
         __________
         form    -- Completed project form
         """
+        if p_id := request.args.get("id", None):
+            # The project is being edited
+            return self.edit_project(p_id)
+
         form = forms.ProjectForm(request.form)
 
         # TODO: improve flash messages
@@ -358,14 +359,37 @@ class ProjectGUI(HumasolBlueprint):
         """
 
     @roles_accepted(*ROLES_ADD_PROJECT)
-    def edit_project(self, project_id: int, form: forms.ProjectForm) -> None:
+    def edit_project(self, p_id: int) -> Response:
         """Update the referenced project with the provided input.
 
         Parameters
         __________
         project_id  -- Identifier of the project to update
-        form        -- New inputs with which to update the project
+        form        -- New inputs with which to update the project.
+                        As a requests argument
         """
+        form = forms.ProjectForm(request.form)
+
+        # TODO: improve flash messages
+        if form.validate_on_submit():
+            try:
+
+                self.app.edit_project(int(p_id), form.get_data())
+                self.app.get_session()["id"] = p_id
+
+                return redirect(url_for(f"gui.{self.NAME}.view_project"))
+
+            except exceptions.FormError as exc:
+                flash(str(exc))
+
+        else:
+            for key, err in form.errors.items():
+                flash(f"{key}: {err}")
+
+        self.app.get_session()["id"] = p_id
+        self.app.get_session()["project_form"] = request.form
+
+        return redirect(url_for(f"gui.{self.NAME}.view_edit_project"))
 
     @roles_accepted(*ROLES_ADD_PROJECT)
     def get_api_token(
@@ -506,13 +530,14 @@ class ProjectGUI(HumasolBlueprint):
         return render_template(
             "form_add_project.html",
             form=form,
+            id=None,
             show_followup=False,
             _forms=self._forms,
             unwrap=forms.utils.unwrap,
         )
 
     @roles_accepted(*ROLES_ADD_PROJECT)
-    def view_edit_project(self, project_id: int) -> HtmlPage:
+    def view_edit_project(self) -> HtmlPage:
         """Retrieve the requested project in editable form.
 
         Retrieve a filled out form with the project information that can be
@@ -527,6 +552,36 @@ class ProjectGUI(HumasolBlueprint):
         Return an empty HTML edit page that will fetch the data while
         loading.
         """
+        if not (
+            p_id := (
+                request.args.get("id", None)
+                or self.app.get_session().get("id", None)
+            )
+        ):
+            # TODO: raise exception instead
+            print("Redirecting")
+            return redirect(url_for(f"gui.{self.NAME}.view_projects"))
+
+        project = self.app.get_project(int(p_id), editable=True)
+        has_followup = (
+            project.tasks or project.subscriptions or project.data_source
+        )
+
+        if form_data := self.app.get_session().get("project_form", None):
+            self.app.get_session().pop("project_form")
+            form = forms.ProjectForm(MultiDict(form_data))
+        else:
+            form = forms.ProjectForm()
+            form.from_object(project)
+
+        return render_template(
+            "form_add_project.html",
+            form=form,
+            id=project.id,
+            show_followup=has_followup,
+            _forms=self._forms,
+            unwrap=forms.utils.unwrap,
+        )
 
     @roles_accepted(*ROLES_VIEW_PROJECT)
     def view_project(self) -> HtmlPage | Response:
@@ -588,9 +643,7 @@ class SecurityGUI(HumasolBlueprint):
 
     def __init__(self, app: HumasolApp, **kwargs: ty.Any) -> None:
         """Initialize security blueprint."""
-        super().__init__(
-            self.NAME, app, __name__, template_folder=self.NAME, **kwargs
-        )
+        super().__init__(self.NAME, app, template_folder=self.NAME, **kwargs)
 
     def _bind_routes(self) -> None:
         """Bind the URL routes to the interface functions."""

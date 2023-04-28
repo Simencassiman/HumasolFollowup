@@ -19,12 +19,13 @@ DataSource      -- Class containing all the information to access a project's
 from __future__ import annotations
 
 import re
+import typing as ty
 from enum import Enum
-from typing import Any, Optional, Union
 
 # Local modules
 import humasol
 from humasol import exceptions, model
+from humasol.model.snapshot import Snapshot
 from humasol.repository import db
 
 
@@ -71,8 +72,8 @@ class Address(model.BaseModel, model.ProjectElement):
         self,
         place: str,
         country: str,
-        street: Optional[str] = None,
-        number: Optional[int] = None,
+        street: ty.Optional[str] = None,
+        number: ty.Optional[int] = None,
     ) -> None:
         """Instantiate an address object.
 
@@ -131,7 +132,7 @@ class Address(model.BaseModel, model.ProjectElement):
         )
 
     @staticmethod
-    def is_legal_number(number: Optional[int]) -> bool:
+    def is_legal_number(number: ty.Optional[int]) -> bool:
         """Check whether the provided number is a legal street number."""
         return number is None or (isinstance(number, int) and number > 0)
 
@@ -145,7 +146,7 @@ class Address(model.BaseModel, model.ProjectElement):
         return re.fullmatch(r"[A-Z]([A-Z\s,.]-?)*", place.upper()) is not None
 
     @staticmethod
-    def is_legal_street(street: Optional[str]) -> bool:
+    def is_legal_street(street: ty.Optional[str]) -> bool:
         """Check whether the provided street is a legal street name."""
         return street is None or (
             isinstance(street, str)
@@ -153,7 +154,8 @@ class Address(model.BaseModel, model.ProjectElement):
             is not None
         )
 
-    def update(self, params: dict[str, Any]) -> Address:
+    @Snapshot.protect
+    def update(self, params: dict[str, ty.Any]) -> Address:
         """Update this instance with the provided new parameters.
 
         Valid parameters are those passed to the __init__ method.
@@ -162,61 +164,19 @@ class Address(model.BaseModel, model.ProjectElement):
         _______
         Return reference to self.
         """
-        if street_present := "street" in params:
-            if not Address.is_legal_street(params["street"]):
-                raise ValueError(
-                    "Parameter 'street' should be of type str or None."
-                    " It should contain only letters (at least one), spaces, "
-                    "hyphens, commas and periods"
-                )
-
-            if (
-                not params["street"]
-                and "number" in params
-                and params["number"]
-            ):
-                raise ValueError(
-                    "Cannot have a street number without a street"
-                )
-
-        if (
-            number_present := "number" in params
-        ) and not Address.is_legal_number(params["number"]):
-            raise ValueError(
-                "Parameter 'number' should be a positive integer or None"
-            )
-
-        if (place_present := "place" in params) and not Address.is_legal_place(
-            params["place"]
-        ):
-            raise ValueError(
-                "Parameter 'place' should not be none and of type str. It "
-                "should only contain letters (at least one), spaces, hyphens,"
-                "commas and periods"
-            )
-
-        if (
-            country_present := "country" in params
-        ) and not Address.is_legal_country(params["country"]):
-            raise ValueError(
-                "Parameter 'country' should not be None and of type str. It "
-                "should only contain letters (at least one), space, hyphens,"
-                "commas and periods"
-            )
-
-        if street_present:
+        if "street" in params:
             self.street = params["street"]
 
-        if number_present:
+        if "number" in params:
             self.number = params["number"]
 
         if self.street is None:
             self.number = None
 
-        if place_present:
+        if "place" in params:
             self.place = params["place"]
 
-        if country_present:
+        if "country" in params:
             self.country = params["country"]
 
         return self
@@ -275,7 +235,8 @@ class Coordinates(model.BaseModel, model.ProjectElement):
         """Check whether the provided coordinate is a legal longitude."""
         return isinstance(longitude, (float, int)) and -180 <= longitude <= 180
 
-    def update(self, params: dict[str, Any]) -> Coordinates:
+    @Snapshot.protect
+    def update(self, params: dict[str, ty.Any]) -> Coordinates:
         """Update this instance with the provided new parameters.
 
         Valid parameters are those passed to the __init__ method.
@@ -284,25 +245,9 @@ class Coordinates(model.BaseModel, model.ProjectElement):
         _______
         Return reference to self.
         """
-        if (
-            latitude_present := "latitude" in params
-        ) and not Coordinates.is_legal_latitude(params["latitude"]):
-            raise ValueError(
-                "Parameter 'latitude' should not be None and of type "
-                "float. It should be in the range from -90º to 90º"
-            )
-
-        if (
-            longitude_present := "longitude" in params
-        ) and not Coordinates.is_legal_longitude(params["longitude"]):
-            raise ValueError(
-                "Parameter 'longitude' should not be none and of type "
-                "float. It should be in the range from -180º to 180"
-            )
-
-        if latitude_present:
+        if "latitude" in params:
             self.latitude = params["latitude"]
-        if longitude_present:
+        if "longitude" in params:
             self.longitude = params["longitude"]
 
         return self
@@ -357,28 +302,17 @@ class Location(model.BaseModel, model.ProjectElement):
         """Check whether the provided address is a legal location address."""
         return isinstance(address, Address)
 
-    def update(self, **params: Any) -> Location:
+    @Snapshot.protect
+    def update(self, params: dict[str, ty.Any]) -> Location:
         """Update this instance with the provided new parameters.
 
         Provided parameters should match those of the __init__ method.
         """
-        if "street" in params:
-            self.set_street(params["street"])
+        if "address" in params:
+            self.address.update(params["address"])
 
-        if "number" in params:
-            self.set_number(params["number"])
-
-        if "place" in params:
-            self.set_place(params["place"])
-
-        if "country" in params:
-            self.set_country(params["country"])
-
-        if "latitude" in params:
-            self.set_latitude(params["latitude"])
-
-        if "longitude" in params:
-            self.set_longitude(params["longitude"])
+        if "coordinates" in params:
+            self.coordinates.update(params["coordinates"])
 
         return self
 
@@ -435,7 +369,7 @@ class SDG(Enum):
     # pylint: enable=no-member
 
     @property
-    def number(self) -> Optional[str]:
+    def number(self) -> ty.Optional[str]:
         """Provide the number of the goal."""
         # if m := re.search(r"[0-9]{1,2}$", self.goal_name):
         #     return m[0]
@@ -546,9 +480,9 @@ class DataSource(model.BaseModel, model.ProjectElement):
         api_manager: str,
         data_manager: str,
         report_manager: str,
-        user: Optional[str] = None,
-        password: Optional[str] = None,
-        token: Optional[str] = None,
+        user: ty.Optional[str] = None,
+        password: ty.Optional[str] = None,
+        token: ty.Optional[str] = None,
     ) -> None:
         """Instantiate data source object.
 
@@ -617,7 +551,7 @@ class DataSource(model.BaseModel, model.ProjectElement):
         )
 
     @staticmethod
-    def is_legal_password(password: Optional[str]) -> bool:
+    def is_legal_password(password: ty.Optional[str]) -> bool:
         """Check whether the password is a legal password string."""
         return password is None or isinstance(password, str)
 
@@ -627,12 +561,12 @@ class DataSource(model.BaseModel, model.ProjectElement):
         return isinstance(source, str) and len(source) > 0
 
     @staticmethod
-    def is_legal_token(token: Optional[str]) -> bool:
+    def is_legal_token(token: ty.Optional[str]) -> bool:
         """Check whether the provided token is a legal token string."""
         return token is None or isinstance(token, str)
 
     @staticmethod
-    def is_legal_user(user: Optional[str]) -> bool:
+    def is_legal_user(user: ty.Optional[str]) -> bool:
         """Check whether the provided user is a legal user string."""
         return user is None or isinstance(user, str)
 
@@ -651,9 +585,9 @@ class DataSource(model.BaseModel, model.ProjectElement):
     def set_managers(
         self,
         *,
-        api_manager: Union[str, None] = None,
-        data_manager: Union[str, None] = None,
-        report_manager: Union[str, None] = None,
+        api_manager: ty.Optional[str] = None,
+        data_manager: ty.Optional[str] = None,
+        report_manager: ty.Optional[str] = None,
     ) -> None:
         """Set the managers for this data source."""
         if api_manager is not None and not self.is_valid_api_manager(
@@ -692,7 +626,7 @@ class DataSource(model.BaseModel, model.ProjectElement):
         if report_manager is not None:
             self.report_manager = report_manager
 
-    def get_credentials(self) -> dict[str, Any]:
+    def get_credentials(self) -> dict[str, ty.Any]:
         """Provide the access and credentials for this data source.
 
         Returns
@@ -703,7 +637,7 @@ class DataSource(model.BaseModel, model.ProjectElement):
         password    -- password
         token       -- token
         """
-        creds: dict[str, Any] = {
+        creds: dict[str, ty.Any] = {
             "source": self.source,
             "user": decrypt(self.user) if self.user is not None else self.user,
             "password": decrypt(self.password)
@@ -716,7 +650,8 @@ class DataSource(model.BaseModel, model.ProjectElement):
 
         return creds
 
-    def update(self, params: dict[str, Any]) -> DataSource:
+    @Snapshot.protect
+    def update(self, params: dict[str, ty.Any]) -> DataSource:
         """Update this instance with the provided new parameters.
 
         Provided parameters should match those of the __init__ method.

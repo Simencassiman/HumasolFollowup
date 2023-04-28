@@ -1,7 +1,7 @@
 <div class="page-header">
     <h1 class="page-title">{{ project.name }}</h1>
     {% if editable %}
-        <!--<a class="nav button button-secondary" href="">Edit</a>-->
+        <a class="nav button button-secondary" href="{{url_for('gui.projects.view_edit_project')}}?id={{ project.id }}">Edit</a>
         <a class="nav button button-secondary" href="{{url_for('gui.projects.remove_project')}}?id={{ project.id }}">Delete</a>
     {% endif %}
 </div>
@@ -32,7 +32,8 @@
                 <a href="{{ sdg.link }}" target="_blank">
                     <!-- <img src="{{ sdg.icon }}"> -->
                     <div class="sdg-card">
-                        <img src="{{  url_for('static', filename=sdg.icon) }}" class="circle">
+                        <!-- <img src="{{  url_for('static', filename=sdg.icon) }}" class="sdg-icon"> -->
+                        <object class="sdg-icon" type="image/svg+xml" data="{{  url_for('static', filename=sdg.icon) }}"></object>
                         <p class="sdg-name">{{ sdg.goal_name }}</p>
                     </div>
                 </a>

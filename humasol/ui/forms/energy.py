@@ -1,8 +1,8 @@
 """Module providing all project forms related to an energy project."""
 
 # Python Libraries
+import typing as ty
 from abc import abstractmethod
-from typing import Any
 
 from wtforms import (
     BooleanField,
@@ -15,6 +15,7 @@ from wtforms import (
 )
 
 # Local Modules
+from humasol import model
 from humasol.model import model_interface
 from humasol.model import model_validation as model_val
 from humasol.ui import forms
@@ -32,7 +33,12 @@ class EnergyProjectComponentForm(forms.ProjectElementForm):
     def LABEL(self) -> str:
         """Provide identifying label of the project component."""
 
-    def get_data(self) -> dict[str, Any]:
+    def from_object(self, obj: ty.Any) -> None:
+        """Fill in energy component from object."""
+        self.power.data = obj.power
+        self.is_primary.data = obj.is_primary
+
+    def get_data(self) -> dict[str, ty.Any]:
         """Return the data in the form fields.
 
         Returns
@@ -62,7 +68,12 @@ class SourceComponentForm(EnergyProjectComponentForm):
     def LABEL(self) -> str:
         """Provide identifying label of the project component."""
 
-    def get_data(self) -> dict[str, Any]:
+    def from_object(self, obj: ty.Any) -> None:
+        """Fill in source component from object."""
+        super().from_object(obj)
+        self.price.data = obj.price
+
+    def get_data(self) -> dict[str, ty.Any]:
         """Return the data in the form fields.
 
         Returns
@@ -86,7 +97,13 @@ class GridForm(SourceComponentForm):
     blackout_threshold = FloatField("Blackout threshold [kW]", default=None)
     injection_price = FloatField("Injection price [€]", default=None)
 
-    def get_data(self) -> dict[str, Any]:
+    def from_object(self, obj: ty.Any) -> None:
+        """Fill in grid from object."""
+        super().from_object(obj)
+        self.blackout_threshold.data = obj.blackout_threshold
+        self.injection_price.data = obj.injection_price
+
+    def get_data(self) -> dict[str, ty.Any]:
         """Return the data in the form fields.
 
         Returns
@@ -133,7 +150,16 @@ class GeneratorForm(SourceComponentForm):
     overheating_time = FloatField("Overheating time", default=0)
     cooldown_time = FloatField("Cool-down time", default=0)
 
-    def get_data(self) -> dict[str, Any]:
+    def from_object(self, obj: ty.Any) -> None:
+        """Fill in generator from object."""
+        super().from_object(obj)
+        self.efficiency.data = obj.efficiency
+        self.fuel_cost.data = obj.fuel_cost
+        self.overheats.data = obj.overheats
+        self.overheating_time.data = obj.overheating_time
+        self.cooldown_time.data = obj.cooldown_time
+
+    def get_data(self) -> dict[str, ty.Any]:
         """Return the data in the form fields.
 
         Returns
@@ -188,7 +214,12 @@ class StorageComponentForm(EnergyProjectComponentForm):
     def LABEL(self) -> str:
         """Provide identifying label of the project component."""
 
-    def get_data(self) -> dict[str, Any]:
+    def from_object(self, obj: ty.Any) -> None:
+        """Fill in storage component from object."""
+        super().from_object(obj)
+        self.capacity.data = obj.capacity
+
+    def get_data(self) -> dict[str, ty.Any]:
         """Return the data in the form fields.
 
         Returns
@@ -226,7 +257,15 @@ class BatteryForm(StorageComponentForm):
         "Maximum State of Charge (%): 80", default=80
     )
 
-    def get_data(self) -> dict[str, Any]:
+    def from_object(self, obj: ty.Any) -> None:
+        """Fill in battery component from object."""
+        super().from_object(obj)
+        self.battery_type.data = obj.battery_type.name
+        self.battery_base_soc.data = obj.base_soc
+        self.battery_min_soc.data = obj.min_soc
+        self.battery_max_soc.data = obj.max_soc
+
+    def get_data(self) -> dict[str, ty.Any]:
         """Return the data in the form fields.
 
         Returns
@@ -282,7 +321,12 @@ class ConsumptionComponentForm(EnergyProjectComponentForm):
 
     is_critical = BooleanField("Is critical load")
 
-    def get_data(self) -> dict[str, Any]:
+    def from_object(self, obj: ty.Any) -> None:
+        """Fill in consumption component from object."""
+        super().from_object(obj)
+        self.is_critical.data = obj.is_critical
+
+    def get_data(self) -> dict[str, ty.Any]:
         """Return the data in the form fields.
 
         Returns
@@ -321,7 +365,20 @@ class EnergyProjectForm(forms.HumasolSubform):
         )
     )
 
-    def get_data(self) -> dict[str, Any]:
+    def from_object(self, obj: ty.Any) -> None:
+        """Fill in energy project specifics from object."""
+        for component in obj.project_components:
+            if isinstance(component, model.SourceComponent):
+                self.sources.append_entry()
+                self.sources[-1].from_object(component)
+            elif isinstance(component, model.StorageComponent):
+                self.storage.append_entry()
+                self.storage[-1].from_object(component)
+            elif isinstance(component, model.ConsumptionComponent):
+                self.loads.append_entry()
+                self.loads[-1].from_object(component)
+
+    def get_data(self) -> dict[str, ty.Any]:
         """Return the data in the form fields.
 
         Returns

@@ -227,7 +227,9 @@ class HumasolApp(Flask):
 
         return project.id if success else -1
 
-    def edit_project(self, parameters: dict[str, ty.Any]) -> None:
+    def edit_project(
+        self, project_id: int, parameters: dict[str, ty.Any]
+    ) -> None:
         """Edit an existing project in the system.
 
         Parameters
@@ -235,6 +237,19 @@ class HumasolApp(Flask):
         parameters  -- Parameters and values to update. Contains the project
                         identifier as 'id'
         """
+        project = model_ops.get_project(project_id)
+        if project is None:
+            raise exceptions.Error404("Project not found")
+
+        if not (
+            self.get_user() == project.creator
+            or set(self.get_user().roles).intersection(
+                {ma.get_role_admin(), ma.get_role_humasol_followup()}
+            )
+        ):
+            raise exceptions.Error404("Unauthorized request.")
+
+        model_ops.edit_project(project, parameters)  # type: ignore
 
     def get_api_token(
         self, username: str, password: str, api_interface: str
@@ -271,7 +286,7 @@ class HumasolApp(Flask):
 
         return self.assistant.get_dashboard(self.get_user())
 
-    def get_project(self, project_id: int) -> model.Project:
+    def get_project(self, project_id: int, editable=False) -> model.Project:
         """Retrieve the project matching the project identifier.
 
         Retrieve the complete project object from storage.
@@ -284,7 +299,17 @@ class HumasolApp(Flask):
         _______
         Return complete project object.
         """
-        return model_ops.get_project(project_id)
+        project = model_ops.get_project(project_id)
+
+        if editable and not (
+            self.get_user() == project.creator
+            or set(self.get_user().roles).intersection(
+                {ma.get_role_admin(), ma.get_role_humasol_followup()}
+            )
+        ):
+            raise exceptions.InvalidRequestException("Insufficient rights")
+
+        return project
 
     def get_projects(self) -> list[model.Project]:
         """Retrieve a list of all projects in the system.
@@ -320,17 +345,9 @@ class HumasolApp(Flask):
         # TODO: Catch any errors
         assert form.user is not None
         remember_me = form.remember.data if "remember" in form else None
-        # response = _security.two_factor_plugins.tf_enter(
-        #     form.user, remember_me, "password"
-        # )
-        # if response:
-        #     return response
-        # two factor not required - login user
         after_this_request(sec_util.view_commit)
         login_user(form.user, remember=remember_me, authn_via=["password"])
 
-        # if _security._want_json(request):
-        #     return base_render_json(form, include_auth_token=True)
         return True
 
     def logout(self) -> bool:

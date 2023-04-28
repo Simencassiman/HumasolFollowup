@@ -29,7 +29,7 @@ SouthernPartner -- Class representing an organisation from a project country
 from __future__ import annotations
 
 import re
-from typing import Any, Optional, Type, TypeVar
+import typing as ty
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import orm
@@ -37,6 +37,7 @@ from sqlalchemy.ext.declarative import declared_attr
 
 # Local modules
 from humasol import exceptions, model
+from humasol.model.snapshot import Snapshot
 from humasol.repository import db
 
 
@@ -86,7 +87,7 @@ class Person(model.BaseModel, model.ProjectElement):
         self,
         name: str,
         email: str,
-        phone: Optional[str],
+        phone: ty.Optional[str],
         organization: Organization,
     ) -> None:
         """Instantiate Person object with provided arguments.
@@ -182,7 +183,7 @@ class Person(model.BaseModel, model.ProjectElement):
         return isinstance(organization, Organization)
 
     @staticmethod
-    def is_legal_phone(phone: Optional[str]) -> bool:
+    def is_legal_phone(phone: ty.Optional[str]) -> bool:
         """Check whether this is a legal phone number.
 
         Check based on the structure and contents, not whether it is actually
@@ -197,7 +198,8 @@ class Person(model.BaseModel, model.ProjectElement):
         regex = r"^((\+|00)[1-9]{1,3}){0,1}[0-9]{9,12}"
         return re.fullmatch(regex, phone) is not None
 
-    def update(self, **params: Any) -> Person:
+    @Snapshot.protect
+    def update(self, params: dict[str, ty.Any]) -> Person:
         """Update this instance with the new parameters.
 
         Valid parameters are those provided to the __init__ method.
@@ -206,22 +208,6 @@ class Person(model.BaseModel, model.ProjectElement):
         _______
         Return reference to self.
         """
-        if "email" not in params or self.email != params["email"]:
-            raise ValueError(
-                "The provided parameters dictionary does not contain "
-                "a matching email"
-            )
-        if "name" in params and not self.is_legal_name(params["name"]):
-            raise ValueError(
-                "Argument 'name' has an illegal value. It should be made "
-                "up of letters"
-            )
-        if "phone" in params and not self.is_legal_phone(params["phone"]):
-            raise ValueError(
-                "Argument 'phone' has an invalid structure. "
-                "Example of a valid "
-            )
-
         if "name" in params:
             self.name = params["name"]
 
@@ -284,7 +270,7 @@ class Student(Person):
         email: str,
         university: str,
         field_of_study: str,
-        phone: Optional[str] = None,
+        phone: ty.Optional[str] = None,
     ) -> None:
         """Instantiate Student object with provided arguments.
 
@@ -332,7 +318,8 @@ class Student(Person):
 
         return re.fullmatch(r"[A-Z.,\s]+", university.upper()) is not None
 
-    def update(self, **params: Any) -> Student:
+    @Snapshot.protect
+    def update(self, params: dict[str, ty.Any]) -> Student:
         """Update this instance with the new parameters.
 
         Valid parameters are those passed to the __init__ method.
@@ -341,23 +328,6 @@ class Student(Person):
         _______
         Return reference to self.
         """
-        if "university" in params and not self.is_legal_university(
-            params["university"]
-        ):
-            raise ValueError(
-                "Argument 'university' has invalid content. "
-                "The string should not be empty and should not contain "
-                "special characters"
-            )
-        if "field_of_study in" in params and not self.is_legal_field_of_study(
-            params["field_of_study"]
-        ):
-            raise ValueError(
-                "Argument 'field_of_study' has invalid content. "
-                "The string should not be empty and should not contain "
-                "special characters"
-            )
-
         super().update(**params)
 
         if "university" in params:
@@ -421,7 +391,11 @@ class Supervisor(Person):
     # End of database definitions #
 
     def __init__(
-        self, name: str, email: str, function: str, phone: Optional[str] = None
+        self,
+        name: str,
+        email: str,
+        function: str,
+        phone: ty.Optional[str] = None,
     ) -> None:
         """Instantiate Student object with provided arguments.
 
@@ -449,7 +423,8 @@ class Supervisor(Person):
 
         return re.match("[A-Z]{2,}", function.upper()) is not None
 
-    def update(self, **params: Any) -> Supervisor:
+    @Snapshot.protect
+    def update(self, params: ty.Any) -> Supervisor:
         """Update this instance with the new parameters.
 
         Valid parameters are those passed to the __init__ method.
@@ -458,15 +433,7 @@ class Supervisor(Person):
         _______
         Return reference to self.
         """
-        if "function" in params and not self.is_legal_function(
-            params["function"]
-        ):
-            raise ValueError(
-                "Argument 'function' has invalid content. There should be at "
-                "least two letters."
-            )
-
-        super().update(**params)
+        super().update(params)
 
         if "function" in params:
             self.function = params["function"]
@@ -528,7 +495,7 @@ class Partner(Person):
         email: str,
         function: str,
         organization: Organization,
-        phone: Optional[str] = None,
+        phone: ty.Optional[str] = None,
     ) -> None:
         """Instantiate Student object with provided arguments.
 
@@ -561,7 +528,28 @@ class Partner(Person):
 
         return re.match("[A-Z]{2,}", function.upper()) is not None
 
-    def update(self, **params: Any) -> Partner:
+    def _construct_organization(
+        self, partner_type: str, **kwargs: ty.Any
+    ) -> Organization:
+        """Update the current organization or create a new one.
+
+        Parameters
+        __________
+        partner_type    -- Label of the type of organization
+        kwargs          -- Parameters for the organization
+        """
+        types: dict[str, type] = {
+            BelgianPartner.LABEL: BelgianPartner,
+            SouthernPartner.LABEL: SouthernPartner,
+        }
+
+        if self.organization.LABEL == partner_type:
+            return self.organization.update(kwargs)
+
+        return types[partner_type](**kwargs)
+
+    @Snapshot.protect
+    def update(self, params: dict[str, ty.Any]) -> Partner:
         """Update this instance with the provided new parameters.
 
         Valid parameters are those passed to the __init__ method.
@@ -570,13 +558,6 @@ class Partner(Person):
         _______
         Return reference to self.
         """
-        if "function" in params and not self.is_legal_function(
-            params["function"]
-        ):
-            raise ValueError(
-                "Argument 'function' has invalid content. There should be at "
-                "least two letters."
-            )
         if "organization" in params:
             if "partner_type" not in params:
                 raise ValueError(
@@ -594,39 +575,15 @@ class Partner(Person):
                     f'Got: {params["partner_type"]}.'
                 )
 
-        super().update(**params)
+        super().update(params)
 
         if "function" in params:
             self.function = params["function"]
 
         if "organization" in params:
-            if params["partner_type"] == BelgianPartner.LABEL:
-                if (
-                    isinstance(self.organization, BelgianPartner)
-                    and params["organization"]["name"]
-                    == self.organization.name
-                ):
-                    self.organization.update(**params["organization"])
-                else:
-                    organization = BelgianPartner(
-                        name=params["organization"]["name"],
-                        logo=params["organization"]["logo"],
-                    )
-                    self.organization = organization
-            else:
-                if (
-                    isinstance(self.organization, SouthernPartner)
-                    and params["organization"]["name"]
-                    == self.organization.name
-                ):
-                    self.organization.update(**params["organization"])
-                else:
-                    organization = SouthernPartner(
-                        name=params["organization"]["name"],
-                        logo=params["organization"]["logo"],
-                        country=params["organization"]["country"],
-                    )
-                    self.organization = organization
+            self.organization = self._construct_organization(
+                **params["organization"]
+            )
 
         return self
 
@@ -716,7 +673,8 @@ class Organization(model.BaseModel, model.ProjectElement):
         # TODO: add whitespaces and Ü type characters
         return re.match(r"[A-Z]+", name.upper()) is not None
 
-    def update(self, **params: Any) -> Organization:
+    @Snapshot.protect
+    def update(self, params: dict[str, ty.Any]) -> Organization:
         """Update this instance with the provided new parameters.
 
         Valid parameters are those passed to the __init__ method.
@@ -725,7 +683,13 @@ class Organization(model.BaseModel, model.ProjectElement):
         _______
         Return reference to self.
         """
-        # TODO: create method to update instance
+        if "name" in params:
+            self.name = params["name"]
+
+        if "logo" in params:
+            self.logo = params["logo"]
+
+        return self
 
     def __repr__(self) -> str:
         """Provide a string representation for this instance."""
@@ -747,18 +711,6 @@ class Humasol(Organization):
         # TODO: add correct logo URI
         super().__init__("Humasol", "logo.png")
 
-    # Disable pylint. Argument is necessary for inheritance
-    # pylint: disable-msg=unused-argument
-    def update(self, **params: Any) -> Humasol:
-        """Update this instance with the provided new parameters.
-
-        A Humasol instance should not need to be changed. Simply don't do
-        anything.
-        """
-        return self
-
-    # pylint: enable-msg=unused-argument
-
     def __repr__(self) -> str:
         """Provide a string representation for Humasol."""
         return "Humasol(" + super().__repr__() + ")"
@@ -773,21 +725,6 @@ class BelgianPartner(Organization):
     __mapper_args__ = {"polymorphic_identity": "belgian_partner"}
 
     # End database definitions #
-
-    def update(self, **params: Any) -> Organization:
-        """Update instance with provided new parameters."""
-        # TODO: call super when it is implemented
-        if "name" in params and not self.is_legal_name(params["name"]):
-            raise ValueError("Illegal name for BelgianPartner update")
-        if "logo" in params and not self.is_legal_logo(params["logo"]):
-            raise ValueError("Illegal logo path for BelgianPartner update")
-
-        if "name" in params:
-            self.set_name(params["name"])
-        if "logo" in params:
-            self.set_logo(params["logo"])
-
-        return self
 
     def __repr__(self) -> str:
         """Provide string representation for this organisation."""
@@ -834,7 +771,8 @@ class SouthernPartner(Organization):
             and re.fullmatch(r"^[A-Z][A-Z\s.,]*", country.upper()) is not None
         )
 
-    def update(self, **params: Any) -> Organization:
+    @Snapshot.protect
+    def update(self, params: dict[str, ty.Any]) -> Organization:
         """Update this instance with the provided new parameters.
 
         Valid parameters are those passed to the __init__ method.
@@ -843,20 +781,8 @@ class SouthernPartner(Organization):
         _______
         Return reference to self.
         """
-        # TODO: call super when it is implemented
-        if "name" in params and not self.is_legal_name(params["name"]):
-            raise ValueError("Illegal name for SouthernPartner update")
-        if "logo" in params and not self.is_legal_logo(params["logo"]):
-            raise ValueError("Illegal logo path for SouthernPartner update")
-        if "country" in params and not self.is_legal_country(
-            params["country"]
-        ):
-            raise ValueError("Illegal country name for SouthernPartner update")
+        super().update(params)
 
-        if "name" in params:
-            self.set_name(params["name"])
-        if "logo" in params:
-            self.set_logo(params["logo"])
         if "country" in params:
             self.set_country(params["country"])
 
@@ -872,10 +798,10 @@ class SouthernPartner(Organization):
         )
 
 
-T = TypeVar("T", bound=Person)
+T = ty.TypeVar("T", bound=Person)
 
 
-def construct_person(constructor: Type[T], params: dict[str, Any]) -> T:
+def construct_person(constructor: ty.Type[T], params: dict[str, ty.Any]) -> T:
     """Construct a person object.
 
     Constructs an object subclassing Person with the provided parameters. Do
@@ -911,7 +837,7 @@ def construct_person(constructor: Type[T], params: dict[str, Any]) -> T:
     return constructor(**params)
 
 
-def get_constructor_from_type(person_type: str) -> Type[Person]:
+def get_constructor_from_type(person_type: str) -> ty.Type[Person]:
     """Return class constructor associated with the given person_type label.
 
     Provides the constructor callable for a subclass of person.

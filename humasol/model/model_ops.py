@@ -41,19 +41,19 @@ def _get_unique_attributes(
 
 
 def _merge_on_uniqueness(new_objs: list[model.ProjectElement]) -> list[str]:
-    type(new_objs[0])
+    cls = type(new_objs[0])
 
-    # objs = [
-    #     repo.get_object_by_attributes(cls, obj)
-    #     for obj in _get_unique_attributes(new_objs)
-    # ]
+    objs = [
+        repo.get_object_by_attributes(cls, obj)  # type: ignore
+        for obj in _get_unique_attributes(new_objs)
+    ]
 
     problem_elements = list[str]()
-    # for i, (new, old) in enumerate(zip(new_objs, objs)):
-    #     if len(old) == 1:
-    #         new.update(old[0])
-    #     elif len(new) > 1:
-    #         problem_elements.append(f"{type(new).__name__} {i + 1}")
+    for i, (new, old) in enumerate(zip(new_objs, objs)):
+        if len(old) == 1:
+            new.update(old[0])
+        elif len(old) > 1:
+            problem_elements.append(f"{type(new).__name__} {i + 1}")
 
     return problem_elements
 
@@ -196,7 +196,7 @@ def delete_project(project: model.Project) -> None:
 
 def edit_project(
     project: model.Project, new_parameters: model.Project.ProjectArgs
-) -> model.Project:
+) -> None:
     """Update the provided project with the new parameters.
 
     Parameters
@@ -209,6 +209,11 @@ def edit_project(
     _______
     Project in its updated state.
     """
+    try:
+        project.update(new_parameters)
+        repo.commit()
+    except exceptions.RepositoryException as exc:
+        raise exceptions.ModelException(exc) from exc
 
 
 # pylint: enable=no-member
@@ -348,29 +353,32 @@ def save_project(
     """
     # TODO: add checks for uniqueness
     # Get all attributes with a uniqueness constraint from the project
-    # project_unique = _get_unique_attributes(project)
-    # project_match = repo.get_object_by_attributes(
-    #     model.Project, project_unique  # type: ignore
-    # )
-    #
-    # if len(project_match) > 0:
-    #     return False, "Some project attributes violate uniqueness constraint"
-    #
-    # # Go through lists (students, etc.)
-    # problem_elements = (
-    #         _merge_on_uniqueness(project.students)
-    #         + _merge_on_uniqueness(project.supervisors)
-    #         + _merge_on_uniqueness(project.partners)
-    #         + _merge_on_uniqueness(project.tasks)
-    #         + _merge_on_uniqueness(project.subscriptions)
-    # )
+    project_unique = _get_unique_attributes(project)
+    project_match = repo.get_object_by_attributes(
+        model.Project, project_unique  # type: ignore
+    )
+
+    if len(project_match) > 0:
+        return False, "Some project attributes violate uniqueness constraint"
+
+    # Go through lists (students, etc.)
+    problem_elements = (
+        _merge_on_uniqueness(project.students)
+        + _merge_on_uniqueness(project.supervisors)
+        + _merge_on_uniqueness(project.partners)
+        + _merge_on_uniqueness(project.tasks)
+        + _merge_on_uniqueness(project.subscriptions)
+    )
     # contact_person = repo.get_object_by_attributes(
     #     model.Person, _get_unique_attributes(project.contact_person)
     # )
-    #
-    # if len(problem_elements):
-    #     return False, f"Elements {problem_elements} have attributes that " \
-    #                   f"violate uniqueness constraints"
+
+    if len(problem_elements):
+        return (
+            False,
+            f"Elements {problem_elements} have attributes that "
+            f"violate uniqueness constraints",
+        )
 
     # TODO: unify existing objects with new ones
     repo.save_project(project)

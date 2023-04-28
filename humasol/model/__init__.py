@@ -33,6 +33,8 @@ from .project_components import (  # noqa
     Grid,
     ProjectComponent,
     PV,
+    SourceComponent,
+    StorageComponent,
 )
 
 # pylint: disable=cyclic-import

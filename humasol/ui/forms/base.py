@@ -102,7 +102,6 @@ class ProjectElementWrapper(ty.Generic[T]):
             superclass  -- Form superclass from which all elements inherit
             """
             self.kwargs = kwargs
-
             self._elements = {
                 str(c.LABEL): c for c in forms.utils.get_subclasses(superclass)
             }
@@ -123,6 +122,15 @@ class ProjectElementWrapper(ty.Generic[T]):
             """Return the currently instantiated element."""
             return self.form
 
+        @element.setter
+        def element(self, value: str) -> None:
+            """Set the element of this wrapper."""
+            if value not in self._elements:
+                raise ValueError
+
+            self.element_type.data = value
+            self.form = self.element_class()
+
         @property
         def element_class(self) -> type[S]:
             """Return the currently active element class."""
@@ -133,8 +141,10 @@ class ProjectElementWrapper(ty.Generic[T]):
             """Return the wrapped classes."""
             return tuple(self._elements.values())
 
-        def from_object(self, obj: S) -> None:
+        def from_object(self, obj: ty.Any) -> None:
             """Fill in wrapper with object."""
+            self.element = obj.LABEL
+            self.element.from_object(obj)
 
         def get_data(self) -> dict[str, ty.Any]:
             """Return the data in the form fields.

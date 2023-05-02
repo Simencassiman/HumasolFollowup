@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import typing as ty
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 
 import wtforms
 from wtforms import (
@@ -28,17 +28,17 @@ from wtforms.fields import DateField
 from wtforms.validators import ValidationError
 
 # Local Modules
-from humasol import exceptions
+from humasol import exceptions, model
 from humasol.model import model_interface
 from humasol.model import model_validation as model_val
 from humasol.ui import forms
 from humasol.ui.forms import utils
 
-if TYPE_CHECKING:
-    from humasol import model
+P = ty.TypeVar("P", bound=model.Person)
+F = ty.TypeVar("F", bound=model.FollowupJob)
 
 
-class PersonForm(forms.ProjectElementForm):
+class PersonForm(forms.ProjectElementForm[P], ty.Generic[P]):
     """Class for a generic person form."""
 
     person_name = StringField("Name")
@@ -54,22 +54,7 @@ class PersonForm(forms.ProjectElementForm):
 
     # pylint: enable=invalid-name
 
-    @staticmethod
-    def object_to_dict(pers: model.Person) -> dict[str, Any]:
-        """Create a dictionary with the data from the given person object.
-
-        Returns
-        _______
-        A dictionary with keys matching the form items and as values
-        the data from the provided person.
-        """
-        return {
-            "person_name": pers.name,
-            "email": pers.email,
-            "phone": pers.phone,
-        }
-
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: P) -> None:
         """Fill in form from object."""
         self.person_name.data = obj.name
         self.email.data = obj.email
@@ -124,7 +109,7 @@ class PersonForm(forms.ProjectElementForm):
             )
 
 
-class StudentForm(PersonForm):
+class StudentForm(PersonForm[model.Student]):
     """Class for a humasol student form."""
 
     LABEL = model_interface.get_student_label()
@@ -132,23 +117,7 @@ class StudentForm(PersonForm):
     university = StringField("University")
     field_of_study = StringField("Field of study")
 
-    @staticmethod
-    def object_to_dict(pers: model.Student) -> dict[str, Any]:
-        """Create a dictionary with the data from the given student object.
-
-        Returns
-        _______
-        A dictionary with keys matching the form items and as values
-        the data from the provided student.
-        """
-        data = PersonForm.object_to_dict(pers)
-
-        data["university"] = pers.university
-        data["field_of_study"] = pers.field_of_study
-
-        return data
-
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: model.Student) -> None:
         """Fill in student from object."""
         super().from_object(obj)
         self.university.data = obj.university
@@ -185,29 +154,14 @@ class StudentForm(PersonForm):
             raise ValidationError("Invalid field of study")
 
 
-class SupervisorForm(PersonForm):
+class SupervisorForm(PersonForm[model.Supervisor]):
     """Class for a humasol team supervisor form."""
 
     LABEL = model_interface.get_supervisor_label()
 
     function = StringField("Function")
 
-    @staticmethod
-    def object_to_dict(pers: model.Supervisor) -> dict[str, Any]:
-        """Create a dictionary with the data from the given supervisor object.
-
-        Returns
-        _______
-        A dictionary with keys matching the form items and as values
-        the data from the provided supervisor.
-        """
-        data = PersonForm.object_to_dict(pers)
-
-        data["function"] = pers.function
-
-        return data
-
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: model.Supervisor) -> None:
         """Fill in supervisor from object."""
         super().from_object(obj)
         self.function.data = obj.function
@@ -231,7 +185,7 @@ class SupervisorForm(PersonForm):
             raise ValidationError("Invalid supervisor function")
 
 
-class PartnerForm(PersonForm):
+class PartnerForm(PersonForm[model.Partner]):
     """Class for a humasol partner form."""
 
     LABEL = model_interface.get_partner_label()
@@ -239,7 +193,7 @@ class PartnerForm(PersonForm):
     belgian_partner_type = model_interface.get_belgian_partner_label()
     southern_partner_type = model_interface.get_southern_partner_label()
 
-    class OrganizationForm(forms.HumasolSubform):
+    class OrganizationForm(forms.HumasolSubform[model.Organization]):
         """Class for an external organization form."""
 
         organization_name = StringField("Name")
@@ -253,33 +207,7 @@ class PartnerForm(PersonForm):
             self._validate = True
             self._partner_type = PartnerForm.belgian_partner_type
 
-        @staticmethod
-        def organization_to_dict(
-            organization: model.Organization,
-        ) -> tuple[str, dict[str, Any]]:
-            """Create a dictionary with the data from the given organization.
-
-            Returns
-            _______
-            A dictionary with keys matching the form items and as values
-            the data from the provided organization.
-            """
-            partner_type, country = (
-                (PartnerForm.southern_partner_type, organization.country)
-                if isinstance(organization, model.SouthernPartner)
-                else (PartnerForm.belgian_partner_type, "")
-            )
-
-            data = {
-                "organization_name": organization.name,
-                # TODO: Check how filling in the logo works
-                "logo": organization.logo,
-                "country": country,
-            }
-
-            return partner_type, data
-
-        def from_object(self, obj: ty.Any) -> None:
+        def from_object(self, obj: model.Organization) -> None:
             """Fill in organization form from object."""
             self.organization_name.data = obj.name
             self.logo.data = obj.logo
@@ -359,28 +287,7 @@ class PartnerForm(PersonForm):
     )
     organization = FormField(OrganizationForm)
 
-    @staticmethod
-    def partner_to_dict(partner: model.Partner) -> dict[str, Any]:
-        """Create a dictionary with the data from the given partner object.
-
-        Returns
-        _______
-        A dictionary with keys matching the form items and as values
-        the data from the provided partner.
-        """
-        data = PersonForm.object_to_dict(partner)
-
-        data["function"] = partner.function
-        (
-            data["partner_type"],
-            data["organization"],
-        ) = PartnerForm.OrganizationForm.organization_to_dict(
-            partner.organization
-        )
-
-        return data
-
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: model.Partner) -> None:
         """Fill in partner from object."""
         super().from_object(obj)
         self.function.data = obj.function
@@ -418,7 +325,7 @@ class PartnerForm(PersonForm):
         self.organization.set_partner_type(p_type.data)
 
 
-class LocationFrom(forms.HumasolSubform):
+class LocationFrom(forms.HumasolSubform[model.Location]):
     """Class for a project location form."""
 
     street = StringField("Street")
@@ -428,24 +335,6 @@ class LocationFrom(forms.HumasolSubform):
     # TODO: allow the use of coordinates
     latitude = FloatField("Latitude")
     longitude = FloatField("Longitude")
-
-    @staticmethod
-    def location_to_dict(location: model.Location) -> dict[str, Any]:
-        """Create a dictionary with the data from the given location object.
-
-        Returns
-        _______
-        A dictionary with keys matching the form items and as values
-        the data from the provided location.
-        """
-        return {
-            "street": location.address.street,
-            "number": location.address.number,
-            "place": location.address.place,
-            "country": location.address.country,
-            "latitude": location.coordinates.latitude,
-            "longitude": location.coordinates.longitude,
-        }
 
     def from_object(self, obj: model.Location) -> None:
         """Fill in form from the provided location object."""
@@ -526,7 +415,7 @@ class LocationFrom(forms.HumasolSubform):
             raise ValidationError("Invalid longitude")
 
 
-class DataSourceForm(forms.HumasolSubform):
+class DataSourceForm(forms.HumasolSubform[model.DataSource]):
     """Class for a project data source form."""
 
     # A data source is optional for a project,
@@ -570,24 +459,7 @@ class DataSourceForm(forms.HumasolSubform):
         default="---",
     )
 
-    @staticmethod
-    def data_source_to_dict(data_source: model.DataSource) -> dict[str, Any]:
-        """Create a dictionary with the data from the given datasource object.
-
-        Returns
-        _______
-        A dictionary with keys matching the form items and as values
-        the data from the provided datasource.
-        """
-        return {
-            "source": data_source.source,
-            "username": "",
-            "password": "",
-            "token": "",
-            "api_manager": data_source.api_manager,
-        }
-
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: model.DataSource) -> None:
         """Fill in datasource from object."""
         self.source.data = obj.source
         self.api_manager.data = obj.api_manager
@@ -663,7 +535,7 @@ class DataSourceForm(forms.HumasolSubform):
             raise ValidationError("Invalid API manager for selected category")
 
 
-class PeriodForm(forms.HumasolSubform):
+class PeriodForm(forms.HumasolSubform[model.Period]):
     """Class for a project follow-up task period form."""
 
     interval = IntegerField("Interval length")
@@ -674,23 +546,7 @@ class PeriodForm(forms.HumasolSubform):
     start = DateField("Starting date")
     end = DateField("End date", validators=[wtforms.validators.Optional()])
 
-    @staticmethod
-    def period_to_dict(period: model.Period) -> dict[str, Any]:
-        """Create a dictionary with the data from the given period object.
-
-        Returns
-        _______
-        A dictionary with keys matching the form items and as values
-        the data from the provided period.
-        """
-        return {
-            "interval": period.interval,
-            "unit": period.unit.name,
-            "start": period.start,
-            "end": period.end,
-        }
-
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: model.Period) -> None:
         """Fill in period from object."""
         self.interval.data = obj.interval
         self.unit.data = obj.unit.name
@@ -737,7 +593,7 @@ class PeriodForm(forms.HumasolSubform):
             )
 
 
-class FollowupJobForm(forms.HumasolSubform):
+class FollowupJobForm(forms.HumasolSubform[F], ty.Generic[F]):
     """Class for a project follow-up work form."""
 
     # TODO: Allow the selection of existing people
@@ -748,24 +604,7 @@ class FollowupJobForm(forms.HumasolSubform):
     )
     periods = FieldList(FormField(PeriodForm), min_entries=1)
 
-    @staticmethod
-    def followup_job_to_dict(
-        work: model.FollowupJob,
-    ) -> dict[str, Any | dict[str, Any] | list[dict[str, Any]]]:
-        """Create a dictionary with the data from the given work object.
-
-        Returns
-        _______
-        A dictionary with keys matching the form items and as values
-        the data from the provided follow-up work.
-        """
-        data: dict[str, Any | dict[str, Any] | list[dict[str, Any]]] = {
-            "periods": list(map(PeriodForm.period_to_dict, work.periods))
-        }
-
-        return data
-
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: F) -> None:
         """Fill in follow-up job from object."""
         self.subscriber.from_object(obj.subscriber)
         for period in obj.periods:
@@ -786,46 +625,17 @@ class FollowupJobForm(forms.HumasolSubform):
         }
 
 
-class SubscriptionForm(FollowupJobForm):
+class SubscriptionForm(FollowupJobForm[model.Subscription]):
     """Class for a project subscription form."""
 
-    @staticmethod
-    def subscription_to_dict(
-        subscription: model.Subscription,
-    ) -> dict[str, Any]:
-        """Create a dictionary with the data from the given subscription.
 
-        Returns
-        _______
-        A dictionary with keys matching the form items and as values
-        the data from the provided subscription.
-        """
-        return FollowupJobForm.followup_job_to_dict(subscription)
-
-
-class TaskForm(FollowupJobForm):
+class TaskForm(FollowupJobForm[model.Task]):
     """Class for a project task form."""
 
     task_name = StringField("Task name")
     function = StringField("Task description")
 
-    @staticmethod
-    def task_to_dict(task: model.Task) -> dict[str, Any]:
-        """Create a dictionary with the data from the given task object.
-
-        Returns
-        _______
-        A dictionary with keys matching the form items and as values
-        the data from the provided task.
-        """
-        data = FollowupJobForm.followup_job_to_dict(task)
-
-        data["task_name"] = task.name
-        data["function"] = task.function
-
-        return data
-
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: model.Task) -> None:
         """Fill in task from object."""
         super().from_object(obj)
         self.task_name.data = obj.name
@@ -862,7 +672,7 @@ class TaskForm(FollowupJobForm):
             raise ValidationError("Invalid task function")
 
 
-class ProjectSpecificForm(forms.HumasolSubform):
+class ProjectSpecificForm(forms.HumasolSubform[model.Project]):
     """Class containing all elements of project specific forms.
 
     Add all project-specific forms as subform so that
@@ -898,7 +708,7 @@ class ProjectSpecificForm(forms.HumasolSubform):
                     "Unknown project category for specifics section"
                 )
 
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: model.Project) -> None:
         """Fill in project specifics from object."""
         self.category = obj.category
         self.subform.from_object(obj)
@@ -925,7 +735,7 @@ class ProjectSpecificForm(forms.HumasolSubform):
             return False
 
 
-class ProjectForm(forms.HumasolBaseForm):
+class ProjectForm(forms.HumasolBaseForm[model.Project]):
     """Form for creating a project."""
 
     # TODO: Add asterisk for required fields

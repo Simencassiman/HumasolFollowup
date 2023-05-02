@@ -21,8 +21,13 @@ from humasol.model import model_validation as model_val
 from humasol.ui import forms
 from humasol.ui.forms import base
 
+T = ty.TypeVar("T", bound=model.EnergyProjectComponent)
+S = ty.TypeVar("S", bound=model.SourceComponent)
+U = ty.TypeVar("U", bound=model.StorageComponent)
+V = ty.TypeVar("V", bound=model.ConsumptionComponent)
 
-class EnergyProjectComponentForm(forms.ProjectElementForm):
+
+class EnergyProjectComponentForm(forms.ProjectElementForm[T], ty.Generic[T]):
     """Form linked to an energy project component."""
 
     power = FloatField("Component power rating [kW]", default=0)
@@ -33,7 +38,7 @@ class EnergyProjectComponentForm(forms.ProjectElementForm):
     def LABEL(self) -> str:
         """Provide identifying label of the project component."""
 
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: T) -> None:
         """Fill in energy component from object."""
         self.power.data = obj.power
         self.is_primary.data = obj.is_primary
@@ -54,7 +59,7 @@ class EnergyProjectComponentForm(forms.ProjectElementForm):
             raise ValidationError("Invalid power for a project component.")
 
 
-class SourceComponentForm(EnergyProjectComponentForm):
+class SourceComponentForm(EnergyProjectComponentForm[S], ty.Generic[S]):
     """Form linked to a source project component."""
 
     price = FloatField("Energy price [€/kWh]", default=0)
@@ -68,7 +73,7 @@ class SourceComponentForm(EnergyProjectComponentForm):
     def LABEL(self) -> str:
         """Provide identifying label of the project component."""
 
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: S) -> None:
         """Fill in source component from object."""
         super().from_object(obj)
         self.price.data = obj.price
@@ -89,7 +94,7 @@ class SourceComponentForm(EnergyProjectComponentForm):
             raise ValidationError("Invalid price for source component.")
 
 
-class GridForm(SourceComponentForm):
+class GridForm(SourceComponentForm[model.Grid]):
     """Form linked to a grid energy project component."""
 
     LABEL = model_interface.get_grid_label()
@@ -97,7 +102,7 @@ class GridForm(SourceComponentForm):
     blackout_threshold = FloatField("Blackout threshold [kW]", default=None)
     injection_price = FloatField("Injection price [€]", default=None)
 
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: model.Grid) -> None:
         """Fill in grid from object."""
         super().from_object(obj)
         self.blackout_threshold.data = obj.blackout_threshold
@@ -128,13 +133,13 @@ class GridForm(SourceComponentForm):
             raise ValidationError("Invalid injection price for a grid.")
 
 
-class PVForm(SourceComponentForm):
+class PVForm(SourceComponentForm[model.PV]):
     """Form linked to a PV energy project component."""
 
     LABEL = model_interface.get_pv_label()
 
 
-class GeneratorForm(SourceComponentForm):
+class GeneratorForm(SourceComponentForm[model.Generator]):
     """Form linked to a generator energy project component."""
 
     LABEL = model_interface.get_generator_label()
@@ -150,7 +155,7 @@ class GeneratorForm(SourceComponentForm):
     overheating_time = FloatField("Overheating time", default=0)
     cooldown_time = FloatField("Cool-down time", default=0)
 
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: model.Generator) -> None:
         """Fill in generator from object."""
         super().from_object(obj)
         self.efficiency.data = obj.efficiency
@@ -204,7 +209,7 @@ class GeneratorForm(SourceComponentForm):
             raise ValidationError("Invalid cool-down time for a generator.")
 
 
-class StorageComponentForm(EnergyProjectComponentForm):
+class StorageComponentForm(EnergyProjectComponentForm[U], ty.Generic[U]):
     """Form linked to an energy storage component."""
 
     capacity = FloatField("Capacity", default=0)
@@ -214,7 +219,7 @@ class StorageComponentForm(EnergyProjectComponentForm):
     def LABEL(self) -> str:
         """Provide identifying label of the project component."""
 
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: U) -> None:
         """Fill in storage component from object."""
         super().from_object(obj)
         self.capacity.data = obj.capacity
@@ -235,7 +240,7 @@ class StorageComponentForm(EnergyProjectComponentForm):
             raise ValidationError("Invalid capacity for a storage component.")
 
 
-class BatteryForm(StorageComponentForm):
+class BatteryForm(StorageComponentForm[model.Battery]):
     """Form linked to a battery energy project component."""
 
     LABEL = model_interface.get_battery_label()
@@ -257,7 +262,7 @@ class BatteryForm(StorageComponentForm):
         "Maximum State of Charge (%): 80", default=80
     )
 
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: model.Battery) -> None:
         """Fill in battery component from object."""
         super().from_object(obj)
         self.battery_type.data = obj.battery_type.name
@@ -314,14 +319,16 @@ class BatteryForm(StorageComponentForm):
             )
 
 
-class ConsumptionComponentForm(EnergyProjectComponentForm):
+class ConsumptionComponentForm(
+    EnergyProjectComponentForm[model.ConsumptionComponent]
+):
     """Form linked to the energy consumption component form."""
 
     LABEL = model_interface.get_consumption_component_label()
 
     is_critical = BooleanField("Is critical load")
 
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: model.ConsumptionComponent) -> None:
         """Fill in consumption component from object."""
         super().from_object(obj)
         self.is_critical.data = obj.is_critical
@@ -337,7 +344,7 @@ class ConsumptionComponentForm(EnergyProjectComponentForm):
         return {"is_critical": self.is_critical.data, **super().get_data()}
 
 
-class EnergyProjectForm(forms.HumasolSubform):
+class EnergyProjectForm(forms.HumasolSubform[model.EnergyProject]):
     """Class for en energy project's specific section form.
 
     The form contains all the inputs for details specific to an energy form.
@@ -365,7 +372,7 @@ class EnergyProjectForm(forms.HumasolSubform):
         )
     )
 
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: model.EnergyProject) -> None:
         """Fill in energy project specifics from object."""
         for component in obj.project_components:
             if isinstance(component, model.SourceComponent):

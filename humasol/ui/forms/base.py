@@ -1,4 +1,6 @@
 """Module providing base classes for Humasol forms."""
+
+# Python Libraries
 from __future__ import annotations
 
 import typing as ty
@@ -10,14 +12,18 @@ from wtforms import Form as NoCsrfForm
 from wtforms import SelectField, ValidationError
 from wtforms.form import FormMeta
 
+# Local modules
+from humasol import model
 from humasol.ui import forms
 
+U = ty.TypeVar("U", bound=model.Model)
 
-class IHumasolForm(ABC):
+
+class IHumasolForm(ABC, ty.Generic[U]):
     """Humasol form interface."""
 
     @abstractmethod
-    def from_object(self, obj: ty.Any) -> None:
+    def from_object(self, obj: U) -> None:
         """Fill the form from the object it represents.
 
         Parameters
@@ -44,15 +50,19 @@ class MetaNoCsrfForm(FormMeta, ABCMeta):
     """Combine superclasses with distinct meta classes into one meta class."""
 
 
-class HumasolBaseForm(FlaskForm, IHumasolForm, ABC, metaclass=MetaBaseForm):
+class HumasolBaseForm(
+    ty.Generic[U], FlaskForm, IHumasolForm[U], ABC, metaclass=MetaBaseForm
+):
     """Base form to use for any Humasol form."""
 
 
-class HumasolSubform(NoCsrfForm, IHumasolForm, ABC, metaclass=MetaNoCsrfForm):
+class HumasolSubform(
+    ty.Generic[U], NoCsrfForm, IHumasolForm[U], ABC, metaclass=MetaNoCsrfForm
+):
     """Superclass to use with any subform."""
 
 
-class ProjectElementForm(HumasolSubform):
+class ProjectElementForm(ty.Generic[U], HumasolSubform[U]):
     """Base form for all project component forms."""
 
     # LABEL will be a constant
@@ -79,7 +89,7 @@ class ProjectElementWrapper(ty.Generic[T]):
     route it to the actively selected subclass.
     """
 
-    class Wrapper(HumasolSubform, ty.Generic[S]):
+    class Wrapper(HumasolSubform[S], ty.Generic[S]):
         """Subform wrapping project element subclasses.
 
         Actual subform that provides the functionality to select the various
@@ -122,15 +132,6 @@ class ProjectElementWrapper(ty.Generic[T]):
             """Return the currently instantiated element."""
             return self.form
 
-        @element.setter
-        def element(self, value: str) -> None:
-            """Set the element of this wrapper."""
-            if value not in self._elements:
-                raise ValueError
-
-            self.element_type.data = value
-            self.form = self.element_class()
-
         @property
         def element_class(self) -> type[S]:
             """Return the currently active element class."""
@@ -141,9 +142,10 @@ class ProjectElementWrapper(ty.Generic[T]):
             """Return the wrapped classes."""
             return tuple(self._elements.values())
 
-        def from_object(self, obj: ty.Any) -> None:
+        def from_object(self, obj: S) -> None:
             """Fill in wrapper with object."""
-            self.element = obj.LABEL
+            self.element_type.data = obj.LABEL
+            self.form = self.element_class()
             self.element.from_object(obj)
 
         def get_data(self) -> dict[str, ty.Any]:

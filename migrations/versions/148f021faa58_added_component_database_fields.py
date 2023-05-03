@@ -1,9 +1,7 @@
 """Added component database fields
-
 Revision ID: 148f021faa58
 Revises: 891863379b53
 Create Date: 2023-01-13 17:25:09.900000
-
 """
 import sqlalchemy as sa
 from alembic import op
@@ -11,7 +9,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "148f021faa58"
-down_revision = "891863379b53"
+down_revision = ""
 branch_labels = None
 depends_on = None
 

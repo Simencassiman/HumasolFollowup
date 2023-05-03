@@ -26,6 +26,7 @@ from enum import Enum
 from functools import reduce
 
 from sqlalchemy import orm
+from sqlalchemy.orm import declared_attr
 
 # Local modules
 from humasol import exceptions, model
@@ -88,7 +89,6 @@ project_sdg_table = db.Table(
 # --------------------------
 # ----- Project models -----
 # --------------------------
-
 
 # These models are also used to create the database entities
 # through the inheritance of db.Model
@@ -194,7 +194,17 @@ class Project(model.BaseModel):
     )
     tasks = db.relationship("Task", lazy=False, cascade="all, delete-orphan")
     data_file = db.Column(db.String, unique=True, nullable=False)
-    project_components: list[model.project_components.ProjectComponent]
+
+    @declared_attr
+    def project_components(self) -> orm.RelationshipProperty:
+        """Provide database relation to subscriber."""
+        return db.relationship(
+            model.ProjectComponent, lazy=True, cascade="all, delete-orphan"
+        )
+
+    # project_components = db.relationship(
+    #     "ProjectComponent", lazy=True, cascade="all"
+    # )
 
     __mapper_args__ = {
         "polymorphic_on": type,
@@ -514,7 +524,7 @@ class Project(model.BaseModel):
 
     @staticmethod
     def are_legal_project_components(
-        components: list[model.project_components.ProjectComponent],
+        components: list[model.ProjectComponent],
     ) -> bool:
         """Check whether the provided list is a legal components list."""
         return isinstance(components, (list, tuple)) and all(

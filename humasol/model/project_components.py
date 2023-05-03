@@ -50,6 +50,8 @@ class ProjectComponent(db.Model, model.ProjectElement):
     meaningful context or comparisons in the analyses.
     """
 
+    __tablename__ = "project_component"
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     type = db.Column(db.String)  # Used for internal mapping by SQLAlchemy
 
@@ -61,7 +63,11 @@ class ProjectComponent(db.Model, model.ProjectElement):
             db.ForeignKey("project.id", ondelete="CASCADE"),
         )
 
-    __abstract__ = True
+    __mapper_args__ = {
+        "polymorphic_identity": __tablename__,
+        "with_polymorphic": "*",
+        "polymorphic_on": type,
+    }
 
     def __init__(self, *args: ty.Any, **kwargs: ty.Any) -> None:
         """Instantiate project component."""
@@ -104,6 +110,17 @@ class EnergyProjectComponent(ProjectComponent):
                     backup or auxiliary
     """
 
+    __tablename__ = "energy_project_component"
+    __mapper_args__ = {
+        "polymorphic_identity": __tablename__,
+        "with_polymorphic": "*",
+    }
+
+    id = db.Column(  # Repeat ID at level to split hierarchy
+        None,
+        db.ForeignKey("project_component.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
     power = db.Column(db.Float, nullable=False)
     is_primary = db.Column(db.Boolean, nullable=False)
 
@@ -186,6 +203,12 @@ class SourceComponent(EnergyProjectComponent):
     price   -- Price of electricity from this source (€/kWh)
     """
 
+    __tablename__ = "source_component"
+    __mapper_args__ = {
+        "polymorphic_identity": __tablename__,
+        "with_polymorphic": "*",
+    }
+
     price = db.Column(db.Float, nullable=False)
 
     def __init__(self, price: float, **kwargs: ty.Any) -> None:
@@ -258,6 +281,11 @@ class Grid(SourceComponent):
 
     LABEL = "grid"
 
+    __tablename__ = "grid_component"
+    __mapper_args__ = {
+        "polymorphic_identity": __tablename__,
+        "with_polymorphic": "*",
+    }
     blackout_threshold = db.Column(db.Float)
     injection_price = db.Column(db.Float)
 
@@ -349,6 +377,12 @@ class PV(SourceComponent):
 
     LABEL = "pv"
 
+    __tablename__ = "pv_component"
+    __mapper_args__ = {
+        "polymorphic_identity": __tablename__,
+        "with_polymorphic": "*",
+    }
+
     # This is indeed useless delegation, but needed to satisfy mypy
     # pylint: disable=useless-parent-delegation
     def __init__(self, **kwargs: ty.Any) -> None:
@@ -381,6 +415,12 @@ class Generator(SourceComponent):
     """
 
     LABEL = "generator"
+
+    __tablename__ = "generator_component"
+    __mapper_args__ = {
+        "polymorphic_identity": __tablename__,
+        "with_polymorphic": "*",
+    }
 
     efficiency = db.Column(db.Float, nullable=False)
     fuel_cost = db.Column(db.Float, nullable=False)
@@ -553,6 +593,12 @@ class StorageComponent(EnergyProjectComponent):
     capacity    -- Electrical storage capacity (kWh)
     """
 
+    __tablename__ = "storage_component"
+    __mapper_args__ = {
+        "polymorphic_identity": __tablename__,
+        "with_polymorphic": "*",
+    }
+
     capacity = db.Column(db.Float, nullable=False)
 
     def __init__(self, capacity: float, **kwargs: ty.Any) -> None:
@@ -625,6 +671,12 @@ class Battery(StorageComponent):
     """
 
     LABEL = "battery"
+
+    __tablename__ = "battery_component"
+    __mapper_args__ = {
+        "polymorphic_identity": __tablename__,
+        "with_polymorphic": "*",
+    }
 
     @unique
     class BatteryType(Enum):
@@ -851,6 +903,12 @@ class ConsumptionComponent(EnergyProjectComponent):
     """
 
     LABEL = "consumer"
+
+    __tablename__ = "consumption_component"
+    __mapper_args__ = {
+        "polymorphic_identity": __tablename__,
+        "with_polymorphic": "*",
+    }
 
     is_critical = db.Column(db.Boolean, nullable=False)
 

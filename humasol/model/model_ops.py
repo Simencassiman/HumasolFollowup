@@ -20,7 +20,7 @@ T = ty.TypeVar("T", bound=model.ProjectElement)
 
 
 def _get_unique_attributes(
-    obj: model.Model | list[model.Model],
+    obj: model.Model | ty.Iterable[model.Model],
 ) -> dict[str, ty.Any] | list[dict[str, ty.Any]]:
     """Retrieve all attributes of the object with a uniqueness constraint."""
     if isinstance(obj, list):
@@ -40,7 +40,9 @@ def _get_unique_attributes(
     }
 
 
-def _merge_on_uniqueness(new_objs: list[model.ProjectElement]) -> list[str]:
+def _merge_on_uniqueness(
+    new_objs: list[T], merge_identifier: ty.Callable[[T, T], None]
+) -> list[str]:
     cls = type(new_objs[0])
 
     objs = [
@@ -51,7 +53,7 @@ def _merge_on_uniqueness(new_objs: list[model.ProjectElement]) -> list[str]:
     problem_elements = list[str]()
     for i, (new, old) in enumerate(zip(new_objs, objs)):
         if len(old) == 1:
-            new.update(old[0])
+            merge_identifier(new, old[0])
         elif len(old) > 1:
             problem_elements.append(f"{type(new).__name__} {i + 1}")
 
@@ -77,7 +79,7 @@ def create_db_tables() -> None:
 
 
 # Pylint doesn't seem to detect inner class
-# pylint: disable=no-member
+# pylint: disable=no-member, too-many-branches
 def create_project(parameters: dict[str, ty.Any]) -> model.Project:
     """Create a project from the provided project parameters.
 
@@ -101,15 +103,19 @@ def create_project(parameters: dict[str, ty.Any]) -> model.Project:
         )
 
         # Create people objects
+        people = {}
+
         parameters["students"] = [
             model.person.construct_person(model.Student, params)
             for params in parameters["students"]
         ]
+        people.update({stu.email: stu for stu in parameters["students"]})
 
         parameters["supervisors"] = [
             model.person.construct_person(model.Supervisor, params)
             for params in parameters["supervisors"]
         ]
+        people.update({sup.email: sup for sup in parameters["supervisors"]})
 
         for params in parameters["partners"]:
             params["organization"]["logo"] = "logo.png"
@@ -118,6 +124,7 @@ def create_project(parameters: dict[str, ty.Any]) -> model.Project:
             model.person.construct_person(model.Partner, params)
             for params in parameters["partners"]
         ]
+        people.update({par.email: par for par in parameters["partners"]})
 
         # parameters["contact_person"] = model.person.construct_person(
         #     model.person.get_constructor_from_type(
@@ -151,6 +158,11 @@ def create_project(parameters: dict[str, ty.Any]) -> model.Project:
                 model.followup_work.construct_followup_work(model.Task, params)
                 for params in parameters["tasks"]
             ]
+            for t_idx, task in enumerate(parameters["tasks"]):
+                if task.subscriber.email in people:
+                    parameters["tasks"][t_idx].subscriber = people[
+                        task.subscriber.email
+                    ]
 
         if (
             "subscriptions" in parameters
@@ -162,14 +174,21 @@ def create_project(parameters: dict[str, ty.Any]) -> model.Project:
                 )
                 for params in parameters["subscriptions"]
             ]
+            for s_idx, sub in enumerate(parameters["subscriptions"]):
+                if sub.subscriber.email in people:
+                    parameters["subscriptions"][s_idx].subscriber = people[
+                        sub.subscriber.email
+                    ]
 
+        # Create project object
+        project = model.ProjectFactory.get_project(category, parameters)
         if "components" in parameters:
-            parameters["components"] = [
+            components = [
                 model.ProjectFactory.get_project_component(comp)
                 for comp in parameters["components"]
             ]
-        # Create project object
-        project = model.ProjectFactory.get_project(category, parameters)
+            for comp in components:
+                project.add_component(comp)
 
     except KeyError as exc:
         # TODO: create proper exceptions structure
@@ -209,6 +228,25 @@ def edit_project(
     _______
     Project in its updated state.
     """
+    people = {
+        pers["email"]: pers
+        for pers in (
+            new_parameters["students"]
+            + new_parameters["supervisors"]
+            + new_parameters["partners"]
+        )
+    }
+    jobs = list[dict[str, ty.Any]]()
+    if "tasks" in new_parameters:
+        jobs += new_tasks if (new_tasks := new_parameters["tasks"]) else []
+    if "subscriptions" in new_parameters:
+        jobs += (
+            new_subs if (new_subs := new_parameters["subscriptions"]) else []
+        )
+    for job in jobs:
+        if job["subscriber"]["email"] in people:
+            job["subscriber"] = people[job["subscriber"]["email"]]
+
     try:
         project.update(new_parameters)
         repo.commit()
@@ -216,7 +254,7 @@ def edit_project(
         raise exceptions.ModelException(exc) from exc
 
 
-# pylint: enable=no-member
+# pylint: enable=no-member, too-many-branches
 
 
 def get_my_associated_projects(user: model.User) -> list[model.Project]:
@@ -362,12 +400,13 @@ def save_project(
         return False, "Some project attributes violate uniqueness constraint"
 
     # Go through lists (students, etc.)
+    def merge_id(new, old) -> None:
+        new.id = old.id
+
     problem_elements = (
-        _merge_on_uniqueness(project.students)
-        + _merge_on_uniqueness(project.supervisors)
-        + _merge_on_uniqueness(project.partners)
-        + _merge_on_uniqueness(project.tasks)
-        + _merge_on_uniqueness(project.subscriptions)
+        _merge_on_uniqueness(project.students, merge_id)
+        + _merge_on_uniqueness(project.supervisors, merge_id)
+        + _merge_on_uniqueness(project.partners, merge_id)
     )
     # contact_person = repo.get_object_by_attributes(
     #     model.Person, _get_unique_attributes(project.contact_person)
@@ -409,6 +448,4 @@ def tables_exist() -> bool:
 
 
 if __name__ == "__main__":
-    s = model.Student("a", "a@gmail.com", "KUL", "Elec")
-
-    _merge_on_uniqueness([s])
+    ...

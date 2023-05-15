@@ -790,33 +790,17 @@ class ProjectForm(forms.HumasolBaseForm[model.Project]):
         if self.category.data:
             self.specifics.set_category(self.category.data)
 
-    @classmethod
-    def get_attributes(cls) -> dict[str, None | list | str | bool]:
-        """Provide all attributes of this form in a dictionary.
-
-        Returns
-        _______
-        Dictionary with as keys the names of the attributes of this form and
-        either None or a list as value.
-        """
-        return {
-            "name": None,
-            "date": None,
-            "description": None,
-            "category": None,
-            "location": None,
-            "work_folder": None,
-            "students": [],
-            "supervisors": [],
-            "partners": [],
-            "sdgs": [],
-            "tasks": [],
-            "data_source": None,
-            "dashboard": None,
-            "save_data": False,
-            # 'extra_data'
-            "subscriptions": [],
-        }
+    @property
+    def has_followup(self) -> bool:
+        """Indicate whether this form contains followup elements."""
+        return (
+            len(self.tasks) > 0
+            or (
+                self.data_source.source.data is not None
+                and len(self.data_source.source.data) > 0
+            )
+            or len(self.subscriptions) > 0
+        )
 
     def from_object(self, obj: model.Project) -> None:
         """Fill in the project form from the provided object."""

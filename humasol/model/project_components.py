@@ -209,7 +209,7 @@ class SourceComponent(EnergyProjectComponent):
         "with_polymorphic": "*",
     }
 
-    price = db.Column(db.Float, nullable=False)
+    price = db.Column(db.Float)
 
     def __init__(self, price: float, **kwargs: ty.Any) -> None:
         """Instantiate object of this class.
@@ -283,7 +283,7 @@ class Grid(SourceComponent):
 
     __tablename__ = "grid_component"
     __mapper_args__ = {
-        "polymorphic_identity": __tablename__,
+        "polymorphic_identity": LABEL,
         "with_polymorphic": "*",
     }
     blackout_threshold = db.Column(db.Float)
@@ -379,7 +379,7 @@ class PV(SourceComponent):
 
     __tablename__ = "pv_component"
     __mapper_args__ = {
-        "polymorphic_identity": __tablename__,
+        "polymorphic_identity": LABEL,
         "with_polymorphic": "*",
     }
 
@@ -418,13 +418,13 @@ class Generator(SourceComponent):
 
     __tablename__ = "generator_component"
     __mapper_args__ = {
-        "polymorphic_identity": __tablename__,
+        "polymorphic_identity": LABEL,
         "with_polymorphic": "*",
     }
 
-    efficiency = db.Column(db.Float, nullable=False)
-    fuel_cost = db.Column(db.Float, nullable=False)
-    overheats = db.Column(db.Boolean, nullable=False)
+    efficiency = db.Column(db.Float)
+    fuel_cost = db.Column(db.Float)
+    overheats = db.Column(db.Boolean)
     overheating_time = db.Column(db.Float)
     cooldown_time = db.Column(db.Float)
 
@@ -599,7 +599,7 @@ class StorageComponent(EnergyProjectComponent):
         "with_polymorphic": "*",
     }
 
-    capacity = db.Column(db.Float, nullable=False)
+    capacity = db.Column(db.Float)
 
     def __init__(self, capacity: float, **kwargs: ty.Any) -> None:
         """Instantiate object of this class.
@@ -674,7 +674,7 @@ class Battery(StorageComponent):
 
     __tablename__ = "battery_component"
     __mapper_args__ = {
-        "polymorphic_identity": __tablename__,
+        "polymorphic_identity": LABEL,
         "with_polymorphic": "*",
     }
 
@@ -713,10 +713,10 @@ class Battery(StorageComponent):
 
         # pylint: enable=no-member
 
-    battery_type = db.Column(db.Enum(BatteryType), nullable=False)
-    base_soc = db.Column(db.Float, nullable=False)
-    min_soc = db.Column(db.Float, nullable=False)
-    max_soc = db.Column(db.Float, nullable=False)
+    battery_type = db.Column(db.Enum(BatteryType))
+    base_soc = db.Column(db.Float)
+    min_soc = db.Column(db.Float)
+    max_soc = db.Column(db.Float)
 
     def __init__(
         self,
@@ -906,11 +906,11 @@ class ConsumptionComponent(EnergyProjectComponent):
 
     __tablename__ = "consumption_component"
     __mapper_args__ = {
-        "polymorphic_identity": __tablename__,
+        "polymorphic_identity": LABEL,
         "with_polymorphic": "*",
     }
 
-    is_critical = db.Column(db.Boolean, nullable=False)
+    is_critical = db.Column(db.Boolean)
 
     def __init__(self, is_critical: bool, **kwargs: ty.Any) -> None:
         """Instantiate object of this class.

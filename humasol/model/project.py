@@ -93,8 +93,7 @@ project_sdg_table = db.Table(
 # These models are also used to create the database entities
 # through the inheritance of db.Model
 # TODO: check if can remove pylint deactivation when used setters
-# pylint: disable=too-many-public-methods
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-public-methods, too-many-instance-attributes
 class Project(model.BaseModel):
     """Abstract base class for all Humasol project.
 
@@ -234,6 +233,7 @@ class Project(model.BaseModel):
         project_data: ty.Optional[str]
         extra_data: ty.Optional[dict[str, ty.Any]]
         subscriptions: ty.Optional[list[dict[str, ty.Any]]]
+        components: list[model.ProjectComponent]
         kwargs: dict[str, ty.Any]
 
     # pylint: disable=too-many-arguments
@@ -298,7 +298,7 @@ class Project(model.BaseModel):
                         manager
         subscriptions   -- List of subscription objects with people to update
         """
-        # Argument checks
+        # Parameter checks
         if not Project.is_legal_name(name):
             raise exceptions.IllegalArgumentException(
                 "Parameter 'name' should be a non-empty string with "
@@ -700,22 +700,6 @@ class Project(model.BaseModel):
 
     # Private methods #
 
-    def _add_component(
-        self, component: model.project_components.ProjectComponent
-    ) -> None:
-        """Add a project component to this project's components list."""
-        if not isinstance(
-            component, model.project_components.ProjectComponent
-        ):
-            raise TypeError(
-                "Argument 'component' should not be None and of type "
-                "ProjectComponent"
-            )
-
-        # TODO: Check whether this is a correct component for this instance
-
-        self.project_components.append(component)
-
     def _create_code(self) -> None:
         """Create a short letter code based on the project name."""
         name_pieces = (
@@ -862,6 +846,18 @@ class Project(model.BaseModel):
     # pylint: enable=too-many-branches
 
     # Public methods #
+    def add_component(
+        self, component: model.project_components.ProjectComponent
+    ) -> None:
+        """Add a project component to this project's components list."""
+        if not self.is_legal_project_component(component):
+            raise TypeError(
+                "Argument 'component' should not be None and of type "
+                "ProjectComponent"
+            )
+
+        self.project_components.append(component)
+
     def get_credentials(self) -> dict[str, ty.Any]:
         """Get the folder source credentials.
 
@@ -922,8 +918,7 @@ class Project(model.BaseModel):
         return self
 
 
-# pylint: enable=too-many-instance-attributes
-# pylint: enable=too-many-public-methods
+# pylint: enable=too-many-instance-attributes, too-many-public-methods
 
 
 class AgricultureProject(Project):
@@ -936,7 +931,7 @@ class AgricultureProject(Project):
 
     def __init__(self, **kwargs) -> None:
         """Init project object."""
-        super().__init__(**kwargs)
+        super().__init__(category=ProjectCategory.AGRICULTURE, **kwargs)
 
 
 class ElectronicsDevelopmentProject(Project):
@@ -949,7 +944,9 @@ class ElectronicsDevelopmentProject(Project):
 
     def __init__(self, **kwargs) -> None:
         """Init project object."""
-        super().__init__(**kwargs)
+        super().__init__(
+            category=ProjectCategory.ELECTRONICS_DEVELOPMENT, **kwargs
+        )
 
 
 class EnergyProject(Project):
@@ -971,7 +968,6 @@ class EnergyProject(Project):
 
         power: int | float
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,
@@ -995,8 +991,6 @@ class EnergyProject(Project):
 
         self.power = power
 
-    # pylint: enable=too-many-arguments
-
     def __repr__(self) -> str:
         """Provide a string representation for this instance."""
         return (
@@ -1011,6 +1005,13 @@ class EnergyProject(Project):
         """Check whether the provided power is a legal power setting."""
         return isinstance(power, (float, int)) and power >= 0
 
+    @staticmethod
+    def is_legal_project_component(
+        component: model.EnergyProjectComponent,
+    ) -> bool:
+        """Check if the provided component is a legal project component."""
+        return isinstance(component, model.EnergyProjectComponent)
+
     # A more specific data class is ok in this case, doesn't violate LSP
     # since it has no behavior
     @Snapshot.protect
@@ -1022,6 +1023,15 @@ class EnergyProject(Project):
 
         if "power" in params:
             self.power = params["power"]
+
+        if "components" in params:
+            # for component in params["components"]:
+            #     # utils.merge_update_list()
+            #     for c, comp in self.project_components:
+            #         pass
+            #     else:
+            #         pass
+            pass
 
         return self
 
@@ -1036,7 +1046,7 @@ class WaterProject(Project):
 
     def __init__(self, **kwargs) -> None:
         """Init project object."""
-        super().__init__(**kwargs)
+        super().__init__(category=ProjectCategory.WATER, **kwargs)
 
 
 class WasteManagementProject(Project):
@@ -1049,7 +1059,7 @@ class WasteManagementProject(Project):
 
     def __init__(self, **kwargs) -> None:
         """Init project object."""
-        super().__init__(**kwargs)
+        super().__init__(category=ProjectCategory.WASTE_MANAGEMENT, **kwargs)
 
 
 # -----------------------------
@@ -1131,19 +1141,15 @@ class ProjectCategory(Enum):
     WATER = ("water", WaterProject)
     WASTE_MANAGEMENT = ("waste management", WasteManagementProject)
 
-    # Pylint doesn't detect the members of enum subclasses (as of 2.12.2022)
-    # pylint: disable=no-member
     @property
     def category_name(self) -> str:
         """Provide lower case name of the category."""
-        return self._value_[0]
+        return self.value[0]
 
     @property
     def class_name(self) -> type[Project]:
         """Provide class corresponding to the project category."""
-        return self._value_[1]
-
-    # pylint: enable=no-member
+        return self.value[1]
 
     @staticmethod
     def categories() -> tuple[ProjectCategory, ...]:

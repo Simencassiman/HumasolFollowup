@@ -522,8 +522,10 @@ class ProjectGUI(HumasolBlueprint):
         if form_data := self.app.get_session().get("project_form", None):
             self.app.get_session().pop("project_form")
             form = forms.ProjectForm(MultiDict(form_data))
+            show_followup = form.has_followup
         else:
             form = forms.ProjectForm()
+            show_followup = False
 
         # TODO: reload category JS if one is selected already
 
@@ -531,7 +533,7 @@ class ProjectGUI(HumasolBlueprint):
             "form_add_project.html",
             form=form,
             id=None,
-            show_followup=False,
+            show_followup=show_followup,
             _forms=self._forms,
             unwrap=forms.utils.unwrap,
         )

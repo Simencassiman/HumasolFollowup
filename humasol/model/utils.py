@@ -37,7 +37,7 @@ def check_guards(obj: ty.Any, key: str, value: ty.Any) -> None:
                 raise exceptions.IllegalArgumentException(
                     f"Illegal value for {key}."
                 )
-        except AttributeError:
+        except (AttributeError, TypeError):
             # In initialization could be that not all variables have been
             # initialized. This should be foreseen, but to simplify things,
             # just catch the exception...

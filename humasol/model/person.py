@@ -328,7 +328,7 @@ class Student(Person):
         _______
         Return reference to self.
         """
-        super().update(**params)
+        super().update(params)
 
         if "university" in params:
             self.university = params["university"]

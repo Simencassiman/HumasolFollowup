@@ -276,6 +276,9 @@ if __name__ == "__main__":
 
         LABEL = "mock"
 
+        def from_object(self, obj: U) -> None:
+            """Nothing to do..."""
+
         def get_data(self) -> dict[str, ty.Any]:
             """Return the data in the form fields.
 

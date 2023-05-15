@@ -29,7 +29,7 @@ from humasol.model.snapshot import Snapshot
 from humasol.repository import db
 
 
-# TODO: implement RSA
+# TODO: implement RSA (or other crypto method)
 def encrypt(value: str) -> str:
     """Encrypt value using RSA."""
     if len(value) == 0:
@@ -359,21 +359,14 @@ class SDG(Enum):
 
         return SDG.__members__[name]
 
-    # pylint doesn't recognize enum subclasses (yet)
-    # pylint: disable=no-member
     @property
     def goal_name(self) -> str:
         """Provide the name of the goal."""
-        return self._value_
-
-    # pylint: enable=no-member
+        return self.value
 
     @property
     def number(self) -> ty.Optional[str]:
         """Provide the number of the goal."""
-        # if m := re.search(r"[0-9]{1,2}$", self.goal_name):
-        #     return m[0]
-        # return None
         return self.goal_name.split()[1]
 
     @property

@@ -110,7 +110,6 @@ class HumasolApp(Flask):
         self._migrate = Migrate(self, db)
 
         # Create tables if they do not exist
-        # TODO: do this through model_ops
         with self.app_context():
             if not model_ops.tables_exist():
                 model_ops.create_db_tables()

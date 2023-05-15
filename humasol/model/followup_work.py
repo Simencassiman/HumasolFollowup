@@ -395,8 +395,6 @@ class Period(model.BaseModel, model.ProjectElement):
                     periods)
     """
 
-    # Pylint doesn't recognize enum subclasses
-    # pylint: disable=no-member
     @unique
     class TimeUnit(Enum):
         """Enumeration defining available interval time units."""
@@ -419,19 +417,11 @@ class Period(model.BaseModel, model.ProjectElement):
 
         def __str__(self) -> str:
             """Convert instance to string."""
-            return self._value_
+            return self.value
 
         def __repr__(self) -> str:
             """Provide a string representation of this instance."""
             return self.__str__()
-
-        # TODO: Define seconds property in enum
-        @property
-        def seconds(self) -> int:
-            """Provide the amount of seconds in the unit."""
-            return -1
-
-    # pylint: enable=no-member
 
     # Definitions for the database tables  #
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

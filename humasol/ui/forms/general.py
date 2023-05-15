@@ -607,9 +607,7 @@ class FollowupJobForm(forms.HumasolSubform[F], ty.Generic[F]):
     def from_object(self, obj: F) -> None:
         """Fill in follow-up job from object."""
         self.subscriber.from_object(obj.subscriber)
-        for period in obj.periods:
-            self.periods.append_entry()
-            self.periods[-1].from_object(period)
+        utils.fill_field_list(self.periods, obj.periods)
 
     def get_data(self) -> dict[str, Any]:
         """Return the data in the form fields.

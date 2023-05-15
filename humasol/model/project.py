@@ -92,8 +92,7 @@ project_sdg_table = db.Table(
 
 # These models are also used to create the database entities
 # through the inheritance of db.Model
-# TODO: check if can remove pylint deactivation when used setters
-# pylint: disable=too-many-public-methods, too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes, too-many-public-methods
 class Project(model.BaseModel):
     """Abstract base class for all Humasol project.
 
@@ -201,10 +200,6 @@ class Project(model.BaseModel):
             model.ProjectComponent, lazy=True, cascade="all, delete-orphan"
         )
 
-    # project_components = db.relationship(
-    #     "ProjectComponent", lazy=True, cascade="all"
-    # )
-
     __mapper_args__ = {
         "polymorphic_on": type,
         "polymorphic_identity": "project",
@@ -236,9 +231,7 @@ class Project(model.BaseModel):
         components: list[model.ProjectComponent]
         kwargs: dict[str, ty.Any]
 
-    # pylint: disable=too-many-arguments
-    # pylint: disable=too-many-locals
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
     # pylint: disable=too-many-statements
     @abstractmethod
     def __init__(
@@ -452,9 +445,7 @@ class Project(model.BaseModel):
         self.data_file = f"{self.code}.json"
         # TODO: generate project folder file
 
-    # pylint: enable=too-many-statements
-    # pylint: enable=too-many-branches
-    # pylint: enable=too-many-locals
+    # pylint: enable=too-many-statements, too-many-branches, too-many-locals
     # pylint: enable=too-many-arguments
 
     # Magic methods #
@@ -753,7 +744,7 @@ class Project(model.BaseModel):
             self.set_sdgs([model.SDG.from_str(s) for s in params["sdgs"]])
 
         if "extra_data" in params and params["extra_data"]:
-            self.extra_data = params["extra_data"]
+            self.set_extra_data(params["extra_data"])
 
         if "location" in params:
             self.location.update(**params["location"])
@@ -872,25 +863,13 @@ class Project(model.BaseModel):
         self.sdgs = [s.sdg for s in self.sdgs_db]
         # TODO: also add extra data dict
 
-    # TODO: Add addition and removal functions for SDG
     def set_sdgs(self, sdgs: list[model.project_elements.SDG]) -> None:
         """Set the list of SDGs for this project."""
-        if not self.are_legal_sdgs(sdgs):
-            raise ValueError(
-                "Argument 'sdgs' has an illegal value. Should be non-empty "
-                "and only contain SDGs"
-            )
-
         self.sdgs = sdgs if sdgs else []
         self.sdgs_db = [model.project_elements.SdgDB(sdg) for sdg in self.sdgs]
 
     def set_project_data(self, folder: ty.Optional[str]) -> None:
         """Set URL to project folder folder."""
-        if not self.is_legal_data_folder(folder):
-            raise ValueError(
-                "Argument 'project_data' should be of type str or None"
-            )
-
         self.project_data = folder
 
     def set_extra_data(self, data: dict[str, str]) -> None:
@@ -898,12 +877,7 @@ class Project(model.BaseModel):
 
         Extra folder can be used to configure project managers.
         """
-        if not self.are_legal_extra_data(data):
-            raise ValueError(
-                "Illegal value for extra folder. Should be a dict mapping "
-                "strings to strings"
-            )
-
+        # TODO: map also to database entries once the relation exists
         self.extra_data = data
 
     @Snapshot.protect

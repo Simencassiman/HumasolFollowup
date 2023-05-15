@@ -27,7 +27,6 @@ if ty.TYPE_CHECKING:
 ENCODING = "utf-8"
 BaseModel: DeclarativeMeta = db.Model
 T = ty.TypeVar("T", bound=BaseModel)
-# Params = dict[str, Union[str, float, "Params"]]
 
 
 def _get_data_from_file(file: str) -> dict[str, str | float | dict]:
@@ -174,10 +173,6 @@ def save_project(project: model.Project) -> None:
         # pylint: enable=no-member
     except sqlalchemy.exc.IntegrityError as exc:
         raise exceptions.IntegrityException(str(exc)) from exc
-
-    # Save to file
-    # TODO: figure out how to do it on heroku
-    # _save_project_data_to_file(project.to_save_to_file(), project.data_file)
 
 
 def table_exists(table: str) -> bool:

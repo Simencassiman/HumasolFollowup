@@ -1,7 +1,9 @@
 """Module with forms required for security purposes."""
-import typing as ty
+
 
 # Python Libraries
+import typing as ty
+
 import flask_security.forms as sec_forms
 from wtforms import SelectMultipleField, SubmitField, ValidationError
 
@@ -23,12 +25,6 @@ class RegisterForm(
     )
     submit = SubmitField(sec_forms.get_form_field_label("register"))
 
-    def validate_roles(self, roles: SelectMultipleField) -> None:
-        """Validate form input for user roles."""
-        # TODO: do this through model interface
-        if len(roles.data) == 0:
-            raise ValidationError("At least one role must be selected")
-
     def get_data(self) -> dict[str, ty.Any]:
         """Return the data in the form fields.
 
@@ -41,3 +37,9 @@ class RegisterForm(
             "password": self.password.data,
             "roles": self.roles.data,
         }
+
+    def validate_roles(self, roles: SelectMultipleField) -> None:
+        """Validate form input for user roles."""
+        # TODO: do this through model interface
+        if len(roles.data) == 0:
+            raise ValidationError("At least one role must be selected")

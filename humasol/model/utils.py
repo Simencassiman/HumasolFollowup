@@ -45,6 +45,8 @@ def check_guards(obj: ty.Any, key: str, value: ty.Any) -> None:
 
 
 # pylint: disable=too-many-arguments
+
+
 def merge_update_list(
     old: list[T],
     new: list[dict[str, ty.Any]],

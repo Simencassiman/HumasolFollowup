@@ -1,4 +1,5 @@
 """Module providing utility functions for Flask and app setup."""
+
 # Python Libraries
 from functools import reduce
 from typing import TypeVar

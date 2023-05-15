@@ -374,8 +374,6 @@ class Supervisor(Person):
         "with_polymorphic": "*",
     }
 
-    # function = db.Column(db.String, nullable=False)
-
     @declared_attr
     def function(self):
         """Return database attribute for the function of the supervisor."""
@@ -488,7 +486,7 @@ class Partner(Person):
     # End of database definitions #
 
     # Disabling pylint because arguments are necessary
-    # pylint: disable-msg=too-many-arguments
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         name: str,
@@ -515,7 +513,7 @@ class Partner(Person):
         super().__init__(name, email, phone, organization)
         self.function = function
 
-    # pylint: enable-msg=too-many-arguments
+    # pylint: enable=too-many-arguments
 
     @staticmethod
     def is_legal_function(function: str) -> bool:

@@ -116,7 +116,7 @@ class EnergyProjectComponent(ProjectComponent):
         "with_polymorphic": "*",
     }
 
-    id = db.Column(  # Repeat ID at level to split hierarchy
+    id = db.Column(  # Repeat ID at level to split hierarchy in tables
         None,
         db.ForeignKey("project_component.id", ondelete="CASCADE"),
         primary_key=True,
@@ -701,17 +701,13 @@ class Battery(StorageComponent):
                 f"Unknown battery type: {label}"
             )
 
-        # pylint doesn't recognise subclass of enum, disable the error
-        # pylint: disable=no-member
         def __repr__(self) -> str:
             """Provide a string representation of the element."""
-            return self._value_
+            return self.value
 
         def __str__(self) -> str:
             """Provide a string version of the element."""
-            return self._value_
-
-        # pylint: enable=no-member
+            return self.value
 
     battery_type = db.Column(db.Enum(BatteryType))
     base_soc = db.Column(db.Float)

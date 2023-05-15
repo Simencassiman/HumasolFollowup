@@ -12,7 +12,7 @@ from typing import Optional
 # Local modules
 from humasol import model
 
-# TODO: convert managers lists to automated class detections
+# TODO: convert managers lists to automated class detections with registry
 
 
 API_MANAGERS = {model.ProjectCategory.ENERGY: {"VictronAPI"}}

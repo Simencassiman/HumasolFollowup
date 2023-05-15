@@ -1,8 +1,5 @@
 """Provide interface to model class data."""
 
-# Python Libraries
-
-# Local modules
 from humasol import model
 
 

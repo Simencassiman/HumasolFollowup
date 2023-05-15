@@ -10,7 +10,6 @@ UserRole    -- Set of privileges for a user
 User        -- User dataclass of a webapp user, used for authentication
 """
 
-
 # Python Libraries
 from __future__ import annotations
 
@@ -18,11 +17,9 @@ from enum import Enum
 
 from flask_security import RoleMixin, UserMixin
 
+# Local modules
 from humasol import model
 from humasol.repository import db
-
-# Local modules
-
 
 users_role = db.Table(
     "users_role",
@@ -36,11 +33,10 @@ users_role = db.Table(
     ),
 )
 
+
 # Disable pylint. These are dataclasses to be represented in the database
 # They don't necessarily need functionality
 # pylint: disable=too-few-public-methods
-
-
 class Role(Enum):
     """Enumeration of valid roles defined by Humasol."""
 
@@ -76,14 +72,10 @@ class Role(Enum):
         """Return a list of all roles working for Humasol."""
         return Role.HUMASOL_FOLLOWUP, Role.HUMASOL_PR, Role.HUMASOL_MEMBER
 
-    # pylint doesn't recognize enum subclasses (yet)
-    # pylint: disable=no-member
     @property
     def content(self) -> str:
         """Return the value of the enum object."""
-        return self._value_
-
-    # pylint: enable=no-member
+        return self.value
 
 
 class UserRole(RoleMixin, model.BaseModel):

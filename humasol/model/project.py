@@ -18,6 +18,7 @@ ProjectCategory -- Enum class providing the defined project categories and
 # Python Libraries
 from __future__ import annotations
 
+import copy
 import datetime
 import re
 import typing as ty
@@ -33,6 +34,9 @@ from humasol import exceptions, model
 from humasol.model import utils
 from humasol.model.snapshot import Snapshot
 from humasol.repository import db
+
+ExtraDatum = model.project_elements.ExtraDatum
+
 
 # Relationship tables between database entities
 project_students = db.Table(
@@ -416,28 +420,27 @@ class Project(model.BaseModel):
         self.category = category.name
         self.location = location
         self.work_folder = work_folder
-        self.dashboard = dashboard
-        self.save_data = save_data
-        self.project_data = project_data
-        self.extra_data = extra_data if extra_data is not None else {}
-        self.extra_data_db = [  # Wrap for db storage
-            model.project_elements.ExtraDatum(key, value)
-            for key, value in self.extra_data.items()
-        ]
-        self.sdgs = sdgs if sdgs is not None else []
-        self.sdgs_db = [model.project_elements.SdgDB(sdg) for sdg in self.sdgs]
-        self.data_source = data_source
         self.students = students
         self.supervisors = supervisors
         self.partners = partners if partners is not None else []
         self.contact_person = contact_person
+
+        self.extra_data = dict[str, str | list[str]]()
+        self.extra_data_db = list[ExtraDatum]()
+        self.set_extra_data(extra_data if extra_data is not None else {})
+
+        self.sdgs = list[model.SDG]()
+        self.sdgs_db = list[model.project_elements.SdgDB]()
+        self.set_sdgs(sdgs)
+
+        self.data_source = data_source
+        self.dashboard = dashboard
+        self.save_data = save_data
+        self.project_data = project_data
         self.subscriptions = subscriptions if subscriptions is not None else []
         self.tasks = tasks if tasks is not None else []
 
-        self._updated = False
-        self.project_components = list[
-            model.project_components.ProjectComponent
-        ]()
+        self.project_components = list[model.ProjectComponent]()
 
         if self.code is None:
             self._create_code()
@@ -495,9 +498,16 @@ class Project(model.BaseModel):
         return (
             data is None
             or isinstance(data, dict)
-            and all(
+            and all(  # For all items:
                 map(
-                    lambda t: isinstance(t[0], str) and isinstance(t[1], str),
+                    lambda t: isinstance(t[0], str)  # Key is a string
+                    and (
+                        isinstance(t[1], str)  # Value is a string
+                        or (  # Or list of strings
+                            isinstance(t[1], list)
+                            and all(map(lambda e: isinstance(e, str), t[1]))
+                        )
+                    ),
                     data.items(),
                 )
             )
@@ -861,24 +871,146 @@ class Project(model.BaseModel):
     def init_on_load(self) -> None:
         """Prepare instance when it is loaded from the database."""
         self.sdgs = [s.sdg for s in self.sdgs_db]
-        # TODO: also add extra data dict
+
+        extra_data = dict[str, str | list[str]]()
+        for ext_d in self.extra_data_db:
+            if ext_d.key in extra_data:
+                if isinstance(extra_data[ext_d.key], list):
+                    extra_data[ext_d.key].append(ext_d.value)  # type: ignore
+                else:
+                    extra_data[ext_d.key] = [
+                        extra_data[ext_d.key],  # type: ignore
+                        ext_d.value,
+                    ]
+            else:
+                extra_data[ext_d.key] = ext_d.value
+        self.extra_data = extra_data
 
     def set_sdgs(self, sdgs: list[model.project_elements.SDG]) -> None:
         """Set the list of SDGs for this project."""
         self.sdgs = sdgs if sdgs else []
         self.sdgs_db = [model.project_elements.SdgDB(sdg) for sdg in self.sdgs]
 
-    def set_project_data(self, folder: ty.Optional[str]) -> None:
-        """Set URL to project folder folder."""
-        self.project_data = folder
-
-    def set_extra_data(self, data: dict[str, str]) -> None:
+    def set_extra_data(self, data: dict[str, str | list[str]]) -> None:
         """Set the extra folder for this project.
 
-        Extra folder can be used to configure project managers.
+        Extra data can be used to configure project managers.
         """
-        # TODO: map also to database entries once the relation exists
-        self.extra_data = data
+        self.extra_data = copy.deepcopy(data)
+
+        # Merge with existing data (modify database as little as possible)
+        extra_data_db: dict[str, ExtraDatum | list[ExtraDatum]] = {}
+        for ext_d in self.extra_data_db:
+            if ext_d.key in extra_data_db:
+                if isinstance(extra_data_db[ext_d.key], list):
+                    extra_data_db[ext_d.key].append(ext_d)
+                else:
+                    extra_data_db[ext_d.key] = [
+                        extra_data_db[ext_d.key],  # type: ignore
+                        ext_d,
+                    ]
+            else:
+                extra_data_db[ext_d.key] = ext_d
+
+        new_extra_data_db = []
+
+        def merge_lists(
+            dkey: str, dval: list[str], db_val: list[ExtraDatum]
+        ) -> None:
+            """Merge new and old lists of extra data under the same key.
+
+            Merge the new list of extra data with key 'dkey' and old list of db
+            wrappers with key 'dkey'.
+            Reuses as many rapper objects as possible by just modifying their
+            value.
+            """
+            looper = iter(db_val)  # Create iterator to burn used elements
+            missed = []  # Container for burnt but unused elements
+
+            # Loop through old wrappers
+            for item in looper:
+                if item.value in dval:
+                    # Same value in old and new lists -> just keep
+                    dval.remove(item.value)
+                    new_extra_data_db.append(item)
+                else:
+                    # Old value not in the new list -> hold to reuse wrapper
+                    missed.append(item)
+                if len(dval) == 0:
+                    break
+            else:
+                # Only executes if there are still new values that haven't
+                # been processed
+
+                # Join existing but unused ExtraData wrapper objects
+                remainder = list(looper) + missed
+
+                # Loop through remaining new elements in list
+                for elem in dval:
+                    if len(remainder) > 0:
+                        # There are still unused wrapper objects -> use them
+                        new_el = remainder.pop(0)
+                        new_el.value = elem
+                    else:
+                        # Nothing left to reuse -> create new one
+                        new_el = ExtraDatum(dkey, elem)
+
+                    # Add to the new list
+                    new_extra_data_db.append(new_el)
+
+        def merge_list_to_item(
+            dkey: str, dval: list[str], db_val: ExtraDatum
+        ) -> None:
+            """Merge a new extra data list value to an old wrapper.
+
+            Reuses the old wrapper if its value is in the new list or by
+            replacing its value with the first one in the list.
+            """
+            if db_val.value in dval:
+                # Old value is in the list -> just keep
+                dval.remove(db_val.value)
+            else:
+                # Old value is not present anymore -> replace with
+                # first value in the list
+                db_val.value = dval.pop(0)
+                # Add processed element to the new list
+            new_extra_data_db.append(db_val)
+
+            # Process all remaining new elements
+            for elem in dval:
+                new_extra_data_db.append(ExtraDatum(dkey, elem))
+
+        for key, value in data.items():
+            if key in extra_data_db:
+                # Merge with existing
+                match (value, extra_data_db[key]):
+                    case (list(val), list(val_db)):
+                        if len(val) == 0:
+                            continue
+
+                        merge_lists(key, val, val_db)
+
+                    case (list(val), ExtraDatum(val_db)):
+                        if len(val) == 0:
+                            continue
+
+                        merge_list_to_item(key, val, val_db)
+
+                    case (str(val), list(val_db)):
+                        val_db[0].value = val
+                        new_extra_data_db.append(val_db[0])
+                    case (str(val), ExtraDatum(val_db)):
+                        val_db.value = val
+                        new_extra_data_db.append(val_db)
+            else:
+                # Create new one, this key doesn't exist yet
+                if isinstance(value, list):
+                    for elem in value:
+                        new_extra_data_db.append(ExtraDatum(key, elem))
+                else:
+                    new_extra_data_db.append(ExtraDatum(key, value))
+
+        self.extra_data_db = new_extra_data_db
 
     @Snapshot.protect
     def update(self, params: ProjectArgs) -> Project:

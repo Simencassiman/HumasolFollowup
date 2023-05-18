@@ -427,6 +427,10 @@ class ExtraDatum(db.Model):
         self.key = key
         self.value = value
 
+    def __repr__(self) -> str:
+        """Provide representation of this element."""
+        return f"ExtraDatum({self.key}, {self.value})"
+
 
 # pylint: enable=too-few-public-methods
 

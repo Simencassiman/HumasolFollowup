@@ -323,7 +323,7 @@ class HumasolApp(Flask):
     # pylint: disable=protected-access
 
     def get_session(self) -> Session:
-        """Return this apps current session."""
+        """Return this app's current session."""
         return self._session._get_current_object()
 
     def get_user(self) -> model.User:

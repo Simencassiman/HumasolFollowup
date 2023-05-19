@@ -226,7 +226,7 @@ class PartnerForm(PersonForm[model.Partner]):
             data = {
                 "name": self.organization_name.data,
                 "logo": self.logo.data,
-                "type": self._partner_type,
+                "partner_type": self._partner_type,
             }
 
             if self._partner_type == PartnerForm.southern_partner_type:
@@ -305,6 +305,7 @@ class PartnerForm(PersonForm[model.Partner]):
         return {
             "function": self.function.data,
             "organization": self.organization.get_data(),
+            "partner_type": self.partner_type.data,
             **super().get_data(),
         }
 
@@ -564,8 +565,8 @@ class PeriodForm(forms.HumasolSubform[model.Period]):
         return {
             "interval": self.interval.data,
             "unit": self.unit.data,
-            "start": self.start.data,
-            "end": self.end.data,
+            "start_date": self.start.data,
+            "end_date": self.end.data,
         }
 
     def validate_interval(self, interval) -> None:

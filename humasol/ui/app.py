@@ -236,7 +236,7 @@ class HumasolApp(Flask):
         parameters  -- Parameters and values to update. Contains the project
                         identifier as 'id'
         """
-        project = model_ops.get_project(project_id)
+        project = model_ops.get_project(project_id, eager=True)
         if project is None:
             raise exceptions.Error404("Project not found")
 
@@ -247,6 +247,16 @@ class HumasolApp(Flask):
             )
         ):
             raise exceptions.Error404("Unauthorized request.")
+
+        if (
+            parameters["location"]["coordinates"]["latitude"] is None
+            or parameters["location"]["coordinates"]["longitude"] is None
+        ):
+            # TODO: get actual coordinates
+            parameters["location"]["coordinates"] = {
+                "latitude": 0.0,
+                "longitude": 0.0,
+            }
 
         model_ops.edit_project(project, parameters)  # type: ignore
 

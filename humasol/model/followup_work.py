@@ -231,15 +231,15 @@ class FollowupJob(model.BaseModel, model.ProjectElement):
             self.last_notification = params["last_notification"]
 
         if "subscriber" in params:
-            self.subscriber.update(**params["subscriber"])
+            self.subscriber.update(params["subscriber"])
 
         if "periods" in params:
             self.periods = utils.merge_update_list(
                 self.periods,
                 params["periods"],
-                list(map(lambda d: d["start"], params["periods"])),
+                list(map(lambda d: d["start_date"], params["periods"])),
                 lambda p: p.start,
-                lambda p, d: p.update(**d),
+                lambda p, d: p.update(d),
                 lambda d: Period(**d),
             )
 

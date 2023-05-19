@@ -228,6 +228,7 @@ def edit_project(
     _______
     Project in its updated state.
     """
+    # Unify people
     people = {
         pers["email"]: pers
         for pers in (
@@ -236,6 +237,7 @@ def edit_project(
             + new_parameters["partners"]
         )
     }
+
     jobs = list[dict[str, ty.Any]]()
     if "tasks" in new_parameters:
         jobs += new_tasks if (new_tasks := new_parameters["tasks"]) else []
@@ -243,13 +245,28 @@ def edit_project(
         jobs += (
             new_subs if (new_subs := new_parameters["subscriptions"]) else []
         )
+
     for job in jobs:
+        # Unify subscribers with existing people
         if job["subscriber"]["email"] in people:
             job["subscriber"] = people[job["subscriber"]["email"]]
 
+        # Translate unit string into model object
+        for period in job["periods"]:
+            period["unit"] = model.Period.TimeUnit.get_unit(period["unit"])
+
     try:
+        # Remove all project related objects from database session to avoid
+        # intermediate conflicts
+        repo.expunge(project, recursive=True)
+
+        # Update the project with the new parameters
         project.update(new_parameters)
-        repo.commit()
+
+        # Merge into database, which will unify objects with the
+        # same primary key
+        repo.merge(project)
+
     except exceptions.RepositoryException as exc:
         raise exceptions.ModelException(exc) from exc
 
@@ -327,7 +344,7 @@ def get_my_tasks(user: model.User) -> list[model.Project]:
     ).all()
 
 
-def get_project(project_id: int) -> model.Project:
+def get_project(project_id: int, eager: bool = False) -> model.Project:
     """Retrieve project with provided ID from the database.
 
     Parameters
@@ -336,7 +353,7 @@ def get_project(project_id: int) -> model.Project:
     """
     try:
         project = repo.get_object_by_id(
-            model.Project, project_id  # type: ignore
+            model.Project, project_id, eager  # type: ignore
         )
     except exceptions.ObjectNotFoundException as exc:
         raise exceptions.ModelException(str(exc)) from exc

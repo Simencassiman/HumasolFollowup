@@ -317,7 +317,7 @@ class ProjectGUI(HumasolBlueprint):
         """
         if p_id := request.args.get("id", None):
             # The project is being edited
-            return self.edit_project(p_id)
+            return self.edit_project(int(p_id))
 
         form = forms.ProjectForm(request.form)
 
@@ -374,7 +374,7 @@ class ProjectGUI(HumasolBlueprint):
         if form.validate_on_submit():
             try:
 
-                self.app.edit_project(int(p_id), form.get_data())
+                self.app.edit_project(p_id, form.get_data())
                 self.app.get_session()["id"] = p_id
 
                 return redirect(url_for(f"gui.{self.NAME}.view_project"))

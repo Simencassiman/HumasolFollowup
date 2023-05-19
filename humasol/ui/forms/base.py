@@ -145,7 +145,7 @@ class ProjectElementWrapper(ty.Generic[T]):
         def from_object(self, obj: S) -> None:
             """Fill in wrapper with object."""
             self.element_type.data = obj.LABEL
-            self.form = self.element_class()
+            self.form = self.element_class(prefix=self._prefix)
             self.element.from_object(obj)
 
         def get_data(self) -> dict[str, ty.Any]:
@@ -204,7 +204,9 @@ class ProjectElementWrapper(ty.Generic[T]):
             )
 
             if self.element_type.data:
-                self.form = self.element_class(formdata=formdata, **kwargs)
+                self.form = self.element_class(
+                    formdata=formdata, prefix=self._prefix, **kwargs
+                )
 
         def validate(self, extra_validators=None) -> bool:
             """Validate form input for component type."""

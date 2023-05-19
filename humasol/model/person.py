@@ -483,6 +483,11 @@ class Partner(Person):
             "function", db.Column(db.String, nullable=False)
         )
 
+    @declared_attr
+    def organization(self) -> orm.RelationshipProperty:
+        """Return database relationship object to Organization."""
+        return db.relationship("Organization", lazy="subquery")
+
     # End of database definitions #
 
     # Disabling pylint because arguments are necessary
@@ -685,7 +690,8 @@ class Organization(model.BaseModel, model.ProjectElement):
             self.name = params["name"]
 
         if "logo" in params:
-            self.logo = params["logo"]
+            # self.logo = params["logo"]
+            self.logo = "logo.png"
 
         return self
 

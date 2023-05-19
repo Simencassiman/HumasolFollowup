@@ -757,10 +757,10 @@ class Project(model.BaseModel):
             self.set_extra_data(params["extra_data"])
 
         if "location" in params:
-            self.location.update(**params["location"])
+            self.location.update(params["location"])
 
         if "contact_person" in params:
-            self.contact_person.update(**params["contact_person"])
+            self.contact_person.update(params["contact_person"])
 
         def merge_person_list(old_list, new_list, const):
             """Merge list of objects and dictionaries."""
@@ -799,7 +799,7 @@ class Project(model.BaseModel):
                     new_tasks,
                     list(map(lambda d: d["name"], new_tasks)),
                     lambda ta: ta.name,
-                    lambda ta, dic: ta.update(**dic),
+                    lambda ta, dic: ta.update(dic),
                     lambda dic: construct_fw(model.followup_work.Task, dic),
                 )
             else:
@@ -813,7 +813,7 @@ class Project(model.BaseModel):
                 self.save_data = False
             else:
                 if self.data_source is not None:
-                    self.data_source.update(**params["data_source"])
+                    self.data_source.update(params["data_source"])
                 else:
                     self.set_data_source(
                         self.build_data_source(params["data_source"])

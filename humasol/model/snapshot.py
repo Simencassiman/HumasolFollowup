@@ -42,7 +42,7 @@ class Snapshot(ty.Generic[T]):
         self._obj.snapshot = True  # type: ignore
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit context.
 
         If an exception was raised, recover the initial state of the snapshot.
@@ -52,23 +52,26 @@ class Snapshot(ty.Generic[T]):
 
         if exc_type:
             self.recover()
-            return False
-
-        return True
 
     @staticmethod
     def protect(func) -> ty.Callable:
         """Wrap function to roll back object attributes after error."""
 
-        def _protected_apply(obj: U, *args, **kwargs) -> None:
+        def _protected_apply(obj: U, *args, **kwargs) -> ty.Any:
             """Apply called function with potential rollback.
 
             Only rolls back attributes specified by keywords to the function
             call.
             """
             if not hasattr(obj, "snapshot"):
+                # If it is not yet in a snapshot context, create one
                 with Snapshot[U](obj, tuple(kwargs.keys())):
-                    func(obj, *args, **kwargs)
+                    result = func(obj, *args, **kwargs)
+            else:
+                # Already in a snapshot context, continue as is
+                result = func(obj, *args, **kwargs)
+
+            return result
 
         return _protected_apply
 

@@ -686,20 +686,14 @@ class Battery(StorageComponent):
         LEAD_ACID = "Lead acid"
 
         @staticmethod
-        def from_str(label):
+        def from_str(label: str) -> Battery.BatteryType:
             """Provide enum element from the provided label string."""
-            if label in (
-                "Lithium ion",
-                "LITHIUM_ION",
-                "BatteryType.LITHIUM_ION",
-            ):
-                return Battery.BatteryType.LITHIUM_ION
-            if label in ("Lead acid", "LEAD_ACID", "BatteryType.LEAD_ACID"):
-                return Battery.BatteryType.LEAD_ACID
-
-            raise exceptions.IllegalArgumentException(
-                f"Unknown battery type: {label}"
-            )
+            try:
+                return Battery.BatteryType.__members__[label.upper()]
+            except KeyError as exc:
+                raise exceptions.IllegalArgumentException(
+                    f"Unknown battery type: {label}"
+                ) from exc
 
         def __repr__(self) -> str:
             """Provide a string representation of the element."""

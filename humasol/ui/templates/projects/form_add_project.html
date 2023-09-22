@@ -2,16 +2,14 @@
 {% import 'form_items/form_blank_items.html' as blanks %}
 {% import 'form_items/form_project_specifics.html' as project_specifics %}
 {% import 'form_items/energy.html' as energy %}
+{% from "_macros.html" import render_field_with_errors, render_field, render_field_errors, render_form_errors, prop_next %}
 
 {% block title %}
   Add Project
 {% endblock %}
+{% set nav = 'add-project' %}
 
 {% block content%}
-
-    <div class="page-header">
-        <h1 class="page-title">Add Project</h1>
-    </div>
 
     {% if id %}
         {% set action = url_for('gui.projects.add_project') + "?id=" + id|string  %}
@@ -19,129 +17,129 @@
         {% set action = url_for('gui.projects.add_project') %}
     {% endif %}
 
-    <form action="{{ action }}" method="POST" >
-        {{ form.hidden_tag() }}
-
-        <div id="project-general" class="form-section">
-            <div class="form-row form-item">
-                <h4>General information</h4>
+    <div class="sidebar-container form-content">
+        <div id="tabs-top"></div>
+        <nav id="sidebar" class="sidebar form-sidebar">
+            <div id="general-tab" class="sidebar-item visible">
+                <button class="form-sidebar-item" type="button" onclick="changeTab('general')">
+                    General Information
+                </button>
+                {% if general_errors %}
+                    <div class="form-field__error-indicator relative">!</div>
+                {% endif %}
             </div>
+            <div id="team-tab" class="sidebar-item">
+                <button class="form-sidebar-item" type="button" onclick="changeTab('team')">
+                    Team
+                </button>
+                {% if team_errors %}
+                    <div class="form-field__error-indicator relative">!</div>
+                {% endif %}
+            </div>
+            <div id="specifics-tab" class="sidebar-item">
+                <button class="form-sidebar-item" type="button" onclick="changeTab('specifics')">
+                    Project Specifics
+                </button>
+                {% if specifics_errors %}
+                    <div class="form-field__error-indicator relative">!</div>
+                {% endif %}
+            </div>
+            <div id="followup-tab" class="sidebar-item">
+                <button class="form-sidebar-item" type="button" onclick="changeTab('followup')">
+                    Follow-up
+                </button>
+                {% if followup_errors %}
+                    <div class="form-field__error-indicator relative">!</div>
+                {% endif %}
+            </div>
+        </nav>
 
-            <div class="form-row">
-                <div class="form-col form-item grow-four">
-                    {{ form.name.label(class="form-input-label") }}
-                    {{ form.name(class="form-input") }}
+        <form id="panels" class="panel-container grow-three" action="{{ action }}" method="POST" >
+            {{ form.hidden_tag() }}
+
+            <div id="general" class="panel form-panel">
+
+                <div class="form-row">
+                    {{ render_field_with_errors(form.name, class="grow-three") }}
+                    {{ render_field_with_errors(form.date, class="grow-one") }}
                 </div>
 
-                <div class="form-col form-item grow-one">
-                    {{ form.date.label(class="form-input-label") }}
-                    {{ form.date(class="form-input") }}
-                </div>
-            </div>
+                {{ render_field_with_errors(form.description, input_class="large") }}
+                {{ render_field_with_errors(form.category, input_class="form-field__input-list", is_input=False, onChange="projectSpecifics(this)") }}
 
-            <div class="form-row">
-                <div class="form-col form-item grow-one">
-                    {{ form.description.label(class="form-input-label") }}
-                    {{ form.description(class="form-input large", rows=7) }}
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-col form-item grow-one">
-                    {{ form.category.label(class="form-input-label") }}
-                    {{ form.category(class="form-list", onChange="projectSpecifics(this)") }}
-                </div>
-            </div>
-
-            <div class="form-row">
                 {% include 'form_items/location.html' %}
-            </div>
 
-            <div class="form-row">
-                <div class="form-col grow-one form-item">
-                    {{ form.sdgs.label(class="form-input-label") }}
-                    {{ form.sdgs(class="form-input-large", multiple=True) }}
+                {{ render_field_with_errors(form.sdgs, input_class="form-input-large", multiple=True) }}
+                {{ render_field_with_errors(form.work_folder) }}
+                <div class="form-row form-btn-nav">
+                    <div class="grow-two"></div>
+                    <button class="button button-primary grow-one" type="button" onClick="changeTab('team')">
+                        Next
+                    </button>
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-col grow-one form-item">
-                    {{ form.work_folder.label(class="form-input-label") }}
-                    {{ form.work_folder(class="form-input") }}
+            <div id="team" class="panel form-panel hidden">
+                <h2 class="form-header">Students</h2>
+                <div class="form-row">
+                    <div id="students" class="form-col form-card-list grow-one">
+
+                        {% set deletable = True %}
+                        {% for student in form.students %}
+                            {{ blanks.student(student) }}
+                        {% endfor %}
+
+                    </div>
+                </div>
+                <div class="form-row">
+                    <button id="students-button" class="button button-secondary button-team" type="button" onclick="addStudent()" >
+                        Add Student
+                    </button>
+                </div>
+
+                <h2 class="form-header">Supervisors</h2>
+                <div class="form-row">
+                    <div id="supervisors" class="form-col form-card-list grow-one">
+                        {% set deletable = True %}
+                        {% for supervisor in form.supervisors %}
+                            {{ blanks.supervisor(supervisor) }}
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <button id="supervisors-button" class="button button-secondary button-team" type="button" onclick="addSupervisor()">
+                        Add Supervisor
+                    </button>
+                </div>
+
+                <h2 class="form-header">Partners</h2>
+                <div class="form-row">
+                    <div id="partners" class="form-col form-card-list grow-one">
+                        {% set deletable = True %}
+                        {% for partner in form.partners %}
+                            {{ blanks.partner(partner) }}
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="form-row grow-one">
+                    <button id="partners-button" class="button button-secondary button-team" type="button" onclick="addPartner()">
+                        Add Partner
+                    </button>
+                </div>
+
+                <div class="form-row form-btn-nav">
+                    <button class="button button-secondary grow-one" type="button" onClick="changeTab('general')">
+                        Previous
+                    </button>
+                    <div class="grow-one"></div>
+                    <button class="button button-primary grow-one" type="button" onClick="changeTab('specifics')">
+                        Next
+                    </button>
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-col grow-one">
-                    <div class="form-row form-item">
-                        {{ form.students.label(class="form-input-label") }}
-                    </div>
-                    <div class="form-row">
-                        <div id="students" class="form-col grow-one">
+            <div id="specifics" class="panel form-panel hidden">
 
-                            {% set deletable = True %}
-                            {% for student in form.students %}
-                                {{ blanks.student(student) }}
-                            {% endfor %}
-
-                        </div>
-                    </div>
-                    <div class="form-row form-item grow-one">
-                        <button id="students-button" type="button" onclick="addStudent()" class="button-placeholder">
-                            Add Student
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-col grow-one">
-                    <div class="form-row form-item">
-                        {{ form.supervisors.label(class="form-input-label") }}
-                    </div>
-                    <div class="form-row">
-                        <div id="supervisors" class="form-col grow-one">
-                            {% set deletable = True %}
-                            {% for supervisor in form.supervisors %}
-                                {{ blanks.supervisor(supervisor) }}
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="form-row form-item grow-one">
-                        <button id="supervisors-button" type="button" onclick="addSupervisor()" class="button-placeholder">
-                            Add Supervisor
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-col grow-one">
-                    <div class="form-row form-item">
-                        {{ form.partners.label(class="form-input-label") }}
-                    </div>
-                    <div class="form-row">
-                        <div id="partners" class="form-col grow-one">
-                            {% set deletable = True %}
-                            {% for partner in form.partners %}
-                                {{ blanks.partner(partner) }}
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="form-row form-item grow-one">
-                        <button id="partners-button" type="button" onclick="addPartner()" class="button-placeholder">
-                            Add Partner
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <div id="project-specific" class="form-section">
-                <div class="form-row form-item">
-                    <h4>Project specific information</h4>
-                </div>
                 <div id="specifics-content">
                     <!-- Specific forms for subclasses of project will be inserted here -->
                     {% if form.category.data %}
@@ -150,106 +148,83 @@
                         <p class="form-item">Please select a project category...</p>
                     {% endif %}
                 </div>
-            </div>
-
-        <div id="project-followup" class="form-section {% if not show_followup %} hidden {% endif %}">
-            <div class="form-row form-item">
-                <h4>Follow-up information</h4>
-            </div>
-
-            <div class="form-row">
-                <div class="form-col grow-one">
-                    <div class="form-row form-item">
-                        {{ form.tasks.label(class="form-input-label") }}
-                    </div>
-                    <div class="form-row">
-                        <div id="tasks" class="form-col grow-one">
-                            {% for task in form.tasks %}
-                                {{ blanks.task(task) }}
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="form-row form-item grow-one">
-                        <button id="tasks-button" type="button" onclick="addTask()" class="button-placeholder">
-                            Add Task
-                        </button>
-                    </div>
+                <div class="form-row form-btn-nav">
+                    <button class="button button-secondary grow-one" type="button" onClick="changeTab('team')">
+                        Previous
+                    </button>
+                    <div class="grow-one"></div>
+                    <button class="button button-primary grow-one" type="button" onClick="changeTab('followup')">
+                        Next
+                    </button>
                 </div>
             </div>
 
-            {% include 'form_items/datasource.html' %}
-
-            <div class="form-row">
-                <div class="form-col grow-one form-item">
-                    {{ form.dashboard.label(class="form-input-label") }}
-                    {{ form.dashboard(class="form-input") }}
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-col form-item">
-                    {{ form.save_data.label(class="form-input-label") }}
-                </div>
-                <div class="form-col form-item">
-                    {{ form.save_data() }}
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-col grow-one">
-                    <div class="form-row form-item">
-                        {{ form.subscriptions.label(class="form-input-label") }}
+            <div id="followup" class="panel form-panel hidden">
+                <h2 class="form-header">Tasks</h2>
+                <div class="form-row">
+                    <div id="tasks" class="form-col form-card-list grow-one">
+                        {% for task in form.tasks %}
+                            {{ blanks.task(task) }}
+                        {% endfor %}
                     </div>
+                </div>
+                <div class="form-row grow-one">
+                    <button id="tasks-button" class="button button-secondary button-team" type="button" onclick="addTask()">
+                        Add Task
+                    </button>
+                </div>
 
-                    <div class="form-card form-row">
-                        <div class="form-col col-center grow-one">
-                            <img class="form-profile-image" src="{{ url_for('static', filename='img/humasol_icon_light.png') }}">
-                        </div>
-                        <div class="form-col grow-eight">
-                            <div class="form-row row-center">
-                                <div class="form-col grow-one">
-                                    <h4 class="form-item form-input-label">Humasol Follow-up</h4>
-                                    <h4 class="form-item form-input-label">Interval: 1</h4>
-                                </div>
-                                <div class="form-col grow-one">
-                                    <h4 class="form-item form-input-label">followup@humasol.be</h4>
-                                    <h4 class="form-item form-input-label">Interval Unit: Month</h4>
-                                </div>
+                <h2 class="form-header">Project Data</h2>
+                <div class="form-row">
+                    {{ render_field_with_errors(form.dashboard, "grow-one") }}
+                </div>
+                {% include 'form_items/datasource.html' %}
+
+                <h2 class="form-header">Subscriptions</h2>
+
+                <div class="form-card form-item form-row">
+                    <div class="form-col col-center grow-one">
+                        <img class="form-profile-image" src="{{ url_for('static', filename='img/humasol_icon_light.png') }}">
+                    </div>
+                    <div class="form-col grow-eight">
+                        <div class="form-row row-center">
+                            <div class="form-col grow-one">
+                                <h4 class="form-item form-input-label">Humasol Follow-up</h4>
+                                <h4 class="form-item form-input-label">Interval: 1</h4>
+                            </div>
+                            <div class="form-col grow-one">
+                                <h4 class="form-item form-input-label">followup@humasol.be</h4>
+                                <h4 class="form-item form-input-label">Interval Unit: Month</h4>
                             </div>
                         </div>
                     </div>
-                    <div class="form-row">
-                        <div id="subscriptions" class="form-col grow-one">
-                            {% for sub in form.subscriptions %}
-                                {{ blanks.subscription(sub) }}
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="form-row form-item grow-one">
-                        <button id="subscriptions-button" type="button" onclick="addSubscription()" class="button-placeholder">
-                            Add Subscription
-                        </button>
+                </div>
+                <div class="form-row">
+                    <div id="subscriptions" class="form-col form-card-list grow-one">
+                        {% for sub in form.subscriptions %}
+                            {{ blanks.subscription(sub) }}
+                        {% endfor %}
                     </div>
                 </div>
-            </div>
-        </div>
+                <div class="form-row form-item grow-one">
+                    <button id="subscriptions-button" class="button button-secondary button-team" type="button" onclick="addSubscription()">
+                        Add Subscription
+                    </button>
+                </div>
 
-        <div class="form-row">
-            <div class="form-col grow-one">
-                <button id="btn-followup" type="button"
-                        class="button button-secondary {% if show_followup %} hidden {% endif %}"
-                        onclick="showFollowup()">
-                    Follow-Up
-                </button>
+                <div class="form-row form-btn-nav">
+                    <button class="button button-secondary grow-one" type="button" onClick="changeTab('specifics')">
+                        Previous
+                    </button>
+                    <div class="grow-one"></div>
+                    {{ form.submit(class="button button-primary grow-one") }}
+                </div>
             </div>
-            <div class="form-col grow-three">
-                <!-- Used for spacing -->
-            </div>
-            <div class="form-col grow-one">
-                {{ form.submit(class="button button-primary") }}
-            </div>
-        </div>
-    </form>
+
+        </form>
+
+    </div>
+
 
 {% endblock %}
 

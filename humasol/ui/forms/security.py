@@ -8,12 +8,13 @@ import flask_security.forms as sec_forms
 from wtforms import SelectMultipleField, SubmitField, ValidationError
 
 # Local modules
+from humasol import model
 from humasol.model import model_authorization as ma
 from humasol.ui import forms
 
 
 class RegisterForm(
-    forms.HumasolBaseForm,
+    forms.HumasolBaseForm[model.User],
     sec_forms.UniqueEmailFormMixin,
     sec_forms.PasswordFormMixin,
 ):
@@ -24,6 +25,9 @@ class RegisterForm(
         choices=[(r.name, r.content) for r in ma.get_roles_all()],
     )
     submit = SubmitField(sec_forms.get_form_field_label("register"))
+
+    def from_object(self, obj: model.User) -> None:
+        """Fill in registration from object."""
 
     def get_data(self) -> dict[str, ty.Any]:
         """Return the data in the form fields.

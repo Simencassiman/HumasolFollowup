@@ -3,7 +3,6 @@ const MAX_ENTRIES = 10;
 
 const SCRIPT_SUFFIX = '-script'
 
-
 /******************
  Project specifics
 *******************/
@@ -48,22 +47,19 @@ function selectPartnerType(selector, type) {
     id = id.join('-');
 
     // Retrieve label and input fields
-    let label = $('label[for="' + id + '"]')
-    let input = $('#' + id)
+    let field = $('#' + id).parent()
 
     // Toggle visibility of both the country label and input
-    if (type == 'bp' && !input.hasClass("hidden")) {
-        label.addClass("hidden");
-        input.addClass("hidden");
-    } else if (type == 'sp' && input.hasClass("hidden")) {
-        label.removeClass("hidden");
-        input.removeClass("hidden");
+    if (type == 'bp' && !field.hasClass("hidden")) {
+        field.addClass("hidden");
+    } else if (type == 'sp' && field.hasClass("hidden")) {
+        field.removeClass("hidden");
     }
 }
 
 function setProjectSpecifics(content) {
 
-    let ps = $("#project-specific")
+    let ps = $("#specifics-content")
 
     if (ps.hasClass("hidden")) {
         ps.removeClass("hidden")
@@ -185,6 +181,7 @@ function deleteListElement(element, depth=0) {
     // Reactivate the button if it had been deactivated
     toggleButton(listId);
 }
+
 function toggleButton(listId, max_entries=MAX_ENTRIES) {
     // Create ID reference to the button in question
     // Buttons corresponding to a list with ID lid are named lid-button

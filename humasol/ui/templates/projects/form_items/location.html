@@ -1,45 +1,62 @@
-<div class="form-col grow-one">
-    <div class="form-row form-item">
-        {{ form.location.label(class="form-input-label") }}
-    </div>
-    <div class="form-row">
-        <div class="form-col grow-one">
-            <div class="form-row">
-                <div class="form-col form-item grow-one">
-                    {{ form.location.street.label(class="form-input-label") }}
-                    {{ form.location.street(class="form-input") }}
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-col form-item grow-one">
-                    {{ form.location.number.label(class="form-input-label") }}
-                    {{ form.location.number(class="form-input") }}
-                </div>
-            </div>
-        </div>
-        <div class="form-col grow-one">
-            <div class="form-row">
-                <div class="form-col form-item grow-one">
-                    {{ form.location.place.label(class="form-input-label") }}
-                    {{ form.location.place(class="form-input") }}
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-col form-item grow-one">
-                    {{ form.location.country.label(class="form-input-label") }}
-                    {{ form.location.country(class="form-input") }}
-                </div>
-            </div>
-
-        </div>
-        <div class="form-col col-bottom grow-one">
-            <div class="form-row">
-                <div class="form-col form-item grow-one">
-                    <button type="button" class="button button-secondary" onclick="">
-                        Use Coordinates
-                    </button>
-                </div>
-            </div>
-        </div>
+<!--<div class="form-col grow-one">-->
+<div class="form-row">
+    {{ form.location.label(class="form-input-label") }}
+</div>
+<div class="form-row">
+    {{ render_field_with_errors(form.location.street, class="grow-eight") }}
+    {{ render_field_with_errors(form.location.number, class="grow-one") }}
+</div>
+<div class="form-row">
+    {{ render_field_with_errors(form.location.place, class="grow-one") }}
+    {{ render_field_with_errors(form.location.country, class="grow-one") }}
+</div>
+<div class="form-row">
+    {{ render_field_with_errors(form.location.longitude, class="grow-one hidden") }}
+    {{ render_field_with_errors(form.location.latitude, class="grow-one hidden") }}
+    <div class="form-col grow-one">
+        <button type="button" class="button button-secondary" onclick="">
+            Use Coordinates
+        </button>
     </div>
 </div>
+<!--    <div class="form-row">-->
+<!--        <div class="form-col grow-one">-->
+<!--            <div class="form-row">-->
+<!--                <div class="form-col form-item grow-one">-->
+<!--                    {{ form.location.street.label(class="form-input-label") }}-->
+<!--                    {{ form.location.street(class="form-input") }}-->
+<!--                </div>-->
+<!--            </div>-->
+<!--            <div class="form-row">-->
+<!--                <div class="form-col form-item grow-one">-->
+<!--                    {{ form.location.number.label(class="form-input-label") }}-->
+<!--                    {{ form.location.number(class="form-input") }}-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <div class="form-col grow-one">-->
+<!--            <div class="form-row">-->
+<!--                <div class="form-col form-item grow-one">-->
+<!--                    {{ form.location.place.label(class="form-input-label") }}-->
+<!--                    {{ form.location.place(class="form-input") }}-->
+<!--                </div>-->
+<!--            </div>-->
+<!--            <div class="form-row">-->
+<!--                <div class="form-col form-item grow-one">-->
+<!--                    {{ form.location.country.label(class="form-input-label") }}-->
+<!--                    {{ form.location.country(class="form-input") }}-->
+<!--                </div>-->
+<!--            </div>-->
+
+<!--        </div>-->
+<!--        <div class="form-col col-bottom grow-one">-->
+<!--            <div class="form-row">-->
+<!--                <div class="form-col form-item grow-one">-->
+<!--                    <button type="button" class="button button-secondary" onclick="">-->
+<!--                        Use Coordinates-->
+<!--                    </button>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->

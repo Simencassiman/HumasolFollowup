@@ -1,0 +1,53 @@
+{% macro render_field_with_errors(field, class="", input_class="", is_input=True) %}
+    <div class="form-field {% if field.errors %}form-field__with-error{% endif %} {{ class }}">
+<!--    <div class="form-field {% if field.errors %}form-field__with-error{% endif %} {{ class }}" id="{{ field.id|default('fs-field') }}">-->
+        {{ field.label(class="form-field__label") }}
+        {% if is_input %}
+            {{ field(class="form-field__input " + input_class, **kwargs)|safe }}
+        {% else %}
+            {{ field(class=input_class, **kwargs)|safe }}
+        {% endif %}
+
+        {% if field.errors %}
+            <div class="form-field__error-indicator">!</div>
+            <ul class="form-field__error-list">
+                {% for error in field.errors %}
+                    <li class="form-field__error">{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro render_field(field, class="") %}
+    <div id="{{ field.id|default('fs-field') }}">{{ field(class=class, **kwargs)|safe }}</div>
+{% endmacro %}
+
+{% macro render_field_errors(field) %}
+    <div class="fs-div" id="{{ field.id if field else 'fs-field' }}">
+        {% if field and field.errors %}
+        <ul>
+            {% for error in field.errors %}
+            <li class="fs-error-msg">{{ error }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{# render WTForms (>3.0) form level errors #}
+{% macro render_form_errors(form) %}
+{% if form.form_errors %}
+<div class="fs-div" id="fs-form-errors">
+    <ul>
+        {% for error in form.form_errors %}
+        <li class="fs-error-msg">{{ error }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro prop_next() -%}
+{% if 'next' in request.args %}?next={{ request.args.next|urlencode }}{% endif %}
+{%- endmacro %}

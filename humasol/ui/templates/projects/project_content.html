@@ -1,31 +1,36 @@
-<div class="page-header">
-    <h1 class="page-title">{{ project.name }}</h1>
-    {% if editable %}
-        <a class="nav button button-secondary" href="{{url_for('gui.projects.view_edit_project')}}?id={{ project.id }}">Edit</a>
-        <a class="nav button button-secondary" href="{{url_for('gui.projects.remove_project')}}?id={{ project.id }}">Delete</a>
-    {% endif %}
-</div>
+<!--<div class="page-header">-->
+<!--    <h1 class="page-title">{{ project.name }}</h1>-->
+<!--    {% if editable %}-->
+<!--        <a class="nav button button-secondary" href="{{url_for('gui.projects.view_edit_project')}}?id={{ project.id }}">Edit</a>-->
+<!--        <a class="nav button button-secondary" href="{{url_for('gui.projects.remove_project')}}?id={{ project.id }}">Delete</a>-->
+<!--    {% endif %}-->
+<!--</div>-->
 
 <div class="project-content">
-    <div id="general-info" class="project-section">
-        <h2 class="hidden">General Project Information</h2>
-        <div class="project-row space">
-            <div class="project-col">
-                <p>Project category: {{ project.category|capitalize }}</p>
-                <p>Date of completion: {{ project.implementation_date.strftime('%d-%m-%Y') }}</p>
+    <div id="general-info" class="col project-content">
+<!--        <h2 class="hidden">General Project Information</h2>-->
+        <div class="project-cover row">
+            <div class="col grow-one justify-center project-cover-info">
+                <span class="project-category">{{ project.category|capitalize }}</span>
+                <span class="project-date">{{ project.implementation_date.strftime('%m.%Y') }}</span>
+                <span class="project-location">
+                    {% if project.location.address.street %}
+                        {{ project.location.address.street|capitalize }}
+                    {% endif %}
+                    {% if project.location.address.number %}
+                        {{ project.location.address.number }},
+                    {% endif %}
+                    {{ project.location.address.place }},
+                    <span class="project-country">{{ project.location.address.country }}</span>
+                </span>
             </div>
-            <div class="project-col location">
-                <p>Project location</p>
-                <p>{{ project.location.address.street }}, {{ project.location.address.number }}</p>
-                <p>{{ project.location.address.place }}, {{ project.location.address.country }}</p>
+            <div class="project-description col grow-one justify-center">
+                {{ project.description }}
             </div>
-        </div>
-        <div class="description">
-            <p>{{ project.description }}</p>
         </div>
     </div>
-    <div class="project-section sdg-section">
-        <h2 class="sdg-title">Sustainable Development Goals (SDG)</h2>
+    <div class="sdg-section">
+        <h2 class="project-section-header">Sustainable Development Goals</h2>
         <div class="sdgs">
             {% for sdg in project.sdgs %}
                 <!-- <img src="{{ sdg.icon }}"> -->
@@ -40,8 +45,8 @@
             {% endfor %}
         </div>
     </div>
-    <div id="students" class="project-section person-section">
-        <h2>Students</h2>
+    <div id="students" class="project-section">
+        <h2 class="project-section-header">Students</h2>
         <div class="person-list">
             {% for student in project.students %}
                 <div class="person-card">
@@ -64,8 +69,8 @@
             {% endfor %}
         </div>
     </div>
-    <div id="supervisors" class="project-section person-section">
-        <h2>Project Supervisors</h2>
+    <div id="supervisors" class="project-section">
+        <h2 class="project-section-header">Project Supervisors</h2>
         <div class="person-list">
             {% for super in project.supervisors %}
                 <div class="person-card">
@@ -87,8 +92,8 @@
             {% endfor %}
         </div>
     </div>
-    <div id="partners" class="project-section person-section">
-        <h2>Partners</h2>
+    <div id="partners" class="project-section">
+        <h2 class="project-section-header">Partners</h2>
         <div class="person-list">
             {% for partner in project.partners %}
                 <div class="person-card">
@@ -111,11 +116,10 @@
             {% endfor %}
         </div>
     </div>
-    <div id="details-section" class="project-section">
-        <h2>Project Details</h2>
-
-        <div class="details-section">
-            <div class="details-col info grow-two">
+    <div id="details-section" class="details-section">
+        <h2 class="project-section-header project-details__header">Project Details</h2>
+        <div class="project-details">
+            <div class="col grow-three space-between">
                 <p>Project work folder: {{ project.work_folder }}</p>
                 {% if project.save_data %}
                     <p>Project data: {{ project.project_data }}</p>
@@ -130,8 +134,8 @@
                     <p>Report manager: {{ project.data_source.report_manager }}</p>
                 {% endif %}
             </div>
-            <div class="details-col contact grow-one">
-                <p class="strong">Contact Person</p>
+            <div class="contact-person col align-center justify-center grow-two">
+                <p>Contact Person</p>
                 <img class="person-img" src="{{ url_for('static', filename='img/humasol_icon_light.png') }}">
                 <p>{{ project.contact_person.name }}</p>
                 <p>{{ project.contact_person.email }}</p>
@@ -144,54 +148,14 @@
     </div>
 
     {% if has_followup %}
-        <div id="followup" class="project-section">
-            <h2>Project Follow-up</h2>
-
+        <div id="followup">
             {% if project.tasks | length > 0 %}
                 <div class="project-section">
-                    <h3>Tasks</h3>
+                    <h2 class="project-section-header">Tasks</h2>
                     {% for task in project.tasks %}
-                    <div class="followup-work">
-                        <div class="task-info grow-two">
-                            <p>Task: {{ task.name }}</p>
-                            <p>Description: {{ task.function }}</p>
-
-                            <div>
-                                <p>
-                                    Task
-                                    {% if task.periods|length > 1 %}
-                                    periods
-                                    {% else %}
-                                    period
-                                    {% endif %}
-                                </p>
-
-                                {% for period in task.periods %}
-                                <p>
-                                    Every {{ period.interval }}
-                                    {% if period.interval > 1 %}
-                                    {{ period.get_unit() }}s,
-                                    {% else %}
-                                    {{ period.get_unit() }},
-                                    {% endif %}
-                                    from {{ period.start.strftime('%d-%m-%Y') }}
-                                    {% if period.end %}
-                                    until {{ period.end.strftime('%d-%m-%Y') }}
-                                    {% endif %}
-                                </p>
-                                {% endfor %}
-                            </div>
-
-                            <p>
-                                Last notified:
-                                {% if task.last_notification %}
-                                {{ task.last_notification }}
-                                {% else %}
-                                not yet notified
-                                {% endif %}
-                            </p>
-                        </div>
-                        <div class="task-person grow-one">
+                    <div class="task grow-one grow-width">
+                        <div class="contact-person col align-center justify-center grow-one grow-width">
+                            <p>Contact Person</p>
                             <img class="person-img" src="{{ url_for('static', filename='img/humasol_icon_light.png') }}">
                             <p>{{ task.subscriber.name }}</p>
                             <p>{{ task.subscriber.email }}</p>
@@ -200,6 +164,49 @@
                             {% endif %}
                             <p>{{ task.subscriber.organization.name }}</p>
                         </div>
+                        <div class="task-info col grow-three grow-width">
+                            <p class="task-title">{{ task.name }}</p>
+                            <p>{{ task.function }}</p>
+                            <p class="last-notified">
+                                Last notified:
+                                {% if task.last_notification %}
+                                {{ task.last_notification }}
+                                {% else %}
+                                not yet notified
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <div class="task-periods col grow-three grow-width">
+                            <p>
+                                {% if task.periods|length > 1 %}
+                                Periods
+                                {% else %}
+                                Period
+                                {% endif %}
+                            </p>
+
+                            {% for period in task.periods %}
+                            <div class="period row">
+                                <p class="period-range">
+                                    {{ period.start.strftime('%d.%m.%Y') }}
+                                    -
+                                    {% if period.end %}
+                                        {{ period.end.strftime('%d.%m.%Y') }}
+                                    {% endif %}
+                                </p>
+                                <p class="period-interval">
+                                    Interval: {{ period.interval }}
+                                    {% if period.interval > 1 %}
+                                        {{ period.get_unit() }}s
+                                    {% else %}
+                                        {{ period.get_unit() }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                            {% endfor %}
+                        </div>
+
                     </div>
                     {% endfor %}
                 </div>
@@ -207,14 +214,14 @@
 
             {% if project.subscription | length > 0 %}
                 <div class="project-section">
-                    <h3>Subscriptions</h3>
+                    <h2>Subscriptions</h2>
                     {% for sub in project.subscriptions %}
                     <div class="followup-work">
                         <div class="sub-img">
                             <img class="person-img" src="{{ url_for('static', filename='img/humasol_icon_light.png') }}">
                         </div>
 
-                        <div class="sub-info grow-one">
+                        <div class="sub-info grow-one grow-width">
                             <p>{{ sub.subscriber.name }}</p>
                             <p>{{ sub.subscriber.email }}</p>
                             {% if sub.subscriber.phone %}
@@ -223,7 +230,7 @@
                             <p>{{ sub.subscriber.organization.name }}</p>
                         </div>
 
-                        <div class="sub-info grow-one">
+                        <div class="sub-info grow-one grow-width">
                             <p>
                                 Subscription
                                 {% if sub.periods|length > 1 %}
@@ -263,3 +270,6 @@
         </div>
     {% endif %}
 </div>
+<script>
+    $('#page-title').text('{{ project.name}}')
+</script>

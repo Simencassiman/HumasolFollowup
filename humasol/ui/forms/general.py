@@ -44,6 +44,7 @@ class PersonForm(forms.ProjectElementForm[P], ty.Generic[P]):
     person_name = StringField("Name")
     email = StringField("Email")
     phone = StringField("Phone number")
+    contact = BooleanField("Contact Person")
 
     # LABEL will be a constant
     # pylint: disable=invalid-name

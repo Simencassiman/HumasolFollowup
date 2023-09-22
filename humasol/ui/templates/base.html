@@ -14,37 +14,51 @@
         {%- endblock metas %}
 
         {%- block styles %}
+<!--            <link href='https://fonts.googleapis.com/css?family=Inter' rel='stylesheet'>-->
+<!--            <link href="https://fonts.cdnfonts.com/css/inter" rel="stylesheet">-->
+
             <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
         {%- endblock styles %}
 
         <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+<!--        <script src="{{ url_for('static', filename='scripts/scrolling.js') }}" type="module" defer></script>-->
     {%- endblock head %}
     </head>
     <body id="body" {% block body_attribs %}{% endblock body_attribs %}>
     {% block body -%}
         <header class="main-header">
-            <a href="{{ url_for('gui.index') }}">
-                <img class="main-header-image" src="{{ url_for('static', filename='img/humasol_logo_light.png') }}">
-            </a>
-            {% block navbar %}
-            <nav class="nav main-nav">
-                <ul>
-                    <li><a href="{{ url_for('gui.projects.view_projects') }}">Projects</a></li>
-                    {% if can_add_project %}
-                        <li>
-                            <a href="{{ url_for('gui.projects.view_add_project') }}">Add Project</a>
-                        </li>
-                    {% endif %}
-                    {% if user_authenticated %}
-                        <li><a href="{{ url_for('gui.dashboard.view_dashboard') }}">Dashboard</a></li>
-                        <li><a href="{{ url_for('gui.security.logout') }}">Logout</a></li>
-                    {% else %}
-                        <li><a href="{{ url_for('gui.security.view_login') }}">Login</a></li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {%- endblock navbar %}
+            <div class="site-header">
+                <div class="nav-bar">
+                    <a href="{{ url_for('gui.index') }}">
+                        <img class="main-header-image" src="{{ url_for('static', filename='img/humasol_logo_light.png') }}">
+                    </a>
+                    {% block navbar -%}
+                        <nav class="nav main-nav">
+                            <ul>
+                                <li class="{% if nav == 'projects' %}selected{% endif %}"><a href="{{ url_for('gui.projects.view_projects') }}">Projects</a></li>
+                                {% if can_add_project %}
+                                    <li class="{% if nav == 'add-project' %}selected{% endif %}">
+                                        <a href="{{ url_for('gui.projects.view_add_project') }}">Add Project</a>
+                                    </li>
+                                {% endif %}
+                                {% if user_authenticated %}
+                                    <li class="{% if nav == 'dashboard' %}selected{% endif %}"><a href="{{ url_for('gui.dashboard.view_dashboard') }}">Dashboard</a></li>
+                                    <li><a href="{{ url_for('gui.security.logout') }}">Logout</a></li>
+                                {% else %}
+                                    <li><a href="{{ url_for('gui.security.view_login') }}">Login</a></li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {%- endblock navbar %}
+                </div>
+            </div>
         </header>
+        <div class="page-header">
+            {% block page_header -%}
+                <h1 id="page-title" class="page-header__text">{{ self.title() }}</h1>
+            {%- endblock %}
+        </div>
+        <div class="header-spacer"></div>
         <div class="message-container">
             {% for msg in get_flashed_messages() %}
                 {{ utils.message(msg, loop.index) }}
@@ -76,6 +90,7 @@
                  return f'm {s[0]},{s[1]} a {r},{r} 0 {larg_arc} 0 {e[0]},{e[1]}'
             -->
         </div>
+        <div class="footer"><div></div></div>
 
         <script type="text/javascript" src="{{ url_for('static', filename='scripts/base.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='scripts/utils.js') }}"></script>

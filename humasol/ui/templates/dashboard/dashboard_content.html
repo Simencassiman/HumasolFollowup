@@ -1,34 +1,31 @@
+<div class="sidebar-container">
+    <div id="tabs-top"></div>
 
-<div class="sidebar">
-    {% for tab in tabs.keys() %}
-    {% if tab == 'profile' %}
-            {% set visibility = "sidebar-item__selected" %}
-        {% else %}
-            {% set visibility = "" %}
-        {% endif %}
-        <button class="sidebar-item tablink {{visibility}}" name="{{ tab }}" onclick="openLink(event, name)">
-            {{ tab | capitalize }}
-        </button>
-    {% endfor %}
-</div>
+    <nav id="sidebar" class="sidebar">
+        {% for tab in tabs.keys() %}
+            {% if tab == 'profile' %}
+                {% set visibility = "visible" %}
+            {% else %}
+                {% set visibility = "" %}
+            {% endif %}
+            <div id="{{ tab }}-tab" class="sidebar-item {{visibility}}">
+                <button type="button" name="{{ tab }}" onclick="changeTab(name)">
+                    {{ tab | capitalize }}
+                </button>
+            </div>
+        {% endfor %}
+    </nav>
 
-<div class="dash-panel">
-    {% for tab, panel in tabs.items() %}
-        {% if tab == 'profile' %}
-            {% set visibility = "" %}
-        {% else %}
-            {% set visibility = "hidden" %}
-        {% endif %}
-        <div id="{{ tab }}" class="dash-panel__container dashboard-panel {{visibility}}">
-            {{ panel | safe}}
-        </div>
-    {% endfor %}
-
-    <!--
-    <div id="Left" class="w3-container city w3-animate-left" style="display:none">
-        <h2>Slide in from left</h2>
-        <p>Paris is the capital of France.</p>
-        <p>The Paris area is one of the largest population centers in Europe, with more than 12 million inhabitants.</p>
+    <div id="panels" class="panel-container grow-three">
+        {% for tab, panel in tabs.items() %}
+            {% if tab == 'profile' %}
+                {% set visibility = "" %}
+            {% else %}
+                {% set visibility = "hidden" %}
+            {% endif %}
+            <div id="{{ tab }}" class="panel {{visibility}}">
+                {{ panel | safe}}
+            </div>
+        {% endfor %}
     </div>
-    -->
 </div>

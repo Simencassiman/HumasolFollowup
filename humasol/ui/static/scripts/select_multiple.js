@@ -23,7 +23,7 @@ SOFTWARE.
  */
 
 
-function MultiSelectTag (el, customs = {shadow: false, rounded:true}) {
+function MultiSelectTag (el, customs = {shadow: false, rounded:false}) {
     var element = null
     var options = null
     var customSelectContainer = null

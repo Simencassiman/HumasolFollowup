@@ -146,6 +146,12 @@ class GUI(HumasolBlueprint):
         """
         return dict(
             user_authenticated=self.app.get_user().is_authenticated,
+            can_add_project=len(
+                set(self.app.get_user().roles).intersection(
+                    ProjectGUI.ROLES_ADD_PROJECT
+                )
+            )
+            > 0,
         )
 
     def favicon(self) -> Response:
@@ -254,17 +260,6 @@ class ProjectGUI(HumasolBlueprint):
             n: {f.__name__: f() for f in fs}
             for n, fs in forms.get_subforms().items()
         }
-
-        self.context_processor(
-            lambda: dict(
-                can_add_project=len(
-                    set(self.app.get_user().roles).intersection(
-                        self.ROLES_ADD_PROJECT
-                    )
-                )
-                > 0
-            )
-        )
 
     def _bind_routes(self) -> None:
         """Bind the URL routes to the interface functions."""
@@ -536,6 +531,10 @@ class ProjectGUI(HumasolBlueprint):
             show_followup=show_followup,
             _forms=self._forms,
             unwrap=forms.utils.unwrap,
+            general_errors=False,
+            team_errors=False,
+            specifics_errors=False,
+            followup_errors=True,
         )
 
     @roles_accepted(*ROLES_ADD_PROJECT)
@@ -583,6 +582,10 @@ class ProjectGUI(HumasolBlueprint):
             show_followup=has_followup,
             _forms=self._forms,
             unwrap=forms.utils.unwrap,
+            general_errors=False,
+            team_errors=False,
+            specifics_errors=False,
+            followup_errors=True,
         )
 
     @roles_accepted(*ROLES_VIEW_PROJECT)

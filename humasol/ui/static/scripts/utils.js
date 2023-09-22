@@ -28,6 +28,42 @@ function addScript(id, src, callback=null) {
     }
 }
 
+function changeTab(target) {
+    let tabs = $('#sidebar')
+    let panels = $('#panels')
+
+    // Toggle tab display
+    tabs.children('div')
+        .each((idx, item) => {
+            item = $(item)
+            if (item.attr('id') == (target + '-tab') && !item.hasClass('visible')) {
+                item.addClass('visible')
+            } else if (item.attr('id') != (target + '-tab') && item.hasClass('visible')) {
+                item.removeClass('visible')
+            }
+    })
+
+    // Toggle panel display
+    panels.children('div.panel')
+        .each((idx, elem) => {
+            elem = $(elem)
+            if (elem.attr('id') == target && elem.hasClass('hidden')) {
+                elem.removeClass('hidden')
+            } else if (elem.attr('id') != target && !elem.hasClass('hidden')) {
+                elem.addClass('hidden')
+            }
+    })
+
+    const yOffset = -110;
+    const element = document.getElementById('tabs-top');
+
+    if (element != null) {
+        const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+
+        window.scrollTo({top: y, behavior: 'smooth'});
+    }
+}
+
 function scriptLoaded() {
   console.log("Script is ready to rock and roll!");
 }

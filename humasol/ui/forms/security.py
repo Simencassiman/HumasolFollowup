@@ -46,4 +46,6 @@ class RegisterForm(
         """Validate form input for user roles."""
         # TODO: do this through model interface
         if len(roles.data) == 0:
-            raise ValidationError("At least one role must be selected")
+            error = "At least one role must be selected"
+            self.roles.errors.append(error)
+            raise ValidationError(error)

@@ -228,7 +228,9 @@ class ProjectElementWrapper(ty.Generic[T]):
         def validate_component_type(self, comp_type) -> None:
             """Validate form input for component type."""
             if comp_type.data not in self._elements:
-                raise ValidationError("Invalid component label")
+                error = "Invalid component label"
+                self.element_type.errors.append(error)
+                raise ValidationError(error)
 
         def __iter__(self) -> Iterator[str]:
             """Iterate over the classes contained in this wrapper."""

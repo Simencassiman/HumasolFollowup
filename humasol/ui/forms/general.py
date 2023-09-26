@@ -81,9 +81,9 @@ class PersonForm(forms.ProjectElementForm[P], ty.Generic[P]):
             name.data = name.data.strip()
 
         if not model_val.is_legal_person_name(name.data):
-            raise ValidationError(
-                "Name must not be empty and made up of letters"
-            )
+            error = "Name must not be empty and made up of letters"
+            self.person_name.errors.append(error)
+            raise ValidationError(error)
 
     def validate_email(self, email: wtforms.StringField) -> None:
         """Validate form input for email."""
@@ -91,9 +91,9 @@ class PersonForm(forms.ProjectElementForm[P], ty.Generic[P]):
             email.data = email.data.strip()
 
         if not model_val.is_legal_person_email(email.data):
-            raise ValidationError(
-                "Email may not be empty and should be a valid address"
-            )
+            error = "Email may not be empty and should be a valid address"
+            self.email.errors.append(error)
+            raise ValidationError(error)
 
     def validate_phone(self, phone: wtforms.StringField) -> None:
         """Validate from input for phone."""
@@ -104,10 +104,12 @@ class PersonForm(forms.ProjectElementForm[P], ty.Generic[P]):
             phone.data = None
 
         if not model_val.is_legal_person_phone(phone.data):
-            raise ValidationError(
+            error = (
                 "Phone must be empty or a legal phone number of the form "
                 "(+32)123456789"
             )
+            self.phone.errors.append(error)
+            raise ValidationError(error)
 
 
 class StudentForm(PersonForm[model.Student]):
@@ -144,7 +146,9 @@ class StudentForm(PersonForm[model.Student]):
             uni.data = uni.data.strip()
 
         if not model_val.is_legal_student_university(uni.data):
-            raise ValidationError("Invalid university")
+            error = "Invalid university"
+            self.university.errors.append(error)
+            raise ValidationError(error)
 
     def validate_field_of_study(self, field) -> None:
         """Validate form input for field of study."""
@@ -152,7 +156,9 @@ class StudentForm(PersonForm[model.Student]):
             field.data = field.data.strip()
 
         if not model_val.is_legal_student_field_of_study(field.data):
-            raise ValidationError("Invalid field of study")
+            error = "Invalid field of study"
+            self.field_of_study.errors.append(error)
+            raise ValidationError(error)
 
 
 class SupervisorForm(PersonForm[model.Supervisor]):
@@ -183,7 +189,9 @@ class SupervisorForm(PersonForm[model.Supervisor]):
             function.data = function.data.strip()
 
         if not model_val.is_legal_supervisor_function(function.data):
-            raise ValidationError("Invalid supervisor function")
+            error = "Invalid supervisor function"
+            self.function.errors.append(error)
+            raise ValidationError(error)
 
 
 class PartnerForm(PersonForm[model.Partner]):
@@ -257,7 +265,9 @@ class PartnerForm(PersonForm[model.Partner]):
             if self._validate and not model_val.is_legal_organization_name(
                 name.data
             ):
-                raise ValidationError("Invalid organization name")
+                error = "Invalid organization name"
+                self.organization_name.errors.append(error)
+                raise ValidationError(error)
 
         def validate_logo(self, logo) -> None:
             """Validate form input for the organization logo."""
@@ -275,7 +285,9 @@ class PartnerForm(PersonForm[model.Partner]):
                     country.data
                 )
             ):
-                raise ValidationError("Invalid organization country")
+                error = "Invalid organization country"
+                self.country.errors.append(error)
+                raise ValidationError(error)
 
     function = StringField("Function")
     partner_type = SelectField(
@@ -316,7 +328,9 @@ class PartnerForm(PersonForm[model.Partner]):
             function.data = function.data.strip()
 
         if not model_val.is_legal_partner_function(function.data):
-            raise ValidationError("Invalid partner function")
+            error = "Invalid partner function"
+            self.function.errors.append(error)
+            raise ValidationError(error)
 
     def validate_partner_type(self, p_type) -> None:
         """Set the organization partner type.
@@ -374,7 +388,9 @@ class LocationFrom(forms.HumasolSubform[model.Location]):
             street.data = street.data.strip()
 
         if not model_val.is_legal_address_street(street.data):
-            raise ValidationError("Invalid street name")
+            error = "Invalid street name"
+            self.street.errors.append("Invalid street name")
+            raise ValidationError(error)
 
     def validate_number(self, number) -> None:
         """Validate form input for the street number."""
@@ -382,7 +398,9 @@ class LocationFrom(forms.HumasolSubform[model.Location]):
             self.street.data is not None
             and not model_val.is_legal_address_number(number.data)
         ):
-            raise ValidationError("Invalid street number")
+            error = "Invalid street number"
+            self.number.errors.append(error)
+            raise ValidationError(error)
 
     def validate_place(self, place) -> None:
         """Validate form input for location place."""
@@ -390,7 +408,9 @@ class LocationFrom(forms.HumasolSubform[model.Location]):
             place.data = place.data.strip()
 
         if not model_val.is_legal_address_place(place.data):
-            raise ValidationError("Invalid place")
+            error = "Invalid place"
+            self.place.errors.append(error)
+            raise ValidationError(error)
 
     def validate_country(self, country) -> None:
         """Validate form input for location country."""
@@ -398,7 +418,9 @@ class LocationFrom(forms.HumasolSubform[model.Location]):
             country.data = country.data.strip()
 
         if not model_val.is_legal_address_country(country.data):
-            raise ValidationError("Invalid country")
+            error = "Invalid country"
+            self.country.errors.append(error)
+            raise ValidationError(error)
 
     def validate_latitude(self, latitude) -> None:
         """Validate form input for latitude."""
@@ -406,7 +428,9 @@ class LocationFrom(forms.HumasolSubform[model.Location]):
             latitude.data is not None
             and not model_val.is_legal_coordinates_latitude(latitude.data)
         ):
-            raise ValidationError("Invalid latitude")
+            error = "Invalid latitude"
+            self.latitude.errors.append(error)
+            raise ValidationError(error)
 
     def validate_longitude(self, longitude) -> None:
         """Validate form input for longitude."""
@@ -414,7 +438,9 @@ class LocationFrom(forms.HumasolSubform[model.Location]):
             longitude.data is not None
             and not model_val.is_legal_coordinates_longitude(longitude.data)
         ):
-            raise ValidationError("Invalid longitude")
+            error = "Invalid longitude"
+            self.longitude.errors.append(error)
+            raise ValidationError(error)
 
 
 class DataSourceForm(forms.HumasolSubform[model.DataSource]):
@@ -505,14 +531,18 @@ class DataSourceForm(forms.HumasolSubform[model.DataSource]):
     def validate_source(self, source) -> None:
         """Validate form input for datasource source."""
         if not model_val.is_legal_datasource_source(source.data):
-            raise ValidationError("Invalid data source")
+            error = "Invalid data source"
+            self.source.errors.append(error)
+            raise ValidationError(error)
 
     def validate_username(self, username) -> None:
         """Validate form input for username."""
         if self.token.data is None and not model_val.is_legal_datasource_user(
             username.data
         ):
-            raise ValidationError("Invalid data source username")
+            error = "Invalid data source username"
+            self.username.errors.append(error)
+            raise ValidationError(error)
 
     def validate_password(self, password) -> None:
         """Validate form input for datasource password."""
@@ -523,18 +553,22 @@ class DataSourceForm(forms.HumasolSubform[model.DataSource]):
             self.token.data is None
             and not model_val.is_legal_datasource_password(password.data)
         ):
-            raise ValidationError("Invalid data source password")
+            error = "Invalid data source password"
+            self.password.errors.append(error)
+            raise ValidationError(error)
 
     def validate_api_manager(self, api_manager) -> None:
         """Validate form input for API manager."""
         if self._category is None:
-            raise ValidationError(
-                "Invalid API manager for unselected category"
-            )
+            error = "Please select a project category"
+            self.api_manager.errors.append(error)
+            raise ValidationError(error)
 
         category: str = self._category
         if not model_val.is_legal_api_manager(api_manager.data, category):
-            raise ValidationError("Invalid API manager for selected category")
+            error = "Invalid API manager for selected category"
+            self.api_manager.errors.append(error)
+            raise ValidationError(error)
 
 
 class PeriodForm(forms.HumasolSubform[model.Period]):
@@ -573,26 +607,38 @@ class PeriodForm(forms.HumasolSubform[model.Period]):
     def validate_interval(self, interval) -> None:
         """Validate form input for the period's interval."""
         if not model_val.is_legal_period_interval(interval.data):
-            raise ValidationError(f"Invalid period interval: {interval.data}")
+            error = f"Invalid period interval: {interval.data}"
+            self.interval.errors.append(error)
+            raise ValidationError(error)
 
     def validate_unit(self, unit) -> None:
         """Validate from input for the period's time unit."""
         if not model_val.is_legal_period_unit(unit.data):
-            raise ValidationError("Invalid period unit")
+            error = "Invalid period unit"
+            self.unit.errors.append(error)
+            raise ValidationError(error)
 
     def validate_start(self, date) -> None:
         """Validate form input for the period's start."""
         if not model_val.is_legal_period_start(date.data):
-            raise ValidationError("Invalid period start date")
+            error = "Invalid period start date"
+            self.start.errors.append(error)
+            raise ValidationError(error)
 
     def validate_end(self, date) -> None:
         """Validate form input for the period's end date."""
+        error = None
+
         if not model_val.is_legal_period_end(date.data):
-            raise ValidationError("Invalid period end date")
+            error = "Invalid period end date"
+            self.end.errors.append(error)
+
         if date.data is not None and date.data < self.start.data:
-            raise ValidationError(
-                "Invalid period end date. Should be after start date"
-            )
+            error = "Invalid period end date. Should be after start date"
+            self.end.errors.append(error)
+
+        if error:
+            raise ValidationError(error)
 
 
 class FollowupJobForm(forms.HumasolSubform[F], ty.Generic[F]):
@@ -661,7 +707,9 @@ class TaskForm(FollowupJobForm[model.Task]):
             name.data = name.data.strip()
 
         if not model_val.is_legal_task_name(name.data):
-            raise ValidationError("Invalid task name")
+            error = "Invalid task name"
+            self.task_name.errors.append(error)
+            raise ValidationError(error)
 
     def validate_function(self, function) -> None:
         """Validate form input for the task function."""
@@ -669,7 +717,9 @@ class TaskForm(FollowupJobForm[model.Task]):
             function.data = function.data.strip()
 
         if not model_val.is_legal_task_function(function.data):
-            raise ValidationError("Invalid task function")
+            error = "Invalid task function"
+            self.function.errors.append(error)
+            raise ValidationError(error)
 
 
 class ProjectSpecificForm(forms.HumasolSubform[model.Project]):
@@ -884,12 +934,16 @@ class ProjectForm(forms.HumasolBaseForm[model.Project]):
             name.data = name.data.strip()
 
         if not model_val.is_legal_project_name(name.data):
-            raise ValidationError("Invalid project name")
+            error = "Invalid project name"
+            self.name.errors.append(error)
+            raise ValidationError(error)
 
     def validate_date(self, date: wtforms.DateField) -> None:
         """Validate form input for project implementation date."""
         if not model_val.is_legal_project_implementation_date(date.data):
-            raise ValidationError("Invalid project implementation date")
+            error = "Invalid project implementation date"
+            self.date.errors.append(error)
+            raise ValidationError(error)
 
     def validate_description(self, description: wtforms.TextAreaField) -> None:
         """Validate form input for project description."""
@@ -897,28 +951,38 @@ class ProjectForm(forms.HumasolBaseForm[model.Project]):
             description.data = description.data.strip()
 
         if not model_val.is_legal_project_description(description.data):
-            raise ValidationError("Invalid project description")
+            error = "Invalid project description"
+            self.description.errors.append(error)
+            raise ValidationError(error)
 
     def validate_category(self, category: wtforms.RadioField) -> None:
         """Validate form input for project category."""
         if not model_val.is_legal_project_category(category.data):
-            raise ValidationError("Invalid project category")
+            error = "Invalid project category"
+            self.category.errors.append(error)
+            raise ValidationError(error)
 
     def validate_work_folder(self, folder: wtforms.StringField) -> None:
         """Validate form input for project work folder."""
         if not model_val.is_legal_project_work_folder(folder.data):
-            raise ValidationError("Invalid project work folder")
+            error = "Invalid project work folder"
+            self.work_folder.errors.append(error)
+            raise ValidationError(error)
 
     def validate_students(self, students: wtforms.FieldList) -> None:
         """Validate form input for project students."""
         if len(students.data) > model_interface.get_project_max_students():
-            raise ValidationError("Too many students for a project")
+            error = "Too many students for a project"
+            self.students.errors.append(error)
+            raise ValidationError(error)
 
     def validate_sdgs(self, sdgs: wtforms.FieldList) -> None:
         """Validate form input for project SDGs."""
         # TODO: do this through model interface
         if len(sdgs.data) == 0:
-            raise ValidationError("At least one SDG must be selected")
+            error = "At least one SDG must be selected"
+            self.sdgs.errors.append(error)
+            raise ValidationError(error)
 
     def validate_dashboard(self, dashboard: wtforms.StringField) -> None:
         """Validate form input for project dashboard."""
@@ -930,9 +994,9 @@ class ProjectForm(forms.HumasolBaseForm[model.Project]):
             and len(self.data_source.source.data) != 0
             and not model_val.is_legal_project_dashboard(dashboard.data)
         ):
-            raise ValidationError(
-                f"Invalid project dashboard: {dashboard.data}"
-            )
+            error = f"Invalid project dashboard: {dashboard.data}"
+            self.dashboard.errors.append(error)
+            raise ValidationError(error)
 
 
 if __name__ == "__main__":

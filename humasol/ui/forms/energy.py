@@ -56,7 +56,9 @@ class EnergyProjectComponentForm(forms.ProjectElementForm[T], ty.Generic[T]):
     def validate_power(self, power) -> None:
         """Validate form input for component power."""
         if not model_val.is_legal_energy_project_component_power(power.data):
-            raise ValidationError("Invalid power for a project component.")
+            error = "Invalid power for a project component."
+            self.power.errors.append(error)
+            raise ValidationError(error)
 
 
 class SourceComponentForm(EnergyProjectComponentForm[S], ty.Generic[S]):
@@ -91,7 +93,9 @@ class SourceComponentForm(EnergyProjectComponentForm[S], ty.Generic[S]):
     def validate_price(self, price) -> None:
         """Validate form input for source energy price."""
         if not model_val.is_legal_source_component_price(price.data):
-            raise ValidationError("Invalid price for source component.")
+            error = "Invalid price for source component."
+            self.price.errors.append(error)
+            raise ValidationError(error)
 
 
 class GridForm(SourceComponentForm[model.Grid]):
@@ -125,12 +129,16 @@ class GridForm(SourceComponentForm[model.Grid]):
     def validate_blackout_threshold(self, threshold) -> None:
         """Validate form input for blackout threshold."""
         if not model_val.is_legal_grid_blackout_threshold(threshold.data):
-            raise ValidationError("Invalid blackout threshold for a grid")
+            error = "Invalid blackout threshold for a grid"
+            self.blackout_threshold.errors.append(error)
+            raise ValidationError(error)
 
     def validate_injection_price(self, price) -> None:
         """Validate form input for injection price."""
         if not model_val.is_legal_grid_injection_price(price.data):
-            raise ValidationError("Invalid injection price for a grid.")
+            error = "Invalid injection price for a grid."
+            self.injection_price.errors.append(error)
+            raise ValidationError(error)
 
 
 class PVForm(SourceComponentForm[model.PV]):
@@ -185,12 +193,16 @@ class GeneratorForm(SourceComponentForm[model.Generator]):
         """Validate form input for generator efficiency."""
         eff = float(efficiency.data) / 100
         if not model_val.is_legal_generator_efficiency(eff):
-            raise ValidationError("Invalid generator efficiency.")
+            error = "Invalid generator efficiency."
+            self.efficiency.errors.append(error)
+            raise ValidationError(error)
 
     def validate_fuel_cost(self, cost) -> None:
         """Validate form input for generator fuel cost."""
         if not model_val.is_legal_generator_fuel_cost(cost.data):
-            raise ValidationError("Invalid generator fuel cost.")
+            error = "Invalid generator fuel cost."
+            self.fuel_cost.errors.append(error)
+            raise ValidationError(error)
 
     def validate_overheating_time(self, time) -> None:
         """Validate form input for generator overheating time."""
@@ -198,7 +210,9 @@ class GeneratorForm(SourceComponentForm[model.Generator]):
             self.overheats.data
             and not model_val.is_legal_generator_overtheating_time(time.data)
         ):
-            raise ValidationError("Invalid generator overheating time")
+            error = "Invalid generator overheating time"
+            self.overheating_time.errors.append(error)
+            raise ValidationError(error)
 
     def validate_cooldown_time(self, time) -> None:
         """Validate form input for cool-down time."""
@@ -206,7 +220,9 @@ class GeneratorForm(SourceComponentForm[model.Generator]):
             self.overheats.data
             and not model_val.is_legal_generator_cooldown_time(time.data)
         ):
-            raise ValidationError("Invalid cool-down time for a generator.")
+            error = "Invalid cool-down time for a generator."
+            self.cooldown_time.errors.append(error)
+            raise ValidationError(error)
 
 
 class StorageComponentForm(EnergyProjectComponentForm[U], ty.Generic[U]):
@@ -237,7 +253,9 @@ class StorageComponentForm(EnergyProjectComponentForm[U], ty.Generic[U]):
     def validate_capacity(self, capacity) -> None:
         """Validate form input for capacity."""
         if not model_val.is_legal_storage_component_capacity(capacity.data):
-            raise ValidationError("Invalid capacity for a storage component.")
+            error = "Invalid capacity for a storage component."
+            self.capacity.errors.append(error)
+            raise ValidationError(error)
 
 
 class BatteryForm(StorageComponentForm[model.Battery]):
@@ -289,34 +307,52 @@ class BatteryForm(StorageComponentForm[model.Battery]):
     def validate_battery_type(self, btype) -> None:
         """Validate form input for the battery type."""
         if not model_val.is_legal_battery_type(btype.data):
-            raise ValidationError("Invalid battery type")
+            error = "Invalid battery type"
+            self.battery_type.errors.append(error)
+            raise ValidationError(error)
 
     def validate_battery_base_soc(self, soc) -> None:
         """Validate form input for the battery base SOC."""
         if not model_val.is_legal_battery_base_soc(float(soc.data)):
-            raise ValidationError("Invalid battery base state of charge")
+            error = "Invalid battery base state of charge"
+            self.battery_base_soc.errors.append(error)
+            raise ValidationError(error)
 
     def validate_battery_min_soc(self, soc) -> None:
         """Validate form input for the battery minimal SOC."""
+        error = None
+
         if not model_val.is_legal_battery_min_soc(float(soc.data)):
-            raise ValidationError("Invalid battery minimum SOC")
+            error = "Invalid battery minimum SOC"
+            self.battery_min_soc.errors.append(error)
 
         if soc.data > self.battery_base_soc.data:
-            raise ValidationError(
+            error = (
                 "Invalid minimum battery state of charge. "
                 "Minimum must be below base SOC"
             )
+            self.battery_min_soc.errors.append(error)
+
+        if error:
+            raise ValidationError(error)
 
     def validate_battery_max_soc(self, soc) -> None:
         """Validate form input for the battery maximal SOC."""
-        if not model_val.is_legal_battery_min_soc(float(soc.data)):
-            raise ValidationError("Invalid battery maximum SOC")
+        error = None
+
+        if not model_val.is_legal_battery_max_soc(float(soc.data)):
+            error = "Invalid battery maximum SOC"
+            self.battery_max_soc.errors.append(error)
 
         if soc.data < self.battery_base_soc.data:
-            raise ValidationError(
+            error = (
                 "Invalid maximum battery state of charge. "
                 "Maximum must be above base SOC"
             )
+            self.battery_max_soc.errors.append(error)
+
+        if error:
+            raise ValidationError(error)
 
 
 class ConsumptionComponentForm(

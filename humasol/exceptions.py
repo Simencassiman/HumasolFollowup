@@ -5,6 +5,10 @@ class HumasolException(Exception):
     """Base system exception."""
 
 
+class AppConfigError(HumasolException):
+    """Exception specific to the AppConfig class."""
+
+
 class ModelException(HumasolException):
     """Exception class raised by the models modules."""
 

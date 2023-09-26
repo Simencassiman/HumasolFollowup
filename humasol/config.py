@@ -7,6 +7,9 @@ from typing import Union, get_type_hints
 
 from dotenv import load_dotenv
 
+# Local modules
+from humasol import exceptions
+
 load_dotenv()
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -15,10 +18,6 @@ PROJECT_FILES = os.path.join(dir_path, "project_files")
 # Disable some pylint checks which should be ok
 # pylint: disable=no-member
 # pylint: disable=too-few-public-methods
-
-
-class AppConfigError(Exception):
-    """Exception specific to the AppConfig class."""
 
 
 # pylint: disable=unidiomatic-typecheck
@@ -65,7 +64,9 @@ class AppConfig:
             # Raise AppConfigError if required field not supplied
             default_value = getattr(self, field, None)
             if default_value is None and env.get(field) is None:
-                raise AppConfigError(f"The {field} field is required")
+                raise exceptions.AppConfigError(
+                    f"The {field} field is required"
+                )
 
             # Cast env var value to expected type and raise
             # AppConfigError on failure
@@ -79,7 +80,7 @@ class AppConfig:
 
                 self.__setattr__(field, value)
             except ValueError as exc:
-                raise AppConfigError(
+                raise exceptions.AppConfigError(
                     f'Unable to cast value of "{env[field]}" to type '
                     f'"{var_type}" for "{field}" field'
                 ) from exc

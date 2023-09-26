@@ -46,7 +46,9 @@ SQLAlchemy==1.4.42
 toml==0.10.2
 tomli==2.0.1
 tomlkit==0.11.5
+types-Flask-SQLAlchemy==2.5.9
 types-python-dateutil==2.8.19.2
+types-SQLAlchemy==1.4.53.18
 typing_extensions==4.4.0
 virtualenv==20.16.5
 Werkzeug==2.2.2

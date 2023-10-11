@@ -8,6 +8,14 @@ tasks.
 To contribute to this project please read the rest of this document to set up
 a working environment.
 
+The project is mainly split in two parts: a webapp to register projects and an
+automation script to carry out follow-up jobs of the registered projects.
+
+The webapp functionality is built using the [Flask](https://flask.palletsprojects.com/en/2.3.x/quickstart/)
+framework. You can find a lot better and more detailed information in their
+documentation.
+
+
 ## Setup
 
 To start working on the project locally first of all clone the git repository
@@ -52,3 +60,17 @@ database. The URI contains placeholders for the username, password and database
 name, which should have all been used in the database setup section.
 And lastly, a section for humasol variables. Currently there are initial values
 for an admin account which will be created as a first user.
+
+
+## Run locally
+
+If everything is set up correctly, a debugging server can be started locally
+as follows
+
+```
+flask run
+```
+
+This will serve the app on a local port which will be shown in the command line.
+You should now be able to test out the webapp by using a browser to connect to
+the local port.

@@ -1,4 +1,5 @@
 /*
+
 File organization:
 
 1. Variable declaration
@@ -7,20 +8,24 @@ File organization:
 4. Site header
     4.1 Main header
     4.2 Navigation
-6. Page header
+    4.3 Page header
 5. Loader style
-7. Project list
-8. Project page
-9. Project form
-10. Dashboard
+6. Messages
+7. Footer
+8. Login
+9. Project list
+10. Project page
+11. Project registration form
+12. Buttons
+13. Dashboard
+14. Select multi
 11. Utilities
 
-
- */
+*/
 
 
 /************************
- Variable declaration
+* Variable declaration
 *************************/
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300&display=swap');
@@ -55,7 +60,7 @@ File organization:
 
 
 /************************
- Base styles
+* Base styles
 *************************/
 
 *,
@@ -67,7 +72,7 @@ File organization:
 }
 
 /************************
- General styles
+* General styles
 *************************/
 
 html {
@@ -77,7 +82,6 @@ html {
 }
 
 body {
-    /*position: relative;*/
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -139,10 +143,6 @@ a:hover {
     gap: 0.2rem;
     align-items: center;
 
-    /*width: 100%;*/
-    /*text-align:left;*/
-    /*white-space:normal;*/
-
     > button {
         border: none;
         background-color: inherit;
@@ -171,7 +171,7 @@ a:hover {
 
 
 /************************
- Site header
+* Site header
 *************************/
 
 .main-header {
@@ -188,6 +188,9 @@ a:hover {
     z-index: 10;
 }
 
+
+/*** Navigation ***/
+
 .nav-bar {
     position: relative;
     width: var(--content-width);
@@ -197,33 +200,6 @@ a:hover {
     flex-direction: row;
     align-items: center;
 }
-
-/*.nav-bar::before {*/
-/*    content: '';*/
-/*    position: absolute;*/
-/*    top: 0;*/
-/*    left: calc(-23px - 0.5rem);*/
-/*    width: 0.5em;*/
-/*    height: calc(100px + 0.5 * 20vw);*/
-/*    background-color: var(--humasol-orange);*/
-/*    animation: shorten linear;*/
-/*    animation-timeline: scroll(root block);*/
-/*}*/
-
-/*@keyframes shorten {*/
-/*    0% {*/
-/*        height: calc(100px + 0.5 * 20vw);*/
-/*    }*/
-/*    4.2% {*/
-/*        height: calc(100px + 0.5 * 20vw);*/
-/*    }*/
-/*    10% {*/
-/*        height: 100%;*/
-/*    }*/
-/*    100% {*/
-/*        height: 100%;*/
-/*    }*/
-/*}*/
 
 .main-header-image {
     height: 50px;
@@ -273,6 +249,9 @@ a:hover {
 .main-nav > ul > li:hover > a {
     color: var(--humasol-orange-light);
 }
+
+
+/*** Page header ***/
 
 .page-header {
     position: fixed;
@@ -328,7 +307,7 @@ a:hover {
 
 
 /************************
- Loader style
+* Loader style
 *************************/
 
 .loader {
@@ -384,7 +363,7 @@ a:hover {
 
 
 /************************
- Page header
+* Messages
 *************************/
 
 .title-light {
@@ -435,6 +414,12 @@ a.nav {
     flex-grow: 1;
 }
 
+
+
+/************************
+* Footer
+*************************/
+
 .footer {
     width: 100%;
     margin-top: auto;
@@ -452,7 +437,7 @@ a.nav {
 
 
 /************************
-  Login formatting
+* Login formatting
 *************************/
 
 .login-screen {
@@ -490,8 +475,10 @@ a.nav {
     width: 100%
 }
 
+
+
 /************************
-  Project list formatting
+* Project list formatting
 *************************/
 
 .projects-grid {
@@ -594,9 +581,11 @@ a.nav {
 }
 
 
+
 /*************************
-  Project page formatting
+* Project page formatting
 *************************/
+
 .project-content {
     min-height: min(50vh, var(--content-width));
     margin-bottom: 10px;
@@ -970,9 +959,10 @@ a.nav {
 }
 
 
-/*************************
-  Project form formatting
-**************************/
+
+/**************************
+* Project registration form
+***************************/
 
 .form-section {
     background-color: #fafafa;
@@ -1010,8 +1000,6 @@ a.nav {
 .form-col {
     display: flex;
     flex-direction: column;
-    /*margin-top: 10px;*/
-    /*margin-bottom: 5px;*/
 }
 
 .form-grid {
@@ -1086,14 +1074,12 @@ a.nav {
     top: 50%;
     transform: translateY(0%);  /** Have to overwrite the property **/
     height: calc(50% + 0.6rem);
-    /*height: 70%;*/
 }
 
 .form-sidebar > div:last-child::before {
     top: 50%;
     transform: translateY(-100%);
     height: calc(50% + 0.6rem);
-    /*height: 70%;*/
 }
 
 .form-sidebar > .visible::before {
@@ -1249,8 +1235,6 @@ a.nav {
 
 
 
-
-
 .form-input {
     border-style: solid;
     border-width: 1px;
@@ -1326,8 +1310,10 @@ a.nav {
 }
 
 
+
+
 /*******************
-  Button formatting
+* Buttons
 ********************/
 
 .button {
@@ -1377,23 +1363,6 @@ a.nav {
     }
 }
 
-/*.button-placeholder {*/
-/*  border: none;*/
-/*  background-color: #ccc;*/
-/*  padding: 1.5em;*/
-/*  border-radius: 3px;*/
-/*  justify-content: center;*/
-/*  align-items: center;*/
-/*  color: #fff;*/
-/*  width: 100%;*/
-/*  cursor: pointer;*/
-/*}*/
-
-.button-placeholder:hover {
-  transform: scale(1.02);
-
-}
-
 .button-team {
     margin-block: 1.5rem;
     flex-grow: 1;
@@ -1435,46 +1404,12 @@ a.nav {
     }
 }
 
+
+
+
 /*****************
- Dashboard
+* Dashboard
 ******************/
-/*.dash-content {*/
-/*    display: flex;*/
-/*    flex-direction: row;*/
-/*    margin-top: 2.5rem;*/
-/*}*/
-
-/*.sidebar {*/
-/*    height:100%;*/
-/*    min-width:130px;*/
-/*    display:flex;*/
-/*    flex-direction: column;*/
-/*    padding:8px 16px;*/
-/*    text-align:left;*/
-/*    white-space:normal;*/
-/*}*/
-
-/*.sidebar-item{*/
-/*    width:100%;*/
-/*    padding:8px 16px;*/
-/*    text-align:left;*/
-/*    white-space:normal;*/
-/*    border: none;*/
-/*    background-color: inherit;*/
-/*}*/
-
-/*.sidebar-item:hover {*/
-/*    color: var(--humasol-orange);*/
-/*}*/
-
-/*.sidebar-item__selected {*/
-/*    color: var(--humasol-orange);*/
-/*}*/
-
-/*.dash-panel{*/
-/*    flex-grow: 1;*/
-/*    padding:16px;*/
-/*}*/
 
 .dash-panel__container {
     display: flex;
@@ -1513,6 +1448,8 @@ a.nav {
         opacity: 1;
     }
 }
+
+
 
 /**************
 * Select multi
@@ -1572,7 +1509,6 @@ a.nav {
     color: #e2eBf0;
     padding: 0.5rem;
     display: flex;
-    /*border-left: 1px solid var(--border-color);*/
 }
 
 .mult-select-tag button {
@@ -1670,8 +1606,9 @@ a.nav {
 }
 
 
+
 /**************
-* Miscellaneous
+* Utilities
 ***************/
 
 /*
@@ -1735,42 +1672,34 @@ Important to keep this at the bottom so it overrides other classes!
 }
 
 .grow-one {
-    /*width: 100%;*/
     flex-grow: 1;
 }
 
 .grow-two {
-    /*width: 100%;*/
     flex-grow: 2;
 }
 
 .grow-three {
-    /*width: 100%;*/
     flex-grow: 3;
 }
 
 .grow-four {
-    /*width: 100%;*/
     flex-grow: 4;
 }
 
 .grow-five {
-    /*width: 100%;*/
     flex-grow: 5;
 }
 
 .grow-six {
-    /*width: 100%;*/
     flex-grow: 6;
 }
 
 .grow-seven {
-    /*width: 100%;*/
     flex-grow: 7;
 }
 
 .grow-eight {
-    /*width: 100%;*/
     flex-grow: 8;
 }
 

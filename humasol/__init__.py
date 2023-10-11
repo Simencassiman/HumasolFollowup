@@ -2,6 +2,7 @@
 
 # Local Modules
 from . import exceptions  # noqa
+from . import utils  # noqa
 from . import repository  # noqa
 from . import model  # noqa
 from . import script  # noqa

@@ -11,7 +11,10 @@ def get_api_managers() -> dict[str, set[str]]:
     Dictionary indexed by category where the values are sets of class names
     for managers valid for that category.
     """
-    return {k.category_name: v for k, v in model.script.API_MANAGERS.items()}
+    return {
+        k.category_name: set(v)
+        for k, v in model.script.api_managers.API_MANAGERS.items()
+    }
 
 
 def get_battery_label() -> str:
@@ -55,7 +58,10 @@ def get_data_managers() -> dict[str, set[str]]:
     Dictionary indexed by category where the values are sets of class names
     for managers valid for that category.
     """
-    return {k.category_name: v for k, v in model.script.DATA_MANAGERS.items()}
+    return {
+        k.category_name: set(v)
+        for k, v in model.script.data_managers.DATA_MANAGERS.items()
+    }
 
 
 def get_generator_label() -> str:
@@ -106,7 +112,8 @@ def get_report_managers() -> dict[str, set[str]]:
     for managers valid for that category.
     """
     return {
-        k.category_name: v for k, v in model.script.REPORT_MANAGERS.items()
+        k.category_name: set(v)
+        for k, v in model.script.report_managers.REPORT_MANAGERS.items()
     }
 
 

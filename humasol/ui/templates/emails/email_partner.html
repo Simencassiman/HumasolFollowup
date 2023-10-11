@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta content="text/html"; charset="UTF-8">
+    <title>Humasol partner project update</title>
+    <style>
+        :root {
+            /* Colors */
+            --humasol-orange: #f19104;
+            --humasol-orange-light: #ffbc76;
+            --humasol-orange-dark: #d06a00;
+
+            --humasol-brown: #863c14;
+            --humasol-brown-light: #eca47c;
+            --humasol-brown-dark: #402111;
+
+            --humasol-neutral: #d6d6d6;
+            --humasol-neutral-light: #f9f9f9;
+            --humasol-neutral-very-light: #fcfcfc;
+            --humasol-neutral-dark: #626262;
+            --humasol-white: #fff;
+        }
+
+        html { background-color: #f2f2f2;}
+
+        * { box-sizing: border-box;}
+
+        .content-section a {
+          color: #f19104;
+          text-decoration: none;
+        }
+
+        .content-section a:hover {
+          color: #ffbc76;
+        }
+
+        .content-section { margin: 1em; }
+
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 0;
+        }
+
+        .header {
+            margin: 0;
+            padding: 0;
+        }
+
+        .header img { margin: 0; padding: 0;}
+
+        .content {
+            padding: 0;
+            margin: 0;
+            border-style: solid;
+            border-width: 1px;
+            border-color: #efefef;
+            text-align: justify;
+        }
+
+        .content p {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .footer p {
+            margin: 0;
+            padding: 10px 20px;
+            background-color: #efefef;
+            font-size: 0.5em;
+        }
+    </style>
+</head>
+<body>
+    <div class="content-section container">
+        <div class="header">
+            <img src="cid:humasol-logo" style="height:30px">
+            <img src="cid:joke" style="width: 600px;vertical-align:bottom;">
+        </div>
+        <div class="content">
+            <p>Dear {{name}},</p>
+            <p>This is an automatically generated email for <a href="www.humasol.be">Humasol</a> project follow up.</p>
+            <p>It is intentionally made to bother you for a while. If you don't get this now, you will...</p>
+            <p>For more information, please see the attachments.</p>
+            <p>Kind regards,</p>
+            <p>You know who</p>
+        </div>
+        <div class="footer">
+            <p>Here goes all the bullshit in small letter</p>
+            <p>At the moment it's impossible to unsubscribe from this emails. However, if you reeally want to try,
+                click <a href="www.tonowhere.com">here</a>.</p>
+        </div>
+    </div>
+</body>
+</html>

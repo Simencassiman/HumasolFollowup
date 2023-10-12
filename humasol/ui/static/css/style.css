@@ -454,7 +454,6 @@ a.nav {
     box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
     overflow: hidden;
 
-
     > div {
         min-width: 25vw;
     }
@@ -464,6 +463,16 @@ a.nav {
     margin: auto;
     height: 90vh;
     opacity: 0.3;
+}
+
+.login-image {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-image > img {
+    width: 100%;
+    height: 100%;
 }
 
 .login-form {

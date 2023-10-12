@@ -7,10 +7,10 @@ Login
 
 {% block content %}
 {% include "security/_messages.html" %}
-<img class="login-screen__bg" src="{{ url_for('static', filename='img/humasol_icon.png') }}">
+<img class="login-screen__bg" src="{{ url_for('static', filename='img/icon.svg') }}">
 <div class="login-screen">
     <div class="login-image grow-one">
-        <img src="{{ url_for('static', filename='img/humasol_icon.png') }}">
+        <img src="{{ url_for('static', filename='img/login_drawing.svg') }}">
     </div>
     <div class="login-form grow-one">
         <form action="{{ url_for('gui.security.login') }}{{ prop_next() }}" method="POST" name="login_user_form">

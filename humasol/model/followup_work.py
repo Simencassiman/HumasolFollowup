@@ -108,7 +108,7 @@ class FollowupJob(model.BaseModel, model.ProjectElement):
         # Disable pylint. Need type to ignore subclasses
         # pylint: disable=unidiomatic-typecheck
         if type(self) == FollowupJob:
-            raise exceptions.IllegalArgumentException(
+            raise exceptions.AbstractClassException(
                 "FollowupWork is an abstract class and cannot be instantiated"
             )
         # pylint: enable=unidiomatic-typecheck
@@ -121,7 +121,8 @@ class FollowupJob(model.BaseModel, model.ProjectElement):
 
         if not FollowupJob.are_legal_periods(periods):
             raise exceptions.IllegalArgumentException(
-                "Parameter 'periods' must be a list and contain unique Periods"
+                "Parameter 'periods' must be a list and contain unique and "
+                "valid Periods"
             )
 
         if not FollowupJob.is_legal_last_notification(last_notification):
@@ -527,6 +528,17 @@ class Period(model.BaseModel, model.ProjectElement):
         """Check whether the provided unit is a valid time unit."""
         return isinstance(unit, Period.TimeUnit)
 
+    def first_check_today(self) -> bool:
+        """Check whether it is the first time this period is active."""
+        if self.unit == Period.TimeUnit.WEEK:
+            return date.today().isoweekday() == 1
+        if self.unit == Period.TimeUnit.MONTH:
+            return date.today().day == 1
+        if self.unit == Period.TimeUnit.MONTH:
+            return date.today().day == 1
+
+        return False
+
     def get_unit(self) -> str:
         """Provide the unit of this period as a string."""
         return str(self.unit)
@@ -603,7 +615,7 @@ class Period(model.BaseModel, model.ProjectElement):
         False otherwise.
         """
         if last_notification is None or last_notification < self.start:
-            return self.first_ckeck_today()
+            return self.first_check_today()
 
         if self.is_applicable(last_notification):
             time_passed = relativedelta(

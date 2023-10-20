@@ -62,3 +62,4 @@ repos:
     hooks:
     -   id: pydocstyle
         exclude: 'migrations'
+        exclude: 'tests'

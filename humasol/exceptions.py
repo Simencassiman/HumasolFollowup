@@ -13,6 +13,10 @@ class ModelException(HumasolException):
     """Exception class raised by the models modules."""
 
 
+class AbstractClassException(HumasolException):
+    """Exception class raised by an abstract class when it is instantiated."""
+
+
 class IllegalArgumentException(ModelException):
     """Exception raised when invalid parameters are passed to a model."""
 
